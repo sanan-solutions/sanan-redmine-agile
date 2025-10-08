@@ -1,0 +1,12 @@
+vi:
+  label_sanan_agile_settings: "Sanan Agile"
+  label_enabled_for_project: "Bật cho project này"
+  label_trigger_status_name: "Tên trạng thái kích hoạt"
+  label_version_strategy: "Chiến lược chọn Version (fallback)"
+  label_strategy_nearest_or_latest: "Nearest due_date hoặc Latest open"
+  label_strategy_latest_open: "Chỉ Latest open"
+  label_skip_if_already_set: "Bỏ qua nếu Target version đã có?"
+  label_skip_note: "(Áp dụng khi KHÔNG chọn custom field)"
+  label_custom_field_to_fill: "Issue Custom Field để ghi tên Version"
+  label_none: "Không"
+  label_custom_field_help: "Nếu chọn CF, plugin ghi TÊN version vào CF. Nếu để trống, plugin sẽ gán Target version."

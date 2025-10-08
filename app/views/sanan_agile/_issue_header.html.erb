@@ -1,0 +1,158 @@
+<%# == Sanan Agile: DoD toggle header for Agile cards (custom box, no native checkbox) == %>
+<% prj      = project %>
+<% cfg      = SananAgile::ProjectSettings.load(prj.id) %>
+<% trackers = Array(cfg['dod_checkbox_trackers']).map(&:to_i) %>
+<% statuses = Array(cfg['dod_checkbox_statuses']).map(&:to_i) %>
+<% cfid     = cfg['dod_cfid'].to_i %>
+
+<% enabled = cfg['sanan_agile_enabled'] == '1' && trackers.present? && statuses.present? && cfid > 0 %>
+
+<% if enabled %>
+  <%= render partial: 'sanan_agile/agile_util' %>
+
+  <% id_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.tracker_id } %>
+  <% st_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.status_id  } %>
+
+  <% state_map = Array(issues).each_with_object({}) do |i, h|
+       v = i.respond_to?(:custom_field_values) ? (i.custom_field_values.detect{|cv| cv.custom_field_id.to_i==cfid}&.value) : i.custom_field_value(cfid)
+       h[i.id] = v.is_a?(Array) ? v.any?{|x| x.present?} : v.present?
+     end %>
+
+  <style>
+    .sanan-issue-card-header{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      padding:3px 0 6px;
+      border-bottom:1px solid #ddd;
+      margin-bottom:4px;gap:8px
+    }
+    .sanan-issue-card-header .txt{
+      font-size:11px;
+      font-weight:bold;
+      color:#333;
+      user-select:none
+    }
+    /* Ô vuông custom – không bị theme can thiệp */
+    .sanan-issue-card-header .sag-dod-box{
+      display:inline-block;
+      width:18px;
+      height:18px;
+      border:1px solid #666;
+      border-radius:3px;
+      background:#fff;
+      cursor:pointer;
+      position:relative;
+      flex:0 0 auto
+    }
+    .sanan-issue-card-header .sag-dod-box.is-on{
+      background:#2e7;
+      border-color:#2e7;
+    }
+    .sanan-issue-card-header .sag-dod-box.is-on::after{
+      content:"✓";
+      position:absolute;
+      inset:0;
+      line-height:18px;
+      text-align:center;
+      color:#fff;
+      font-size:12px
+    }
+    /* Khi card được .selected, vẫn không đổi màu nếu chưa bật is-on */
+    .agile__issue.selected .sanan-issue-card-header .sag-dod-box{
+      background:#fff;
+      border-color:#666;
+    }
+  </style>
+
+  <script>
+  (function(U){
+    var ISSUE_TRACKER = <%= raw(id_map.to_json) %>;
+    var ISSUE_STATUS  = <%= raw(st_map.to_json) %>;
+    var ALLOWED_T     = <%= raw(trackers.to_json) %>;
+    var ALLOWED_S     = <%= raw(statuses.to_json) %>;
+    var DOD_STATE     = <%= raw(state_map.to_json) %>;
+    var DOD_CF_NAME   = "<%= j(IssueCustomField.find_by(id: cfid)&.name.to_s) %>";
+
+    var csrf     = (document.querySelector('meta[name="csrf-token"]')||{}).content || '';
+    var POST_URL = "<%= main_app.sanan_agile_set_dod_path %>";
+
+    var headerClass ='sanan-issue-card-header';
+
+    function hasHeader(card){ return !!card.querySelector('.'+headerClass); }
+
+    function createHeader(card, iid){
+      if (hasHeader(card)) return;
+      var host = U.pickHeaderContainer(card);
+
+      var header = document.createElement('div');
+      header.className = headerClass;
+      header.innerHTML =
+        '<span class="txt">Mark is done (DoD)</span>' +
+        '<span class="sag-dod-box" role="checkbox" aria-checked="false" tabindex="0" aria-label="DoD toggle"></span>';
+      host.insertBefore(header, host.firstChild);
+
+      var box = header.querySelector('.sag-dod-box');
+      var key = String(iid);
+
+      function render(){
+        var on = !!DOD_STATE[key];
+        box.classList.toggle('is-on', on);
+        box.setAttribute('aria-checked', on ? 'true' : 'false');
+      }
+      render();
+
+      function toggle(ev){
+        ev.stopPropagation(); ev.preventDefault();
+        var want = !DOD_STATE[key];
+        header.style.opacity = .6;
+        fetch(POST_URL + "?issue_id=" + encodeURIComponent(iid) + "&checked=" + (want ? "true" : "false"), {
+          method:"POST",
+          headers:{ "X-CSRF-Token": csrf, "Accept":"application/json" }
+        })
+        .then(function(r){ return r.json().catch(function(){return {};}); })
+        .then(function(j){
+          header.style.opacity = 1;
+          if (j && j.ok){
+            DOD_STATE[key] = !!j.checked;
+            render();
+            if (j.checked) {
+              U.addAttributeLine(card, j.value, j.href, DOD_CF_NAME);
+            } else {
+              U.removeAttributeLine(card, DOD_CF_NAME);
+            }
+          } else {
+            render(); // revert theo map hiện tại
+            alert("Cannot update DoD" + (j && j.error ? (": " + j.error) : ""));
+          }
+        })
+        .catch(function(){
+          header.style.opacity = 1;
+          render();
+          alert("Network error");
+        });
+      }
+
+      // Click vào ô – chỉ toggle control này, không ảnh hưởng UI khác
+      box.addEventListener('click', toggle);
+      box.addEventListener('keydown', function(e){
+        if (e.key === ' ' || e.key === 'Enter') toggle(e);
+      });
+    }
+
+    function reconcile(card){
+      var iid = U.findIssueId(card); if(!iid) return;
+      var sidNow = U.statusIdFromDOM(card); if (sidNow != null) ISSUE_STATUS[iid] = sidNow;
+
+      var tid = ISSUE_TRACKER[iid], sid = ISSUE_STATUS[iid];
+      var ok = (!!tid && ALLOWED_T.indexOf(tid)!==-1) && (!!sid && ALLOWED_S.indexOf(sid)!==-1);
+
+      if (ok) createHeader(card, iid);
+      else { var h = card.querySelector('.'+headerClass); if (h) h.remove(); }
+    }
+
+    U.register(reconcile);
+    U.boot(true);
+  })(window.SananAgileUtil);
+  </script>
+<% end %>

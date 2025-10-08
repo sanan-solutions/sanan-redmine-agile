@@ -1,0 +1,12 @@
+en:
+  label_sanan_agile_settings: "Sanan Agile"
+  label_enabled_for_project: "Enable for this project"
+  label_trigger_status_name: "Trigger status name"
+  label_version_strategy: "Version pick strategy (fallback)"
+  label_strategy_nearest_or_latest: "Nearest due_date or Latest open"
+  label_strategy_latest_open: "Latest open only"
+  label_skip_if_already_set: "Skip if Target version already set?"
+  label_skip_note: "(Applies only when NO custom field is selected)"
+  label_custom_field_to_fill: "Issue Custom Field to write Version name"
+  label_none: "None"
+  label_custom_field_help: "If selected, writes VERSION NAME to that CF; otherwise sets Target version."

@@ -1,0 +1,214 @@
+<%# == Sanan Agile: BE/FE Done footer for Agile cards (custom box, map-based) == %>
+<% prj      = project %>
+<% cfg      = SananAgile::ProjectSettings.load(prj.id) %>
+
+<% sp_be_id   = cfg['sp_be_cfid'].to_i %>
+<% sp_fe_id   = cfg['sp_fe_cfid'].to_i %>
+<% done_be_id = cfg['done_be_cfid'].to_i %>
+<% done_fe_id = cfg['done_fe_cfid'].to_i %>
+<% trackers   = Array(cfg['befe_trackers']).map(&:to_i) %>
+
+<% enabled = cfg['sanan_agile_enabled'] == '1' && (sp_be_id > 0 || sp_fe_id > 0) %>
+
+<% if enabled %>
+  <%= render partial: 'sanan_agile/agile_util' %>
+
+  <%# Map: issue_id -> tracker_id %>
+  <% tracker_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.tracker_id } %>
+  <% status_map  = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.status_id  } %>
+
+  <% allowed_statuses = Array(cfg['befe_statuses']).map(&:to_i) %>
+
+  <%# Helper “present” coi "0" là có %>
+  <% def cf_present_bool(issue, cfid)
+       return false if cfid.to_i <= 0
+       v = issue.custom_field_value(cfid.to_i)
+       v.is_a?(Array) ? v.any? { |x| x.to_s.strip != '' } : v.to_s.strip != ''
+     end %>
+
+  <% sp_be_present = Array(issues).each_with_object({}) { |i, h| h[i.id] = cf_present_bool(i, sp_be_id) } %>
+  <% sp_fe_present = Array(issues).each_with_object({}) { |i, h| h[i.id] = cf_present_bool(i, sp_fe_id) } %>
+  <% done_be_state = Array(issues).each_with_object({}) { |i, h| h[i.id] = cf_present_bool(i, done_be_id) } %>
+  <% done_fe_state = Array(issues).each_with_object({}) { |i, h| h[i.id] = cf_present_bool(i, done_fe_id) } %>
+
+  <style>
+    .sanan-issue-card-footer{
+      display:flex;
+      align-items:center;
+      justify-content:flex-start;
+      padding:7px 0 6px;
+      margin:4px 0 8px;
+      border-top:1px solid #ddd
+    }
+    .sanan-issue-card-footer .sag-befe-box{
+      display:inline-block;
+      width:18px;
+      height:18px;
+      border:1px solid #666;
+      border-radius:3px;
+      background:#fff;
+      cursor:pointer;
+      position:relative;
+      vertical-align:middle;
+      flex:0 0 auto;
+      margin-right: 4px
+    }
+    .sanan-issue-card-footer .sag-befe-box.is-on{
+      background:#2e7;
+      border-color:#2e7;
+    }
+    .sanan-issue-card-footer .sag-befe-box.is-on::after{
+      content:"✓";
+      position:absolute;
+      inset:0;
+      line-height:18px;
+      text-align:center;
+      color:#fff;
+      font-size:12px
+    }
+    .sanan-issue-card-footer .sag-befe-btn{
+      cursor:pointer;
+      font-size:11px;
+      font-weight:500;
+      color:#333;
+      user-select:none;
+    }
+    /* Khi card .selected, không tự đổi màu hộp nếu chưa bật is-on */
+    .agile__issue.selected .sanan-issue-card-footer .sag-befe-box{
+      background:#fff;
+      border-color:#666;
+    }
+  </style>
+
+  <script>
+  (function(U){
+    var TRACKER_MAP   = <%= raw(tracker_map.to_json) %>;
+    var TRACKER_ALLOW = <%= raw(trackers.to_json) %>;
+    var SP_BE_SHOW    = <%= raw(sp_be_present.to_json) %>;
+    var SP_FE_SHOW    = <%= raw(sp_fe_present.to_json) %>;
+    var DONE_BE       = <%= raw(done_be_state.to_json) %>;
+    var DONE_FE       = <%= raw(done_fe_state.to_json) %>;
+    var ISSUE_STATUS  = <%= raw(status_map.to_json) %>;  
+    var STATUS_ALLOW  = <%= raw(allowed_statuses.to_json) %>; 
+
+    var csrf     = (document.querySelector('meta[name="csrf-token"]')||{}).content || '';
+    var POST_URL = "<%= main_app.sanan_agile_set_part_done_path %>";
+
+    var footerClass = 'sanan-issue-card-footer';
+
+    function hasFooter(card){ return !!card.querySelector('.'+footerClass); }
+
+    function createFooter(card, iid){
+      if (hasFooter(card)) return;
+
+      // filter theo tracker (nếu cấu hình)
+      var tid = TRACKER_MAP[iid];
+      if (TRACKER_ALLOW.length > 0 && tid && TRACKER_ALLOW.indexOf(tid)===-1) return;
+
+      var showBE = !!SP_BE_SHOW[iid], showFE = !!SP_FE_SHOW[iid];
+      if (!showBE && !showFE) return;
+
+      var container = U.pickFooterContainer(card);
+      var footer = document.createElement('div');
+      footer.className = footerClass;
+
+      var html = '';
+      if (showBE){
+        html += '<span class="sag-befe-box" data-part="be" role="checkbox" aria-checked="false" tabindex="0" aria-label="Backend done"></span>' +
+                '<span class="sag-befe-btn"  data-part="be" role="button"   tabindex="0">BE done</span>';
+      }
+      if (showFE){
+        if (showBE) html += '<span style="width:8px;display:inline-block;"></span>';
+        html += '<span class="sag-befe-box" data-part="fe" role="checkbox" aria-checked="false" tabindex="0" aria-label="Frontend done"></span>' +
+                '<span class="sag-befe-btn"  data-part="fe" role="button"   tabindex="0">FE done</span>';
+      }
+      footer.innerHTML = html;
+      container.appendChild(footer);
+
+      var boxBE = showBE ? footer.querySelector('.sag-befe-box[data-part="be"]') : null;
+      var boxFE = showFE ? footer.querySelector('.sag-befe-box[data-part="fe"]') : null;
+
+      function render(part){
+        var on = part==='be' ? !!DONE_BE[iid] : !!DONE_FE[iid];
+        var box = part==='be' ? boxBE : boxFE;
+        if (!box) return;
+        box.classList.toggle('is-on', on);
+        box.setAttribute('aria-checked', on ? 'true' : 'false');
+      }
+      render('be'); render('fe');
+
+      function toggle(part, ev){
+        ev.stopPropagation(); 
+        ev.preventDefault();
+
+        var want = !(part==='be' ? !!DONE_BE[iid] : !!DONE_FE[iid]);
+        footer.style.opacity = .6;
+        fetch(POST_URL + "?issue_id=" + encodeURIComponent(iid) +
+                          "&part=" + encodeURIComponent(part) +
+                          "&checked=" + (want ? "true" : "false"), {
+          method:"POST", headers:{ "X-CSRF-Token": csrf, "Accept":"application/json" }
+        })
+        .then(function(r){ return r.json().catch(function(){ return {}; }); })
+        .then(function(j){
+          footer.style.opacity = 1;
+          if (j && j.ok){
+            if (part==='be') {
+              DONE_BE[iid] = !!j.checked;
+            } else {
+              DONE_FE[iid] = !!j.checked;
+            }
+
+            render(part);
+            console.log("vao day ne")
+            if (j.auto_moved) {
+              console.log("hihi auto move")
+               location.reload();
+            }
+          } else {
+            render(part); // revert theo map
+            alert("Cannot update" + (j && j.error ? (": " + j.error) : ""));
+          }
+        })
+        .catch(function(){
+          footer.style.opacity = 1;
+          render(part);
+          alert("Network error");
+        });
+      }
+
+      function bind(part){
+        var btn = footer.querySelector('.sag-befe-btn[data-part="'+part+'"]');
+        var box = footer.querySelector('.sag-befe-box[data-part="'+part+'"]');
+        if (btn){ btn.addEventListener('click', function(e){ toggle(part, e); });
+                  btn.addEventListener('keydown', function(e){ if(e.key===' '||e.key==='Enter') toggle(part, e); }); }
+        if (box){ box.addEventListener('click', function(e){ toggle(part, e); });
+                  box.addEventListener('keydown', function(e){ if(e.key===' '||e.key==='Enter') toggle(part, e); }); }
+      }
+      if (showBE) bind('be');
+      if (showFE) bind('fe');
+    }
+
+    function reconcile(card){
+      var iid = U.findIssueId(card); if (!iid) return;
+
+      // cập nhật status_id hiện tại từ DOM (nếu có), đề phòng drag/drop
+      var sidNow = U.statusIdFromDOM(card);
+      if (sidNow != null) ISSUE_STATUS[iid] = sidNow;
+
+      var tid = TRACKER_MAP[iid];
+      var sid = ISSUE_STATUS[iid];
+      var allowTracker = (TRACKER_ALLOW.length===0) || (tid && TRACKER_ALLOW.indexOf(tid)!==-1);
+      var allowStatus  = (STATUS_ALLOW.length===0)  || (sid && STATUS_ALLOW.indexOf(sid)!==-1); // ⬅️ mới
+      var showBE = !!SP_BE_SHOW[iid], showFE = !!SP_FE_SHOW[iid];
+
+      console.log("hhe",iid,  STATUS_ALLOW, allowStatus)
+
+      if (allowTracker && allowStatus && (showBE || showFE)) createFooter(card, iid);
+      else { var f = card.querySelector(`.${footerClass}`); if (f) f.remove(); }
+    }
+
+    U.register(reconcile);
+    U.boot();
+  })(window.SananAgileUtil);
+  </script>
+<% end %>

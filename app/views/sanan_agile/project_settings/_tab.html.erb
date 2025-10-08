@@ -1,0 +1,220 @@
+<% cfg = SananAgile::ProjectSettings.load(@project.id) %>
+<% issue_custom_fields = IssueCustomField.sorted.all %>
+
+<div class="box tabular">
+  <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
+    <p>
+      <label><%= l(:label_enabled_for_project) %></label>
+      <%= hidden_field_tag 'settings[sanan_agile_enabled]', '0' %>
+      <%= check_box_tag 'settings[sanan_agile_enabled]', '1', (cfg['sanan_agile_enabled'] == '1') %>
+    </p>
+
+    <p>
+      <label><%= l(:label_version_strategy) %></label>
+      <%= select_tag 'settings[sanan_agile_version_strategy]',
+        options_for_select([
+          [l(:label_strategy_nearest_or_latest), 'nearest_due_date_or_latest_open'],
+          [l(:label_strategy_latest_open), 'latest_open_only']
+        ], cfg['sanan_agile_version_strategy']) %>
+    </p>
+
+    <p>
+      <label><%= l(:label_skip_if_already_set) %></label>
+      <%= hidden_field_tag 'settings[skip_if_already_set]', '0' %>
+      <%= check_box_tag 'settings[skip_if_already_set]', '1', (cfg['skip_if_already_set'] == '1') %>
+      <em><%= l(:label_skip_note) %></em>
+    </p>
+
+    <div class="setting-group">
+      <h3>Story point Custom Field</h3>
+      <p>
+        <label>Story Point – chọn Issue Custom Field</label><br/>
+        <%= select_tag 'settings[story_point_cfid]',
+          options_for_select([['— Không dùng —', '']] +
+            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] },
+            cfg['story_point_cfid']) %>
+        <br/>
+        <small>CF này sẽ được đồng bộ vào cột <code>issues.story_points</code> của Redmine Agile sau khi bạn lưu Issue.</small>
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <h3>BE/FE Done Field</h3>
+       <p>
+          <label>Story point Backend</label>
+          <%= select_tag 'settings[sp_be_cfid]',
+              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['sp_be_cfid']),
+                include_blank: true %>
+        </p>
+
+      <p>
+          <label>Done Backend In Sprint (CF)</label>
+          <%= select_tag 'settings[done_be_cfid]',
+                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['done_be_cfid']),
+                include_blank: true %>
+        </p>
+
+        <p>
+          <label>Story point Frontend</label>
+          <%= select_tag 'settings[sp_fe_cfid]',
+                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['sp_fe_cfid']),
+                include_blank: true %>
+        </p>
+
+        <p>
+          <label>Done Frontend In Sprint (CF)</label>
+          <%= select_tag 'settings[done_fe_cfid]',
+                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['done_fe_cfid']),
+                include_blank: true %>
+        </p>
+
+        <p>
+          <label>Limit trackers (optional)</label>
+          <%= select_tag 'settings[befe_trackers][]',
+                options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['befe_trackers'])),
+                multiple: true %>
+          <br><small>Để trống = áp dụng tất cả tracker.</small>
+        </p>
+
+        <p>
+          <label>Statuses hiển thị BE/FE footer (optional)</label><br>
+          <% statuses = IssueStatus.order(:position) %>
+          <%= select_tag 'settings[befe_statuses][]',
+                options_from_collection_for_select(statuses, :id, :name, Array(cfg['befe_statuses']).map(&:to_i)),
+                multiple: true %>
+          <span class="info">Chỉ những issue đang ở các status này mới thấy 2 checkbox BE/FE.</span>
+        </p>
+
+        <hr>
+        <p>
+          <label>Tự động chuyển status khi đủ điều kiện</label>
+          <%= hidden_field_tag 'settings[auto_move_enabled]', '0' %>
+          <%= check_box_tag 'settings[auto_move_enabled]', '1', cfg['auto_move_enabled'] == '1' %>
+        </p>
+
+        <p>
+          <label>Status đích</label>
+          <%= select_tag 'settings[auto_move_status_id]',
+                options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['auto_move_status_id']),
+                include_blank: true %>
+        </p>
+
+        <p>
+          <label>Resolve status (bắt buộc Done BE/FE)</label><br>
+          <% statuses = IssueStatus.order(:position) %>
+          <%= select_tag 'settings[resolve_status]',
+              options_from_collection_for_select(statuses, :id, :name, cfg['resolve_status'].to_s),
+              include_blank: true, class: 'select' %>
+          <span class="info">Khi issue chuyển sang status này, hệ thống sẽ kiểm tra Done BE/FE tương ứng với SP được set.</span>
+        </p>
+    </div>
+
+    <div class="setting-group">
+     <h3>Code Done field</h3>
+      <p>
+        <label><%= l(:label_trigger_status_name) %></label>
+                 <%= select_tag 'settings[code_done_status_name]',
+            options_for_select(
+              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
+              cfg['code_done_status_name']
+            )
+          %>
+          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
+      </p>
+
+      <p>
+        <label><%= l(:label_custom_field_to_fill) %></label>
+        <%= select_tag 'settings[code_done_cfid]',
+          options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] +
+            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }, cfg['code_done_cfid']) %>
+        <br/>
+        <small><%= l(:label_custom_field_help) %></small>
+      </p>
+    </div>
+
+
+    <div class="setting-group">
+     <h3>QA Done field</h3>
+      <p>
+        <label><%= l(:label_trigger_status_name) %></label>
+                 <%= select_tag 'settings[development_done_status_name]',
+            options_for_select(
+              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
+              cfg['development_done_status_name']
+            )
+          %>
+          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
+      </p>
+
+      <p>
+        <label><%= l(:label_custom_field_to_fill) %></label>
+        <%= select_tag 'settings[development_done_cfid]',
+          options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] +
+            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }, cfg['development_done_cfid']) %>
+        <br/>
+        <small><%= l(:label_custom_field_help) %></small>
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <h3>Done field</h3>
+      <p>
+        <label>Trackers hiển thị checkbox "Mark is done (DoD)"</label><br/>
+        <%= select_tag 'settings[dod_checkbox_trackers][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, cfg['dod_checkbox_trackers']),
+              multiple: true %>
+      </p>
+
+      <p>
+        <label>Status hiển thị checkbox "Mark is done (DoD)"</label><br/>
+        <%= select_tag 'settings[dod_checkbox_statuses][]',
+        options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['dod_checkbox_statuses'])),
+        multiple: true %>
+        <br><small>Chỉ khi Issue đang ở một trong các trạng thái này, checkbox mới xuất hiện.</small>
+      </p>
+
+      <p>
+        <label>Custom Field "Mark is done (DoD)"</label><br/>
+        <%= select_tag 'settings[dod_cfid]',
+              options_for_select([['— Chưa chọn —','']] + IssueCustomField.all.map{|cf| ["##{cf.id} - #{cf.name}", cf.id]},
+                                cfg['dod_cfid']) %>
+      </p>
+    </div>
+
+    <div class="setting-group">
+      <h3>UAT Done field</h3>
+      <p>
+        <label>UAT Done – chọn trạng thái (status)</label><br/>
+          <%= select_tag 'settings[uat_done_status_name]',
+            options_for_select(
+              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
+              cfg['uat_done_status_name']
+            )
+          %>
+          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
+      </p>
+
+      <p>
+        <label>UAT Done – chọn Custom Field để ghi</label><br/>
+        <%= select_tag 'settings[uat_done_cfid]',
+            options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['uat_done_cfid']) %>
+        <br><small>Nếu CF là kiểu <code>Version</code> sẽ ghi ID version; nếu là Text sẽ ghi tên version.</small>
+      </p>
+    </div>
+
+
+
+    <p><%= submit_tag l(:button_save) %></p>
+  <% end %>
+</div>
+
+  <style>
+    .setting-group {
+      margin-top: 1rem
+    }
+  </style>

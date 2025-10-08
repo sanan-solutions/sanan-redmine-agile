@@ -1,0 +1,43 @@
+<%
+  prj = @project || @issue&.project
+  cfg = prj ? SananAgile::ProjectSettings.load(prj.id) : {}
+  enabled = cfg['sanan_agile_enabled'] == '1' && cfg['story_point_cfid'].present?
+%>
+<% if enabled %>
+  <style>
+    /* Ẩn trực tiếp input + cả block p bao quanh (fallback khi JS chưa chạy) */
+    input[name="issue[agile_data_attributes][story_points]"] { display:none !important; }
+    #issue_agile_data_attributes_story_points { display:none !important; }
+    label[for="issue[agile_data_attributes]_story_points"] { display:none !important; }
+  </style>
+
+  <script>
+  (function() {
+    function hideAgileSP() {
+      // selector cho input story points của Agile (bản bạn đang dùng)
+      var sp = document.querySelector('input[name="issue[agile_data_attributes][story_points]"]');
+      if (!sp) return;
+
+      // Ẩn cả block chứa (thường là <p> ... </p>)
+      var block = sp.closest('p, .attributes .attribute, .form--field, .box, .tabular') || sp.parentElement;
+      if (block) block.style.display = 'none';
+
+      // Ẩn label nếu có
+      var lbl = document.querySelector('label[for="issue[agile_data_attributes]_story_points"]');
+      if (lbl) lbl.style.display = 'none';
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', hideAgileSP);
+    } else {
+      hideAgileSP();
+    }
+
+    // Một số trang load form qua AJAX → quan sát DOM để ẩn lại
+    try {
+      var obs = new MutationObserver(hideAgileSP);
+      obs.observe(document.documentElement, { childList: true, subtree: true });
+    } catch (e) {}
+  })();
+  </script>
+<% end %>
