@@ -24,6 +24,7 @@ module SananAgile
       'dod_cfid'                     => '',   # CF cho DoD in Sprint
 
       # CF ids
+      'sp_qa_cfid'            =>'',
       'sp_be_cfid'            => '',  # Story point Backend
       'sp_fe_cfid'            => '',  # Story point Frontend
       'done_be_cfid'          => '',  # Done Backend In Sprint
@@ -36,6 +37,12 @@ module SananAgile
       # auto move khi đủ điều kiện
       'auto_move_enabled'     => '0',
       'auto_move_status_id'   => '',  # issue status id đích
+
+      # version attribute
+      'sp_actual_version_cfid'=>'',
+      'sp_be_actual_version_cfid'=>'',
+      'sp_fe_actual_version_cfid'=>'',
+      'sp_qa_actual_version_cfid'=>'',
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

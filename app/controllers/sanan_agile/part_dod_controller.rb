@@ -34,11 +34,11 @@ class SananAgile::PartDodController < ApplicationController
 
     # Auto move if both done & config cho phép
     moved = false
-    if cfg['auto_move_enabled'] == '1' && cfg['auto_move_status_id'].present?
-      if both_parts_done?(@issue, cfg)
-        moved = move_issue_status!(@issue, cfg['auto_move_status_id'].to_i)
-      end
-    end
+    # if cfg['auto_move_enabled'] == '1' && cfg['auto_move_status_id'].present?
+    #   if both_parts_done?(@issue, cfg)
+    #     moved = move_issue_status!(@issue, cfg['auto_move_status_id'].to_i)
+    #   end
+    # end
 
     render json: {
       ok: true,
@@ -70,8 +70,8 @@ class SananAgile::PartDodController < ApplicationController
   end
 
   def both_parts_done?(issue, cfg)
-    be = value_present?(issue, cfg['done_be_cfid'])
     fe = value_present?(issue, cfg['done_fe_cfid'])
+    be = value_present?(issue, cfg['done_be_cfid'])
     be && fe
   end
 

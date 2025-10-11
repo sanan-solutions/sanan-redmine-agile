@@ -1,5 +1,6 @@
 <% cfg = SananAgile::ProjectSettings.load(@project.id) %>
 <% issue_custom_fields = IssueCustomField.sorted.all %>
+<% version_cfs = VersionCustomField.order(:name) %>
 
 <div class="box tabular">
   <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
@@ -36,17 +37,73 @@
         <br/>
         <small>CF này sẽ được đồng bộ vào cột <code>issues.story_points</code> của Redmine Agile sau khi bạn lưu Issue.</small>
       </p>
+
+      <p>
+        <label>Story point Backend</label>
+        <%= select_tag 'settings[sp_be_cfid]',
+            options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                            cfg['sp_be_cfid']),
+              include_blank: true %>
+      </p>
+
+      <p>
+        <label>Story point Frontend</label>
+        <%= select_tag 'settings[sp_fe_cfid]',
+              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                            cfg['sp_fe_cfid']),
+              include_blank: true %>
+      </p>
+
+      <p>
+        <label>Story point QA</label>
+        <%= select_tag 'settings[sp_qa_cfid]',
+              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                            cfg['sp_qa_cfid']),
+              include_blank: true %>
+      </p>
+
+      <hr/>
+      <p>
+        <label for="settings_sp_total_version_cfid">SP Total (Version CF)</label><br>
+        <%= select_tag 'settings[sp_actual_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_actual_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+
+      <p>
+        <label for="settings_sp_be_total_version_cfid">SP BE Total (Version CF)</label><br>
+        <%= select_tag 'settings[sp_be_actual_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_be_actual_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+
+      <p>
+        <label for="settings_sp_fe_total_version_cfid">SP FE Total (Version CF)</label><br>
+        <%= select_tag 'settings[sp_fe_actual_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_fe_actual_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+
+      <p>
+        <label for="settings_sp_test_total_version_cfid">SP Test Total (Version CF)</label><br>
+        <%= select_tag 'settings[sp_qa_actual_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_qa_actual_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+
+      <p class="info">
+        Các trường ở đây là <strong>Custom fields của Version</strong>. Hãy tạo trước ở Admin → Custom fields → Versions.
+      </p>
+
     </div>
 
     <div class="setting-group">
       <h3>BE/FE Done Field</h3>
-       <p>
-          <label>Story point Backend</label>
-          <%= select_tag 'settings[sp_be_cfid]',
-              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['sp_be_cfid']),
-                include_blank: true %>
-        </p>
+
 
       <p>
           <label>Done Backend In Sprint (CF)</label>
@@ -56,13 +113,7 @@
                 include_blank: true %>
         </p>
 
-        <p>
-          <label>Story point Frontend</label>
-          <%= select_tag 'settings[sp_fe_cfid]',
-                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['sp_fe_cfid']),
-                include_blank: true %>
-        </p>
+
 
         <p>
           <label>Done Frontend In Sprint (CF)</label>

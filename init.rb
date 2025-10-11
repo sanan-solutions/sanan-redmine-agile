@@ -7,6 +7,7 @@ require_dependency File.expand_path('lib/sanan_agile/projects_helper_patch.rb', 
 require_dependency File.expand_path('lib/sanan_agile/agile_data', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/hide_agile_sp_field_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/hooks', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 
 Redmine::Plugin.register :sanan_redmine_agile do
   name        'Sanan Redmine Agile'

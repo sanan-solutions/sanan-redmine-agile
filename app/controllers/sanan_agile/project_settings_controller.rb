@@ -14,7 +14,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
 
                   :development_done_status_name,
                   :development_done_cfid, 
-                  
+
                   :uat_done_status_name, 
                   :uat_done_cfid,
 
@@ -25,6 +25,12 @@ class SananAgile::ProjectSettingsController < ApplicationController
 
                   :sp_be_cfid, :sp_fe_cfid, :done_be_cfid, :done_fe_cfid,
                   :auto_move_enabled, :auto_move_status_id,:resolve_status,
+                  :sp_qa_cfid,
+                  :sp_actual_version_cfid,
+                  :sp_be_actual_version_cfid,
+                  :sp_fe_actual_version_cfid,
+                  :sp_qa_actual_version_cfid,
+
                   befe_trackers: [],
                   befe_statuses: [],
                   
