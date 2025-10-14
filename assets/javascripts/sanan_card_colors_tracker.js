@@ -13,7 +13,7 @@
   function applyColor(card, bg, mode) {
     // reset trước (phòng đổi mode)
     card.style.backgroundColor = '';
-    card.style.color = '';
+    // card.style.color = '';
     card.style.borderLeft = '';
 
     var links = card.querySelectorAll('a');
@@ -21,15 +21,15 @@
 
     if (mode === 'border') {
       // chỉ viền trái
-      card.style.borderLeft = '4px solid ' + bg;
+      card.style.borderLeft = '5px solid ' + bg;
       return;
     }
 
     // mode 'body' (default): tô nền + đổi màu chữ + viền theo màu chữ
     var fg = contrast(bg);
     card.style.backgroundColor = bg;
-    card.style.color = fg;
-    card.style.borderLeft = '4px solid ' + fg;
+    // card.style.color = fg;
+    card.style.borderLeft = '1px solid #d1d3e0';
     links.forEach(function (a) { a.style.color = fg; });
   }
 
