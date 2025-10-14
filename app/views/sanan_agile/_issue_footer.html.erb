@@ -159,9 +159,7 @@
             }
 
             render(part);
-            console.log("vao day ne")
             if (j.auto_moved) {
-              console.log("hihi auto move")
                location.reload();
             }
           } else {
@@ -200,8 +198,6 @@
       var allowTracker = (TRACKER_ALLOW.length===0) || (tid && TRACKER_ALLOW.indexOf(tid)!==-1);
       var allowStatus  = (STATUS_ALLOW.length===0)  || (sid && STATUS_ALLOW.indexOf(sid)!==-1); // ⬅️ mới
       var showBE = !!SP_BE_SHOW[iid], showFE = !!SP_FE_SHOW[iid];
-
-      console.log("hhe",iid,  STATUS_ALLOW, allowStatus)
 
       if (allowTracker && allowStatus && (showBE || showFE)) createFooter(card, iid);
       else { var f = card.querySelector(`.${footerClass}`); if (f) f.remove(); }

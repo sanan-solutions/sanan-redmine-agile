@@ -6,6 +6,8 @@ module SananAgile
       'sanan_agile_version_strategy'            => 'nearest_due_date_or_latest_open', # fallback khi KHÔNG có default version
       'skip_if_already_set' => '1',
 
+      'card_color_tracker_map'=> {},
+      'card_color_tracker_mode' => 'border',
       # Auto set story point for redmine agile
       'story_point_cfid'    => '',
 

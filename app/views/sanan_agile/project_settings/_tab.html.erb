@@ -1,6 +1,9 @@
 <% cfg = SananAgile::ProjectSettings.load(@project.id) %>
 <% issue_custom_fields = IssueCustomField.sorted.all %>
 <% version_cfs = VersionCustomField.order(:name) %>
+<% tracker_map  = (cfg['card_color_tracker_map']  || {}).stringify_keys %>
+<% trackers     = Tracker.order(:position) %>
+<% mode = (cfg['card_color_tracker_mode'].presence || 'body') %>
 
 <div class="box tabular">
   <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
@@ -25,6 +28,46 @@
       <%= check_box_tag 'settings[skip_if_already_set]', '1', (cfg['skip_if_already_set'] == '1') %>
       <em><%= l(:label_skip_note) %></em>
     </p>
+
+    <div class="setting-group">
+      <div>
+      <h3>Kiểu hiển thị màu thẻ (Tracker)</h3>
+        <p>
+          <label>
+            <%= radio_button_tag 'settings[card_color_tracker_mode]', 'body', mode == 'body' %>
+            Tô <strong>nền thẻ</strong> (có đổi màu chữ)
+          </label>
+        </p>
+        <p>
+          <label>
+            <%= radio_button_tag 'settings[card_color_tracker_mode]', 'border', mode == 'border' %>
+            Chỉ tô <strong>viền trái</strong> (giữ nền & màu chữ mặc định)
+          </label>
+        </p>
+      </div>
+
+        <h3>Agile card colors — theo Tracker (đè màu theo Status)</h3>
+        <table class="list">
+          <thead>
+            <tr><th>Tracker</th><th>Màu (#RRGGBB)</th></tr>
+          </thead>
+          <tbody>
+            <% trackers.each do |tr| %>
+              <% key = tr.id.to_s %>
+              <% val = tracker_map[key].presence %>
+              <tr>
+                <td><%= h tr.name %> (<%= tr.id %>)</td>
+                <td>
+                  <input type="color" value="<%= val || '#ffffff' %>" oninput="this.nextElementSibling.value=this.value">
+                  <%= text_field_tag "settings[card_color_tracker_map][#{key}]", val, placeholder: '#RRGGBB', style: 'width:110px' %>
+                  <span class="info">Để trống = không tô màu riêng</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+        <p class="info">Ưu tiên màu: <strong>Priority</strong> &gt; <strong>Tracker</strong> &gt; <strong>Status</strong>.</p>
+    </div>
 
     <div class="setting-group">
       <h3>Story point Custom Field</h3>
