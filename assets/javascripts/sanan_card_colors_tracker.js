@@ -30,7 +30,7 @@
     card.style.backgroundColor = bg;
     // card.style.color = fg;
     card.style.borderLeft = '1px solid #d1d3e0';
-    links.forEach(function (a) { a.style.color = fg; });
+    // links.forEach(function (a) { a.style.color = fg; });
   }
 
   function extractTrackerName(card) {
