@@ -1,13 +1,13 @@
 (function () {
   function contrast(hex) {
-    if (!hex) return '#000';
+    if (!hex) return '#1A1E23';
     var h = ('' + hex).trim();
     if (h[0] !== '#') h = '#' + h;
-    if (!/^#[0-9A-Fa-f]{6}$/.test(h)) return '#000';
+    if (!/^#[0-9A-Fa-f]{6}$/.test(h)) return '#1A1E23';
     var r = parseInt(h.substr(1, 2), 16),
       g = parseInt(h.substr(3, 2), 16),
       b = parseInt(h.substr(5, 2), 16);
-    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 140 ? '#000' : '#fff';
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b) > 140 ? '#1A1E23' : '#fff';
   }
 
   function applyColor(card, bg, mode) {
@@ -29,8 +29,13 @@
     var fg = contrast(bg);
     card.style.backgroundColor = bg;
     // card.style.color = fg;
-    card.style.borderLeft = '1px solid #d1d3e0';
-    // links.forEach(function (a) { a.style.color = fg; });
+    card.style.borderLeft = '0px solid #d1d3e0';
+    links.forEach(function (a) {
+      if (!(a.classList.contains('issue') && a.classList.contains('parent'))) {
+        // làm gì đó ở đây, ví dụ:
+        a.style.color = fg; // hoặc xử lý khác
+      }
+    });
   }
 
   function extractTrackerName(card) {
