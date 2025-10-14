@@ -31,10 +31,15 @@
     // card.style.color = fg;
     card.style.borderLeft = '0px solid #d1d3e0';
     links.forEach(function (a) {
-      if (!(a.classList.contains('issue') && a.classList.contains('parent'))) {
-        // làm gì đó ở đây, ví dụ:
-        a.style.color = fg; // hoặc xử lý khác
+      var parentP = a.closest('p');
+
+      // nếu thẻ cha tồn tại và có class 'attributes' → bỏ qua (không đổi màu)
+      if (parentP && parentP.classList.contains('attributes')) {
+        return; // skip
       }
+    
+      // ngược lại: đổi màu (hoặc xử lý khác)
+      a.style.color = fg;
     });
   }
 
