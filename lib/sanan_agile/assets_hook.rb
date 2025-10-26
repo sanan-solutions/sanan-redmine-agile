@@ -16,8 +16,10 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     return '' unless sanan_truthy?(cfg['sanan_agile_enabled']) # <<< chỉ khi bật
 
     css = stylesheet_link_tag 'sanan_agile_board_table', plugin: 'sanan_redmine_agile'
-    js  = javascript_include_tag 'sanan_board_table_scroll_sync', plugin: 'sanan_redmine_agile'
-    (css + js).html_safe
+    js_scroll  = javascript_include_tag 'sanan_board_table_scroll_sync', plugin: 'sanan_redmine_agile'
+    js_inline = javascript_include_tag 'sanan_inline_card_refresh', plugin: 'sanan_redmine_agile'
+
+    (css + js_scroll + js_inline).html_safe
   end
 
   private

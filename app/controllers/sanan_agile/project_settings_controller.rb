@@ -31,6 +31,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :sp_fe_actual_version_cfid,
                   :sp_qa_actual_version_cfid,
                   :card_color_tracker_mode,
+                  :test_level_cfid,
                   { card_color_tracker_map: {} },
                   befe_trackers: [],
                   befe_statuses: [],

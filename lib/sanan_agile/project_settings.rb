@@ -45,6 +45,8 @@ module SananAgile
       'sp_be_actual_version_cfid'=>'',
       'sp_fe_actual_version_cfid'=>'',
       'sp_qa_actual_version_cfid'=>'',
+
+      'test_level_cfid' =>'',
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

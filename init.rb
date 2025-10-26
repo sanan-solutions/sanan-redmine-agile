@@ -9,6 +9,7 @@ require_dependency File.expand_path('lib/sanan_agile/hide_agile_sp_field_hook', 
 require_dependency File.expand_path('lib/sanan_agile/hooks', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/card_color_hooks', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/global_modal', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 
 

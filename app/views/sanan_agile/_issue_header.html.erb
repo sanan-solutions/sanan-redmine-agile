@@ -1,6 +1,6 @@
 <%# == Sanan Agile: DoD toggle header for Agile cards (custom box, no native checkbox) == %>
 <% prj      = project %>
-<% cfg      = SananAgile::ProjectSettings.load(prj.id) %>
+<% cfg      = SananAgile::ProjectSettings.load(prj&.id) %>
 <% trackers = Array(cfg['dod_checkbox_trackers']).map(&:to_i) %>
 <% statuses = Array(cfg['dod_checkbox_statuses']).map(&:to_i) %>
 <% cfid     = cfg['dod_cfid'].to_i %>
