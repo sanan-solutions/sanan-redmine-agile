@@ -1,0 +1,1121 @@
+/* ===== Base layout tweaks ===== */
+:root {
+  --ui-bg: #fff;
+  --ui-muted: #6b7280;
+  --ui-border: #e5e7eb;
+  --ui-soft: #f8fafc;
+  --ui-primary: #2563eb;
+  --ui-success: #16a34a;
+  --ui-warning: #ca8a04;
+  --ui-danger: #dc2626;
+  --ui-pill: #eef2ff;
+  --ui-radius: 10px;
+  --ui-radius-lg: 14px;
+  --ui-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.releases-page h2 {
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.box {
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 12px;
+}
+
+/* ===== Toolbar ===== */
+.releases-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  padding: 10px 12px;
+  margin: 10px 0 14px;
+}
+.releases-toolbar input[type='text'],
+.releases-toolbar input[type='search'],
+
+.releases-toolbar button {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-primary);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.releases-toolbar button:hover {
+  filter: brightness(0.95);
+}
+
+/* ===== Table ===== */
+.releases-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  background: var(--ui-bg);
+}
+.releases-table thead th {
+  text-align: left;
+  font-weight: 600;
+  color: #334155;
+  font-size: 13px;
+  background: var(--ui-soft);
+  border-bottom: 1px solid var(--ui-border);
+  padding: 10px 12px;
+}
+.releases-table tbody td {
+  padding: 12px;
+  border-bottom: 1px solid var(--ui-border);
+  vertical-align: middle;
+}
+.releases-table tbody tr:hover {
+  background: #fcfcff;
+}
+.desc-ellipsis {
+  max-width: 520px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Badge/Pill ===== */
+.badge {
+  display: inline-block;
+  font-size: 12px;
+  line-height: 1;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--ui-pill);
+  color: #4338ca;
+  border: 1px solid #e0e7ff;
+}
+.badge--unreleased {
+  background: #fff7ed;
+  color: #b45309;
+  border-color: #ffedd5;
+}
+.badge--released {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #d1fae5;
+}
+.badge--archived {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* ===== Progress bar ===== */
+.bar {
+  position: relative;
+  height: 12px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, #60a5fa, #22c55e);
+  animation: grow 0.6s ease-out forwards;
+}
+@keyframes grow {
+  to {
+    width: var(--w, 0%);
+  }
+}
+
+/* ===== Pagination ===== */
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 14px 0;
+}
+.pagination a,
+.pagination span.current {
+  display: inline-block;
+  min-width: 34px;
+  height: 34px;
+  line-height: 34px;
+  text-align: center;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: #111827;
+}
+.pagination a:hover {
+  background: #f8fafc;
+}
+.pagination span.current {
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+/* ===== Modal ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 10000;
+}
+.modal[hidden] {
+  display: none;
+}
+.modal__panel {
+  width: min(760px, 92vw);
+  background: #fff;
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow);
+  overflow: hidden;
+  transform: translateY(10px);
+  animation: up 0.16s ease-out forwards;
+}
+@keyframes up {
+  to {
+    transform: translateY(0);
+  }
+}
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ui-border);
+}
+.modal__header h3 {
+  margin: 0;
+  font-weight: 600;
+}
+.modal__close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px;
+}
+.modal__body {
+  padding: 14px;
+  max-height: 70vh;
+  overflow: auto;
+}
+.modal .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* ===== Show page layout ===== */
+.release-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+}
+.release-side .side-card {
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  box-shadow: var(--ui-shadow);
+  padding: 12px;
+  position: sticky;
+  top: 12px;
+}
+.kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0;
+  font-size: 13px;
+}
+.kv span:first-child {
+  color: var(--ui-muted);
+}
+.kv .bar {
+  width: 160px;
+}
+
+/* ===== Work items ===== */
+.wi-table {
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--ui-radius);
+  overflow: hidden;
+  border-collapse: separate;
+}
+.wi-table th {
+  background: var(--ui-soft);
+  border-bottom: 1px solid var(--ui-border);
+  padding: 10px 12px;
+  text-align: left;
+}
+.wi-table td {
+  border-bottom: 1px solid var(--ui-border);
+  padding: 12px;
+}
+.wi-table tr:hover {
+  background: #fcfcff;
+}
+.wi-summary {
+  /* max-width: 680px; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.wi-summary:hover {
+  /* max-width: 680px; */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: underline;
+}
+.wi-status {
+  height: 30px;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 8px;
+}
+.wi-remove {
+  border: none;
+  background: #fff;
+  color: #6b7280;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: none;
+}
+.wi-remove:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  box-shadow: none;
+}
+
+/* ===== Picker ===== */
+.picker-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.picker-toolbar input {
+  height: 32px;
+  max-width: 15rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 0 10px;
+}
+.picker-toolbar select {
+  height: 32px;
+  max-width: 8rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 0 10px;
+}
+.picker-toolbar button {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--ui-primary);
+  background: var(--ui-primary);
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+.row > p {
+  flex: 1;
+}
+
+.actions .button-primary {
+  background: var(--ui-primary);
+  border: 1px solid var(--ui-primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.actions .button-primary:hover {
+  filter: brightness(0.96);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1100px) {
+  .release-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Form in modal: full-width inputs & nicer footer --- */
+.form-release .field > input[type='text'],
+.form-release .field > input[type='url'],
+.form-release .field > input[type='date'],
+.form-release .field > select,
+.form-release .field > textarea {
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  outline: none;
+}
+
+.form-release .field {
+  margin-bottom: 12px;
+}
+.form-release select[multiple] {
+  min-height: 160px;
+}
+
+/* ROW (2 columns) keeps your existing .row but ensures responsive spacing */
+.form-release .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Footer: split layout */
+.actions--split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+/* Ghost button for Cancel */
+.btn-ghost {
+  background: #fff;
+  color: #374151;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.btn-ghost:hover {
+  background: #f9fafb;
+}
+
+/* Ensure header close (×) aligns nicely */
+.modal__header .modal__close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #6b7280; /* luôn nhìn thấy */
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: none;
+}
+.modal__header .modal__close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* ===== Buttons sizing consistency ===== */
+.button-primary,
+.button-secondary {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: none;
+}
+.button-secondary {
+  background: #fff;
+  color: #374151;
+  border: 1px solid var(--ui-border);
+}
+.button-secondary:hover {
+  background: #f3f4f6;
+  color: #111827;
+  box-shadow: none;
+}
+
+/* Footer align right, compact gap */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ===== Unified form controls (inputs/selects) ===== */
+/* Base token */
+:root {
+  --ctl-h: 36px;
+  --ctl-br: 8px;
+  --ctl-bd: var(--ui-border);
+  --ctl-fg: #111827;
+  --ctl-ph: #9ca3af;
+  --ctl-bg: #fff;
+  --ctl-focus: #2563eb33; /* transparent blue */
+}
+
+.ui-input,
+.ui-select,
+.releases-toolbar input[type='search'],
+.toolbar input[type='text'],
+.picker-toolbar input[type='text'] {
+  height: var(--ctl-h) !important;
+  /* width: 100%; */
+  padding: 0 12px;
+  border: 1px solid var(--ctl-bd);
+  border-radius: var(--ctl-br);
+  background: var(--ctl-bg);
+  color: var(--ctl-fg);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ui-input::placeholder {
+  color: var(--ctl-ph);
+}
+
+.ui-input:focus,
+.ui-select:focus,
+.releases-toolbar input[type='search']:focus {
+  box-shadow: 0 0 0 3px var(--ctl-focus);
+  border-color: #2563eb;
+}
+
+/* Selects */
+.ui-select {
+  padding-right: 28px; /* space for chevron */
+  appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%),
+    linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+  background-position: calc(100% - 18px) 14px, calc(100% - 12px) 14px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+/* Scope shortcuts so bạn không phải thêm class ở mọi nơi cũ */
+.releases-toolbar input[type='search'] {
+  width: 280px;
+}
+.releases-toolbar select {
+  width: 180px;
+}
+.toolbar input[type='text'] {
+  width: 260px;
+}
+.toolbar select {
+  width: 170px;
+}
+
+/* Status select trong bảng work items */
+.wi-status.ui-select {
+  width: 100%;
+}
+
+/* Sidebar select trạng thái release */
+.release-side select.ui-select {
+  width: 160px;
+}
+
+/* Picker controls */
+.picker-toolbar input.ui-input {
+  width: 260px;
+}
+.picker-toolbar select.ui-select {
+  width: 180px;
+}
+
+/* ===== Tree view ===== */
+.tree-toggle {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  user-select: none;
+  color: #6b7280;
+  margin-right: 6px;
+}
+.tree-toggle.toggleable {
+  cursor: pointer;
+}
+.tree-toggle.toggleable:hover {
+  color: #111827;
+}
+
+/* Indentation cell spacing is handled inline via margin-left */
+
+/* ===== Sort indicators ===== */
+thead th.sorted-asc::after {
+  content: ' ▲';
+  font-size: 11px;
+  color: #6b7280;
+}
+thead th.sorted-desc::after {
+  content: ' ▼';
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* ==== Tree appearance: parent vs child ==== */
+
+/* Parent (depth=0): nhấn mạnh nhẹ bằng viền trái & nền hơi nổi */
+.wi-row[data-depth='0'] td {
+  background: #ffffff;
+}
+.wi-row[data-depth='0'] {
+  --parent-accent: #3b82f6; /* blue-500 */
+  border-left: 3px solid var(--parent-accent);
+}
+.wi-row[data-depth='0'] .wi-summary {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Child (depth=1): nền dịu + chữ bình thường */
+.wi-row[data-depth='1'] td {
+  background: #f9fafb; /* gray-50 */
+}
+
+/* Thụt lề theo cấp vào cột đầu tiên */
+.wi-row[data-depth='1'] td:first-child {
+  padding-left: 28px;
+}
+.wi-row[data-depth='2'] td:first-child {
+  padding-left: 44px;
+} /* nếu sau này mở rộng */
+
+/* Toggle caret: hiển thị rõ ràng hơn & xoay khi collapse */
+.tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  user-select: none;
+  color: #6b7280;
+  border-radius: 4px;
+}
+.tree-toggle.toggleable {
+  cursor: pointer;
+}
+.tree-toggle.toggleable:hover {
+  background: #eef2ff;
+  color: #374151;
+}
+.wi-row.collapsed > td .tree-toggle {
+  transform: rotate(-90deg);
+} /* dấu ▾ xoay thành ▸ */
+
+/* Đường “L” nối child với parent (vẽ ở cột đầu) */
+.wi-row[data-depth='1'] td:first-child {
+  position: relative;
+}
+.wi-row[data-depth='1'] td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 20px;
+  top: -22px;
+  width: 5px;
+  height: 52px;
+  border-left: 1.5px solid #e5e7eb; /* vertical */
+  border-bottom: 1.5px solid #e5e7eb; /* horizontal */
+  border-radius: 0 0 0 6px;
+}
+
+/* Viền nhóm: tạo khoảng cách giữa cụm parent + children */
+.wi-row[data-depth='0'] + .wi-row[data-depth='0'] td {
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Giữ độ tương phản ở hàng header & ô select */
+.wi-table thead th {
+  background: #f3f4f6;
+}
+.wi-row td select.ui-select {
+  background-color: #fff;
+}
+
+/* Parent: viền trái xanh vẽ trên ô đầu tiên */
+.wi-row[data-depth='0'] td:first-child {
+  position: relative;
+  overflow: visible; /* đề phòng table có clip */
+}
+
+.wi-row[data-depth='0'] td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0; /* sát mép trái ô */
+  top: -1px; /* phủ kín viền trên dưới của ô */
+  bottom: -1px;
+  width: 3px; /* độ dày viền */
+  background: #3b82f6; /* blue-500 */
+  border-radius: 2px;
+}
+
+/* (giữ các rule nhấn mạnh khác) */
+.wi-row[data-depth='0'] .wi-summary {
+  font-weight: 600;
+  color: #111827;
+}
+
+.badge.is-current {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.badge.is-other {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+#picker-modal .modal__panel {
+  width: max-content;
+  height: 90vh;
+}
+
+/* .modal__panel.modal--wide { width: 90%; max-width: 1200px; max-height: 90vh; display: flex; flex-direction: column; } */
+.sticky-header,
+.sticky-filters,
+.sticky-footer {
+  position: sticky;
+  z-index: 10;
+  background: #fff;
+}
+.sticky-header {
+  top: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.sticky-filters {
+  top: 56px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.sticky-footer {
+  bottom: 0;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.modal__body.scrollable {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0 16px;
+}
+
+.picker-toolbar input,
+.picker-toolbar select {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+#pk-q {
+  flex: 1;
+  border-radius: 6px;
+}
+
+.wi-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wi-table th,
+.wi-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.wi-table th {
+  color: #374151;
+  text-align: left;
+}
+
+.badge.is-current {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.badge.is-other {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+/* --- Modal layout fix --- */
+#picker-modal .modal__panel {
+  width: 90vw; /* cố định chiều rộng modal */
+  height: 90vh; /* cố định chiều cao modal (chiếm 80% chiều cao màn hình) */
+  max-height: 800px;
+  margin: auto;
+  background: #fff;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ẩn tràn nếu có */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Header dính trên cùng */
+#picker-modal .modal__header {
+  flex-shrink: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 3;
+}
+
+/* Toolbar filter cố định bên dưới header */
+#picker-modal .picker-toolbar {
+  flex-shrink: 0;
+  position: sticky;
+  top: 64px; /* ngay dưới header */
+  background: #fff;
+  padding: 10px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+#picker-modal .picker-toolbar input,
+#picker-modal .picker-toolbar select {
+  padding: 6px 10px;
+  font-size: 14px;
+}
+#picker-modal #pk-q {
+  flex: 1;
+  border-radius: 6px;
+}
+
+/* Body cuộn độc lập */
+#picker-modal .modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 20px;
+  background: #fff;
+}
+
+/* Footer luôn dính sát đáy modal */
+#picker-modal .actions {
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+/* Table */
+#picker-modal .wi-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+#picker-modal .wi-table th,
+#picker-modal .wi-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  white-space: nowrap;
+}
+#picker-modal .wi-table th {
+  text-align: left;
+  color: #374151;
+}
+
+.pk-chk {
+  width: 20px;
+  height: 20px;
+  margin: 2.5px !important;
+}
+
+/* Badge cho Epic */
+.badge-epic {
+  background-color: #ede9fe; /* tím nhạt */
+  color: #5b21b6; /* tím đậm */
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+/* Badge Epic */
+.badge-epic {
+  background-color: #ede9fe; /* tím nhạt (đổi nếu muốn) */
+  color: #5b21b6;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+/* Phần text sẽ bị cắt bằng ellipsis */
+.badge-epic .truncate {
+  display: inline-block;
+  max-width: 190px; /* < max-width của badge để chừa padding */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Table layout tổng ===== */
+#picker-modal .wi-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* table-layout: fixed;   // Bật nếu bạn muốn cột ổn định hơn,
+                             // khi bật nhớ set width cho từng cột ở dưới */
+}
+
+/* ===== Summary: cho phép wrap nhiều dòng ===== */
+#picker-modal .wi-table td.wi-summary .wrap {
+  white-space: normal; /* cho phép xuống dòng */
+  word-break: break-word; /* cắt từ dài */
+  overflow-wrap: anywhere; /* phòng chữ liền nhau quá dài */
+  line-height: 1.35;
+}
+
+/* ===== Badge Epic đã có. Badge In release giống Epic (màu xanh) ===== */
+.badge-release {
+  background-color: #e0f2fe; /* xanh nhạt */
+  color: #0369a1; /* xanh đậm */
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 7px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  max-width: 190px; /* giới hạn ngang để có ellipsis */
+  vertical-align: middle;
+}
+
+/* CURRENT (nếu muốn nhấn mạnh hơn chút) */
+.badge-release.is-current {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+}
+
+/* Ellipsis phần text bên trong badge */
+.badge-release .truncate {
+  display: inline-block;
+  max-width: 190px; /* nhỏ hơn max-width của badge để chừa padding */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Chỉ text bị cắt, không cắt badge cha */
+.badge-release .badge-text,
+.badge-epic .badge-text {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sa-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.button-primary.icon-only {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+.toolbar-right {
+  margin-left: auto;
+}
+
+.release-main .toolbar {
+  display: flex;
+  justify-content: space-evenly;
+  margin-bottom: 0.8rem;
+}
+
+/* layout */
+/* Layout grid */
+.release-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+/* Allow sticky to see the page scroll */
+#content,
+.release-page,
+.release-layout,
+.release-main {
+  overflow: visible !important; /* critical */
+}
+
+/* Some themes set overflow on .box; undo for our cards */
+.release-side .box,
+.release-header.box {
+  overflow: initial;
+}
+
+/* The sticky element */
+
+.release-side {
+  position: sticky;
+  top: 10px;
+  align-self: start;
+  height: max-content; /* avoid stretching */
+  z-index: 3; /* float over table if needed */
+}
+
+/* Make sure no transforms break sticky on ancestors of .release-side */
+.release-page,
+.release-layout,
+.release-main {
+  transform: none !important;
+}
+
+/* Responsive: stack columns on narrow screens */
+@media (max-width: 1100px) {
+  .release-layout {
+    grid-template-columns: 1fr;
+  }
+  .release-side {
+    position: static;
+    top: auto;
+  }
+}
+
+#btn-add-items.button-primary.icon-only {
+  padding: 0 !important;
+  padding-left: 0 !important;
+}
+
+a.related-work-item-wrap:hover,
+a.related-work-item-wrap:focus {
+  text-decoration: none !important;
+}
+
+.related-work-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  color: #292a2e;
+}
+
+.related-work-item:hover {
+  background-color: #0515240f;
+}
+
+.release-title-wrap {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.release-title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.related-works-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Cho phép summary xuống dòng khi quá dài */
+.wi-summary {
+  white-space: normal !important; /* Cho phép xuống dòng */
+  word-break: break-word; /* Tự ngắt khi có chuỗi dài */
+  line-height: 1.4;
+  max-width: 480px; /* Giới hạn độ rộng để không chiếm hết bảng */
+  min-width: 200px;
+}
+
+.wi-assignee {
+  white-space: normal !important; /* Cho phép xuống dòng */
+  word-break: break-word; /* Tự ngắt khi có chuỗi dài */
+  line-height: 1.4;
+  max-width: 100px; /* Giới hạn độ rộng để không chiếm hết bảng */
+  min-width: 60px;
+}
+
+.wi-table td.wi-summary {
+  max-width: 100px;
+}
+
+#picker-modal .wi-table .wi-summary {
+  font-weight: bold;
+  text-decoration: none;
+  cursor: default;
+}
+
+.wi-table .wi-epic {
+  max-width: 130px;
+}

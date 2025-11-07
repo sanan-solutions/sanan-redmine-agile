@@ -1,0 +1,357 @@
+<% epic_tracker_id = SananAgile::ProjectSettings.load(@project.id)['epic_tracker'].presence&.to_i %>
+<% is_released =  @release.state == 'released' %>
+<div class="release-page">
+  <div class="release-layout">
+    <!-- Main content -->
+    <div class="release-main">
+      <div class="release-header box" style="margin-bottom:16px;">
+        <div class="release-title-wrap">
+          <div class="release-title"><%= h @release.name %></div>
+          <span class="badge <%= @release.state == 'released' ? 'badge--released' : @release.state == 'archived' ? 'badge--archived' : 'badge--unreleased' %>">
+            <%= @release.state.upcase %>
+          </span>
+        </div>
+        <div class="release-header-related-works">
+          <div class="related-works-title">Related work</div>
+          
+          <% if @release.release_notes_url.present? %>
+            <a class="related-work-item-wrap" href="<%= @release.release_notes_url %>" target="_blank" rel="noopener" class="link-note">
+              <div class="related-work-item related-release-note">
+                <img src="https://jira-frontend-bifrost.prod-east.frontend.public.atl-paas.net/assets/documents-illustration.37d481a2.svg" width="40" height="38" alt="">
+                <div>
+                  <div>Release Notes - <%= @project&.name %> - <%= @release&.name %></div>
+                  <div>Notion</div>
+                </div>
+              </div>  
+            </a>
+          <% end %>
+        </div>
+      </div>
+
+      <section class="work-items box">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <input id="wi-search" class="ui-input" placeholder="Search work items…" />
+
+            <select id="wi-epic-filter" class="ui-select">
+              <option value="">All Epic</option>
+            </select>
+
+            <select id="wi-from-sprint-filter" class="ui-select">
+              <option value="">All From sprint</option>
+            </select>
+
+            <select id="wi-status-filter" class="ui-select">
+              <option value="">All Status</option>
+            </select>
+
+            <!-- NEW: Tracker -->
+            <select id="wi-tracker-filter" class="ui-select">
+              <option value="">All Tracker</option>
+            </select>
+
+            <!-- NEW: Priority -->
+            <select id="wi-priority-filter" class="ui-select">
+              <option value="">All Priority</option>
+            </select>
+
+            <select id="wi-assignee-filter" class="ui-select">
+              <option value="">All Assignee</option>
+            </select>
+
+            <button id="wi-clear" class="button-secondary small">Clear</button>
+          </div>
+
+          <div class="toolbar-right">
+            <% if !is_released %>
+              <button id="btn-add-items" class="button-primary icon-only" title="+ Add work items">+</button>
+            <% end %>
+          </div>
+        </div>
+
+        <table id="wi-table" class="wi-table">
+          <thead>
+            <tr>
+              <th class="col-key">Key</th>
+              <th class="col-tracker">Tracker</th>   <!-- NEW -->
+              <th class="col-summary">Summary</th>
+              <th class="col-epic">Epic</th> 
+              <th class="col-from-sprint">From Sprint</th> 
+              <th class="col-priority">Priority</th>  <!-- NEW -->
+              <th class="col-status">Status</th>
+              <th class="col-assignee">Assignee</th>
+              <th class="col-action"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @issues.each do |iss| %>
+              <% depth = 0 %>
+              <% epic_label =
+                if iss.parent && epic_tracker_id && iss.parent.tracker_id == epic_tracker_id
+                  "##{iss.parent_id}: #{iss.parent.subject}"
+                end 
+              %>
+              <% sprint_id, sprint_name = @from_sprint_by_issue[iss.id] %>
+              <tr class="wi-row wi-row-parent"
+                  data-id="<%= iss.id %>"
+                  data-parent-id=""
+                  data-depth="<%= depth %>"
+                  data-epic-id="<%= epic_label.present? && iss.parent_id %>"
+                  data-status-id="<%= iss.status_id %>"
+                  data-assignee-id="<%= iss.assigned_to_id %>"
+                  data-tracker-id="<%= iss.tracker_id %>"
+                  data-priority-id="<%= iss.priority_id %>"
+                  data-sort-id="<%= iss.id %>"
+                  data-sort-summary="<%= iss.subject.to_s %>"
+                  data-sort-tracker="<%= iss.tracker&.name.to_s %>"
+                  data-sort-priority-pos="<%= iss.priority&.position || 999 %>"
+                  data-sort-priority="<%= iss.priority&.name.to_s %>"
+                  data-sort-status="<%= iss.status&.name.to_s %>"
+                  data-sort-assignee="<%= iss.assigned_to&.name.to_s %>"
+                  data-epic="<%= epic_label.to_s %>"
+                  data-from-sprint="<%= sprint_name %>"
+                  data-epic-label="<%= h epic_label %>"   >     
+                <td>
+                  <span class="tree-toggle"></span>
+                  <span class="wi-key">#<%= iss.id %></span>
+                </td>
+                <td><%= h iss.tracker&.name %></td>
+                <td class="wi-summary"><%= h iss.subject %></td>
+                <td class="wi-epic">
+                  <% if epic_label.present? %>
+                    <span class="badge badge-epic sa-ellipsis" title="<%= h epic_label %>"><%= h epic_label %></span>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td>
+                  <% if sprint_id && sprint_name %>
+                    <span class="badge badge-devdone sa-ellipsis"><%= h sprint_name %></span>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td class="sanan-agile-priority">
+                  <% if iss.priority.name == 'Low' %>
+                    <div class="priority priority-lowest" title="Priority: Low"></div>
+                  <% end %>
+
+                  <% if iss.priority.name == 'Normal' %>
+                    <div class="priority priority-default" title="Priority: Normal"></div>
+                  <% end %>
+
+                  <% if iss.priority.name == 'High' %>
+                    <div class="priority priority-high3" title="Priority: High"></div>
+                  <% end %>
+
+                  <% if iss.priority.name == 'Urgent' %>
+                    <div class="priority priority-high2" title="Priority: Urgent"></div>
+                  <% end %>
+
+                  <% if iss.priority.name == 'Immediate' %>
+                    <div class="priority priority-highest" title="Priority: Immediate"></div>
+                  <% end %>    
+                  <%= h iss.priority&.name %>
+                </td>
+                <td>
+                  <select class="wi-status ui-select" <%= is_released && "disabled" %>>
+                    <% @statuses.each do |st| %>
+                      <option value="<%= st.id %>" <%= 'selected' if st.id == iss.status_id %>><%= h st.name %></option>
+                    <% end %>
+                  </select>
+                </td>
+                <td class="wi-assignee"><%= h(iss.assigned_to&.name || '-') %></td>
+                <td>
+                  <% if !is_released %>
+                    <button class="wi-remove" title="Remove from release">×</button>
+                  <% end %>
+                </td>
+              </tr>
+
+              <% (@children_by_parent[iss.id] || []).each do |ch| %>
+                <% depth = 1 %>
+                <tr class="wi-row wi-row-child"
+                    data-id="<%= ch.id %>"
+                    data-parent-id="<%= ch.parent_id %>"
+                    data-depth="<%= depth %>"
+                    data-status-id="<%= ch.status_id %>"
+                    data-assignee-id="<%= ch.assigned_to_id %>"
+                    data-tracker-id="<%= ch.tracker_id %>"
+                    data-priority-id="<%= ch.priority_id %>"
+                    data-sort-id="<%= ch.id %>"
+                    data-sort-summary="<%= ch.subject.to_s %>"
+                    data-sort-tracker="<%= ch.tracker&.name.to_s %>"
+                    data-sort-priority-pos="<%= ch.priority&.position || 999 %>"
+                    data-sort-priority="<%= ch.priority&.name.to_s %>"
+                    data-sort-status="<%= ch.status&.name.to_s %>"
+                    data-sort-assignee="<%= ch.assigned_to&.name.to_s %>">
+
+                  <td>
+                    <span class="wi-key">#<%= ch.id %></span>
+                  </td>
+                  <td><%= h ch.tracker&.name %></td>
+                  <td class="wi-summary"><%= h ch.subject %></td>
+                  <td class="wi-epic">-</td>
+                  <td>-</td>
+                  <td class="sanan-agile-priority">
+                    <% if ch.priority.name == 'Low' %>
+                      <div class="priority priority-lowest" title="Priority: Low"></div>
+                    <% end %>
+
+                    <% if ch.priority.name == 'Normal' %>
+                      <div class="priority priority-default" title="Priority: Normal"></div>
+                    <% end %>
+
+                    <% if ch.priority.name == 'High' %>
+                      <div class="priority priority-high3" title="Priority: High"></div>
+                    <% end %>
+
+                    <% if ch.priority.name == 'Urgent' %>
+                      <div class="priority priority-high2" title="Priority: Urgent"></div>
+                    <% end %>
+
+                    <% if ch.priority.name == 'Immediate' %>
+                      <div class="priority priority-highest" title="Priority: Immediate"></div>
+                    <% end %>    
+                    <%= h ch.priority&.name %>
+                  </td>
+                  <td>
+                    <select class="wi-status ui-select" <%= is_released && "disabled" %>>
+                      <% @statuses.each do |st| %>
+                        <option value="<%= st.id %>" <%= 'selected' if st.id == ch.status_id %>><%= h st.name %></option>
+                      <% end %>
+                    </select>
+                  </td>
+                  <td class="wi-assignee"><%= h(ch.assigned_to&.name || '-') %></td>
+                  <td></td>
+                </tr>
+              <% end %>
+            <% end %>
+          </tbody>
+
+        </table>
+      </section>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="release-side">
+      <div class="side-card">
+        <div class="side-card-header">
+          <button id="btn-edit-release" class="button-primary" style="width:100%;">✏️ Edit release</button>
+        </div>
+
+        <div class="side-section">
+          <div class="kv">
+            <span>Status</span>
+            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>">
+              <option value="unreleased" <%= 'selected' if @release.state=='unreleased' %>>Unreleased</option>
+              <option value="released"   <%= 'selected' if @release.state=='released' %>>Released</option>
+            </select>
+          </div>
+
+          <div class="kv"><span>Start date</span><span><%= @release.start_on || '-' %></span></div>
+          <div class="kv"><span>Release date</span><span><%= @release.release_on || '-' %></span></div>
+
+          <div class="kv" style="display:block;">
+            <span>Drivers</span>
+            <div class="drivers-list">
+              <% if @release.drivers.any? %>
+                <% @release.drivers.each do |u| %>
+                  <div class="driver-item">👤 <%= h u.name %></div>
+                <% end %>
+              <% else %>
+                <div class="driver-item text-muted">-</div>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="kv">
+            <span>Progress</span>
+            <div class="bar" style="--w:<%= @progress %>%"><span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="issue-panel" class="issue-panel hidden"></div>
+    </aside>
+  </div>
+
+  <!-- Edit release modal -->
+  <div id="edit-modal" class="modal" hidden>
+    <div class="modal__panel">
+      <div class="modal__header">
+        <h3>Edit release</h3>
+        <button class="modal__close">×</button>
+      </div>
+      <div class="modal__body" id="edit-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Add issues modal -->
+<!-- Add issues modal -->
+<div id="picker-modal" class="modal" hidden>
+  <div class="modal__panel modal--wide">
+    <div class="modal__header sticky-header">
+      <h3>Add work items</h3>
+      <button class="modal__close">×</button>
+    </div>
+
+    <!-- FILTERS (fixed) -->
+    <div class="picker-toolbar sticky-filters">
+      <input id="pk-q" placeholder="Search issues..." />
+      <select id="pk-epic">
+        <option value="">All epics</option>
+      </select>
+      <select id="pk-tracker">
+        <option value="">All trackers</option>
+      </select>
+      <select id="pk-from-sprint">
+        <option value="">From sprint</option>
+      </select>
+      <select id="pk-priority">
+        <option value="">All priorities</option>
+      </select>
+      <select id="pk-status">
+        <option value="">All statuses</option>
+        <% @statuses.each do |st| %>
+          <option value="<%= h st.name %>"><%= h st.name %></option>
+        <% end %>
+      </select>
+      <select id="pk-release">
+        <option value="">All releases</option>
+      </select>
+      <button id="pk-clear" class="button-secondary small">Clear</button>
+    </div>
+
+    <div class="modal__body scrollable">
+      <table class="wi-table">
+        <thead>
+          <tr>
+            <th class="col-checkbox"></th>
+            <th class="col-key">Key</th>
+            <th class="col-tracker">Tracker</th>
+            <th class="col-summary">Summary</th>
+            <th class="col-epic">Epic</th>
+            <th style="col-from-sprint">From sprint</th>
+            <th class="col-priority">Priority</th>
+            <th class="col-status">Status</th>
+            <th class="col-assignee">Assignee</th>
+            <th class="col-inrelease">In release</th>
+          </tr>
+        </thead>
+        <tbody id="pk-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- FOOTER (fixed) -->
+    <div class="actions sticky-footer">
+      <button class="modal__close button-secondary">Cancel</button>
+      <button id="pk-attach" class="button-primary">Add selected</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<%= javascript_include_tag 'release_show', plugin: 'sanan_redmine_agile' %>
+<link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/releases.css">

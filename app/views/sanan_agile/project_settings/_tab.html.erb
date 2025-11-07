@@ -35,6 +35,51 @@
     </p>
 
     <div class="setting-group">
+      <h3>Working type schemes</h3>
+      <p>
+        <label>Epic Tracker</label>
+        <%= select_tag 'settings[epic_tracker]',
+              options_for_select([['– Không dùng –', '']] + Tracker.all.map { |st| [st.name, st.id] }, cfg['epic_tracker'])
+              %>
+      </p>
+
+  
+      <p>
+        <label>Standard Trackers</label>
+        <%= select_tag 'settings[standard_tracker][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['standard_tracker'])),
+              multiple: true %>
+      </p>
+
+      <p>
+        <label>Sub-task Trackers</label>
+        <%= select_tag 'settings[subtask_tracker][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['subtask_tracker'])),
+              multiple: true %>
+      </p>
+      
+      <p>
+        <label>Cho phép thêm issue con có tracker là standard vào release version</label>
+        <%= hidden_field_tag 'settings[release_add_child_issue_standard_tracker]', '0' %>
+        <%= check_box_tag 'settings[release_add_child_issue_standard_tracker]', '1', cfg['release_add_child_issue_standard_tracker'] == '1' %>
+      </p>
+
+      <p>
+        <label>Issue status cho phép release</label>
+        <%= select_tag 'settings[release_released_status_id]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_released_status_id']),
+              include_blank: true %>
+      </p>
+      <p>
+        <label>Issue status sử dụng khi release version được mark released</label>
+        <%= select_tag 'settings[release_close_status_id]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_close_status_id']),
+              include_blank: true %>
+      </p>
+
+    </div>
+
+    <div class="setting-group">
       <div>
       <h3>Kiểu hiển thị màu thẻ (Tracker)</h3>
         <p>
@@ -325,6 +370,19 @@
                               cfg['uat_done_cfid']) %>
         <br><small>Nếu CF là kiểu <code>Version</code> sẽ ghi ID version; nếu là Text sẽ ghi tên version.</small>
       </p>
+    </div>
+
+    <hr/>
+    <div>
+      <h2>Release Version Management</h2>
+      <div class="setting-group">
+          <p>
+          <label>Hiển thị issue có status:</label>
+           <%= select_tag 'settings[release_status_filter_ids][]',
+        options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['release_status_filter_ids'])),
+        multiple: true %>
+        </p>
+      </div>
     </div>
 
 

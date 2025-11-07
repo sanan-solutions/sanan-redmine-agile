@@ -1,7 +1,7 @@
 class SananAgile::GlobalModal < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context = {})
-    cfg = get_project_setting(context)
-    return '' unless %w(1 true yes on).include?(cfg['sanan_agile_enabled'].to_s.strip.downcase)
+    # cfg = get_project_setting(context)
+    # return '' unless %w(1 true yes on).include?(cfg['sanan_agile_enabled'].to_s.strip.downcase)
 
     tags = <<-HTML
       <script src="/javascripts/jstoolbar/jstoolbar.js"></script>
@@ -43,13 +43,15 @@ class SananAgile::GlobalModal < Redmine::Hook::ViewListener
             <p>Loading content...</p>
           </div>
           <button id="modal-scroll-top" class="scroll-top-btn" aria-label="Scroll to top">
-            ↑
+          ↑
           </button>
         </div>
       </div>
   
       <script src="#{modal_js}"></script>
+      <script src="/plugin_assets/sanan_redmine_agile/javascripts/helper.js"></script>
       <link rel="stylesheet" href="#{modal_css}" />
+      <link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/helper.css" />
     HTML
     modal_html.html_safe
   end

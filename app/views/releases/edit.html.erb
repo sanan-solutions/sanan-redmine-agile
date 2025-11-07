@@ -1,0 +1,81 @@
+<form id="rel-edit-form"
+      action="<%= project_release_path(@project, @release) %>"
+      method="post"
+      data-method="patch"
+      class="box form-release">
+
+  <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+  <input type="hidden" name="_method" value="patch">
+
+  <!-- Name full-width -->
+  <p class="field">
+    <label for="rel-name">Name<span style="color:#ef4444">*</span></label>
+    <input id="rel-name"
+           type="text"
+           class="ui-input"
+           name="name"
+           required
+           value="<%= h @release.name %>"
+           placeholder="e.g. Release 2025.11 / Sprint 43">
+  </p>
+
+  <!-- Dates 2 cột -->
+  <div class="row">
+    <p class="field">
+      <label for="rel-start">Start date</label>
+      <input id="rel-start"
+             type="date"
+             class="ui-input"
+             name="start_on"
+             value="<%= @release.start_on %>">
+    </p>
+    <p class="field">
+      <label for="rel-release">Release date</label>
+      <input id="rel-release"
+             type="date"
+             class="ui-input"
+             name="release_on"
+             value="<%= @release.release_on %>">
+    </p>
+  </div>
+
+  <!-- Release notes: full-width & nằm dưới ngày -->
+  <p class="field">
+    <label for="rel-notes-url">Release notes URL</label>
+    <input id="rel-notes-url"
+           type="url"
+           class="ui-input"
+           name="release_notes_url"
+           value="<%= h @release.release_notes_url %>"
+           placeholder="https://…">
+    <small class="text-muted">Link đến tài liệu ghi chú phát hành (Confluence/Google Docs, v.v.).</small>
+  </p>
+
+  <!-- Drivers -->
+  <p class="field">
+    <label for="rel-drivers">Drivers (multi)</label>
+    <select id="rel-drivers" name="driver_ids[]" multiple size="7">
+      <% @project.users.each do |u| %>
+        <option value="<%= u.id %>" <%= 'selected' if @release.drivers.exists?(u.id) %>>
+          <%= h u.name %>
+        </option>
+      <% end %>
+    </select>
+    <small class="text-muted">Hold <strong>Cmd/Ctrl</strong> to select multiple</small>
+  </p>
+
+  <!-- Description: full-width & cao hơn -->
+  <p class="field">
+    <label for="rel-desc">Description</label>
+    <textarea id="rel-desc"
+              name="description"
+              rows="6"
+              placeholder="Short description of this release…"><%= h @release.description %></textarea>
+  </p>
+
+  <!-- Footer -->
+  <div class="actions actions--split">
+    <button type="button" class="button-secondary modal__close">Cancel</button>
+    <button type="submit" class="button-primary">Save</button>
+  </div>
+</form>

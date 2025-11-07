@@ -20,9 +20,9 @@ table.list.issues-board th {
 }
 
 .modal-open {
-  overflow: hidden;                  /* chặn scroll desktop */
-  touch-action: none;                /* giảm gesture trên mobile */
-  overscroll-behavior: contain;      /* ngăn “giật” khi chạm mép */
+  overflow: hidden; /* chặn scroll desktop */
+  touch-action: none; /* giảm gesture trên mobile */
+  overscroll-behavior: contain; /* ngăn “giật” khi chạm mép */
 }
 
 .global-modal {
@@ -91,7 +91,7 @@ table.list.issues-board th {
   height: 40px;
   border: none;
   border-radius: 50%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   color: white;
   font-size: 20px;
   cursor: pointer;
@@ -148,10 +148,11 @@ table.list.issues-board th {
   margin-top: 0px;
 }
 
-.issue-card-context .priority {
+.sanan-agile-priority .priority {
   content: ' ';
   display: inline-block;
   width: 14px;
+  height: 14px;
   margin-right: 5px;
   background-repeat: no-repeat;
   background-position: center center;
@@ -162,39 +163,39 @@ table.list.issues-board th {
   display: none;
 }
 
-.issue-card-context .priority-lowest {
+.sanan-agile-priority .priority-lowest {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23029934' d='M11.707 7.293a.999.999 0 00-1.414 0L8 9.586V2a1 1 0 10-2 0v7.586L3.707 7.293a.999.999 0 10-1.414 1.414l4 4a.997.997 0 001.414 0l4-4a.999.999 0 000-1.414z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-low2 {
+.sanan-agile-priority .priority-low2 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%2301A671'%3e%3cpath d='M7 12a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 9.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 12z'/%3e%3cpath opacity='.7' d='M7 7a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 4.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 7z'/%3e%3c/g%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-low3 {
+.sanan-agile-priority .priority-low3 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%2300B3AD' d='M7 9.5a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 7.25l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 9.5z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-default {
+.sanan-agile-priority .priority-default {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%230065FF' d='M11.5 6h-9a1 1 0 110-2h9a1 1 0 110 2zm0 4h-9a1 1 0 110-2h9a1 1 0 110 2z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-high5 {
+.sanan-agile-priority .priority-high5 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23614BA6' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-high4 {
+.sanan-agile-priority .priority-high4 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23FC8C12' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-high3 {
+.sanan-agile-priority .priority-high3 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%23F14F28'%3e%3cpath d='M10.999 7a.994.994 0 01-.599-.2L7 4.25 3.6 6.8a1 1 0 01-1.2-1.6l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01.2 1.399.992.992 0 01-.8.401z'/%3e%3cpath opacity='.7' d='M10.999 12a.994.994 0 01-.599-.2L7 9.25 3.6 11.8a1 1 0 01-1.2-1.599l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01-.6 1.799z'/%3e%3c/g%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-high2 {
+.sanan-agile-priority .priority-high2 {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23E5123D' d='M11.707 5.293l-4-4a.999.999 0 00-1.414 0l-4 4a.999.999 0 101.414 1.414L6 4.414V12a1 1 0 102 0V4.414l2.293 2.293a.997.997 0 001.414 0 .999.999 0 000-1.414z'/%3e%3c/svg%3e");
 }
 
-.issue-card-context .priority-highest {
+.sanan-agile-priority .priority-highest {
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23BC092E' d='M11.6 4.2l-4-3a.999.999 0 00-1.2 0l-4 3A1 1 0 002 5v7a1.001 1.001 0 001.6.8L7 10.25l3.4 2.55a.995.995 0 001.047.095c.339-.17.553-.516.553-.895V5a1 1 0 00-.4-.8z'/%3e%3c/svg%3e");
 }
 

@@ -72,11 +72,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     return {
       lock() {
-        console.log("lock")
         if (document.body.classList.contains('modal-open')) {
           return
         }
-        console.log("lock success")
         scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
 
         // Tránh layout shift khi mất scrollbar
@@ -91,11 +89,9 @@ document.addEventListener("DOMContentLoaded", function () {
         document.body.style.width = '100%';
       },
       unlock() {
-        console.log("unlock")
         if (!document.body.classList.contains('modal-open')) {
           return
         }
-        console.log("unlock scucesss")
         document.body.classList.remove('modal-open');
         document.body.style.position = '';
         document.body.style.top = '';
@@ -185,6 +181,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function initCloseBtn() {
     closeButton.addEventListener('click', function () {
+      modalBody.innerHTML = "";
       // Nếu isCloseModalAfterSubmit=true => đã reload rồi
       if (isHotReload && isWasSubmitted) {
         return closeModalWithReload()
@@ -358,6 +355,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const isParentIssue = e.target.closest('.sanan-attrs a.sanan-parent-pill')
 
+    const isReleaseIssueName = e.target.closest('.release-main .wi-table .wi-row .wi-summary')
+
     const getIssueId = () => {
       if (isAgileBoardEditIssueBtn) {
         return isAgileBoardEditIssueBtn.dataset.issueId
@@ -387,6 +386,13 @@ document.addEventListener("DOMContentLoaded", function () {
       if (isParentIssue) {
         const hrefArr = isParentIssue.getAttribute("href").split('/')
         return hrefArr[2]
+      }
+
+      if (isReleaseIssueName) {
+        const row = isReleaseIssueName.closest('.wi-row')
+        if (!row) null
+
+        return row.dataset.id
       }
 
       return null
@@ -450,7 +456,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (window.location.pathname.includes('agile/board') && isCreateSubTaskBtn) {
+    if ((window.location.pathname.includes('agile/board') || window.location.pathname.includes('/releases/')) && isCreateSubTaskBtn) {
       e.preventDefault();
 
       isWasSubmitted = false
@@ -474,6 +480,15 @@ document.addEventListener("DOMContentLoaded", function () {
           clearTimeout(timeout)
         }
       }, 500)
+    }
+
+    if (window.location.pathname.includes('/releases/') && isReleaseIssueName) {
+      e.preventDefault();
+
+      isWasSubmitted = false
+
+      handleViewIssueModal(getIssueId())
+      return;
     }
   });
 
@@ -526,6 +541,10 @@ document.addEventListener("DOMContentLoaded", function () {
             // update: có sẵn id trong action (/issues/:id)
             const m = form.action.match(/\/issues\/(\d+)/);
             issueId = m ? m[1] : form.querySelector('[name="issue[id]"]')?.value;
+          }
+
+          if (window.location.pathname.includes('/releases/') && action === Action.VIEW) {
+            return location.reload()
           }
 
           if (window.SANAN_refreshIssueCard && issueId) {
