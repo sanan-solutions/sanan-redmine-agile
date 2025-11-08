@@ -6,18 +6,18 @@ class ReleaseItemsCompact < ActiveRecord::Migration[5.2]
     add_column :release_items, :added_by_id, :integer, null: true
 
 
-    # 2) backfill timestamp bằng hàm phù hợp từng DB
-    adapter = ActiveRecord::Base.connection.adapter_name
-    now_sql =
-      case adapter
-      when /SQLite/i      then "datetime('now')"         # UTC
-      when /PostgreSQL/i  then "CURRENT_TIMESTAMP"
-      else                      "CURRENT_TIMESTAMP"      # MySQL/MariaDB
-      end
-    execute "UPDATE release_items SET added_at = #{now_sql} WHERE added_at IS NULL"
+    # # 2) backfill timestamp bằng hàm phù hợp từng DB
+    # adapter = ActiveRecord::Base.connection.adapter_name
+    # now_sql =
+    #   case adapter
+    #   when /SQLite/i      then "datetime('now')"         # UTC
+    #   when /PostgreSQL/i  then "CURRENT_TIMESTAMP"
+    #   else                      "CURRENT_TIMESTAMP"      # MySQL/MariaDB
+    #   end
+    # execute "UPDATE release_items SET added_at = #{now_sql} WHERE added_at IS NULL"
 
-    # 3) ràng buộc NOT NULL
-    change_column_null :release_items, :added_at, false
+    # # 3) ràng buộc NOT NULL
+    # change_column_null :release_items, :added_at, false
 
     # index chống trùng cặp (phòng user add cùng issue nhiều lần vào cùng 1 release)
     add_index :release_items, [:release_version_id, :issue_id],
