@@ -1,3 +1,5 @@
+<% can_manage = User.current.allowed_to?(:manage_releases, @project) %>
+
 <div class="releases-page">
   <h2>Releases</h2>
 
@@ -8,7 +10,9 @@
       <option value="unreleased" <%= 'selected' if params[:state]=='unreleased' %>>Unreleased</option>
       <option value="released"   <%= 'selected' if params[:state]=='released' %>>Released</option>
     </select>
-    <button id="rel-create">Create version</button>
+    <% if can_manage %>
+      <button id="rel-create">Create version</button>
+    <% end %>
   </div>
 
   <table class="releases-table">

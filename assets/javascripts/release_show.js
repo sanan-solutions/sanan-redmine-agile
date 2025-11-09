@@ -275,6 +275,11 @@
   const pkStatus = document.getElementById('pk-status');
   const pkFromSprint = document.getElementById('pk-from-sprint');
   const pkClear = document.getElementById('pk-clear');
+  // NEW: tham chiếu checkbox "select all" ở header
+  const pkSelectAll = document.getElementById('pk-select-all');
+
+  // NEW: bộ nhớ các item đã chọn (persist qua filter)
+  const selectedIds = new Set(); // string id hoặc number đều được, mình dùng string nhất quán
 
   let pkAll = []; // toàn bộ issues (fetch 1 lần khi mở modal)
   let pkFilter = { q: '', epic: '', tracker: '', priority: '', release: '', status: '', fromSprint: '' };
@@ -283,6 +288,10 @@
 
   const escapeHtml = (s) => {
     return (s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+
+  const clearFilter = () => {
+    pkFilter = { q: '', epic: '', tracker: '', priority: '', release: '', status: '', fromSprint: '' };
   }
 
   const populateFilterOptions = () => {
@@ -297,8 +306,10 @@
     });
     // helper
     const fill = (sel, values) => {
-      sel.innerHTML = `<option value="">All ${sel.id.replace('pk-', '')}s</option>`;
-      console.log('enenenen', sel, pkFromSprint, sel === pkFromSprint)
+      const first = sel.firstElementChild; // option đầu tiên (placeholder)
+      sel.innerHTML = '';
+      if (first) sel.appendChild(first);
+      // sel.innerHTML = `<option value="">All ${sel.id.replace('pk-', '')}s</option>`;
       if (sel.id == pkRelease.id) {
         const o = document.createElement('option');
         o.value = '-';
@@ -335,10 +346,12 @@
 
   const renderPickerRows = (rows) => {
     pkBody.innerHTML = rows.map(row => {
-      const disabled = row.in_current_release;
+      const disabled = !!row.in_current_release;
+      const idStr = String(row.id);
+      const checked = selectedIds.has(idStr) && !disabled ? 'checked' : '';
       return `
         <tr>
-          <td><input type="checkbox" class="pk-chk" ${disabled ? 'disabled' : ''} value="${row.id}"></td>
+          <td><input type="checkbox" class="pk-chk" ${disabled ? 'disabled' : ''} ${checked} value="${row.id}"></td>
           <td>#${row.id}</td>
           <td>${row.tracker || '-'}</td>
           <td class="wi-summary">
@@ -372,6 +385,9 @@
           </td>
         </tr>`;
     }).join('');
+
+    // Sau khi render xong → cập nhật trạng thái select-all
+    updateSelectAllVisual();
   }
 
   const loadPickerAll = async () => {
@@ -408,13 +424,30 @@
   // clear nhanh
   const onClear = () => {
     pkFilter = { q: '', epic: '', tracker: '', priority: '', release: '', status: '', fromSprint: '' };
-    pkQ.value = ''; pkEpic.value = ''; pkTracker.value = ''; pkPriority.value = ''; pkRelease.value = ''; pkStatus.value = ''; pkFromSprint.value = ''
+    pkQ.value = '';
+    pkEpic.value = '';
+    pkTracker.value = '';
+    pkPriority.value = '';
+    pkRelease.value = '';
+    pkStatus.value = '';
+    pkFromSprint.value = ''
     renderPickerRows(pkAll);
   }
 
   // OPEN/CLOSE
-  const openPicker = () => { pkModal.hidden = false; loadPickerAll(); };
-  const closePicker = (e) => { if (e.target.classList.contains('modal__close') || e.target === pkModal) pkModal.hidden = true; };
+  const openPicker = () => {
+    ScrollLock.lock()
+    clearFilter()
+    selectedIds.clear()
+    pkModal.hidden = false;
+    loadPickerAll();
+  };
+  const closePicker = (e) => {
+    if (e.target.classList.contains('modal__close') || e.target === pkModal) {
+      ScrollLock.unlock()
+      pkModal.hidden = true;
+    }
+  };
 
   pkBtn?.addEventListener('click', openPicker);
   pkModal?.addEventListener('click', closePicker);
@@ -424,9 +457,43 @@
   [pkEpic, pkTracker, pkPriority, pkRelease, pkStatus, pkFromSprint].forEach(el => el?.addEventListener('change', onFilterChange));
   pkClear?.addEventListener('click', onClear);
 
+  // checked all
+  function updateSelectAllVisual() {
+    const enabled = Array.from(pkBody.querySelectorAll('.pk-chk:not(:disabled)'));
+    if (enabled.length === 0) {
+      pkSelectAll.checked = false;
+      pkSelectAll.indeterminate = false;
+      return;
+    }
+    const checkedCount = enabled.filter(c => selectedIds.has(c.value)).length;
+    pkSelectAll.checked = checkedCount === enabled.length;
+    pkSelectAll.indeterminate = checkedCount > 0 && checkedCount < enabled.length;
+  }
+
+  pkSelectAll?.addEventListener('change', () => {
+    const rows = Array.from(pkBody.querySelectorAll('tr'));
+    rows.forEach(tr => {
+      const cbx = tr.querySelector('.pk-chk');
+      if (!cbx || cbx.disabled) return;
+      cbx.checked = pkSelectAll.checked;
+      if (cbx.checked) selectedIds.add(cbx.value);
+      else selectedIds.delete(cbx.value);
+    });
+    updateSelectAllVisual();
+  });
+
+  // --- Lắng nghe tick từng dòng (event delegation)
+  pkBody.addEventListener('change', (e) => {
+    const cb = e.target.closest('.pk-chk');
+    if (!cb) return;
+    if (cb.checked) selectedIds.add(cb.value);
+    else selectedIds.delete(cb.value);
+    updateSelectAllVisual();
+  });
+
   // attach
   pkAttach?.addEventListener('click', async () => {
-    const ids = Array.from(pkBody.querySelectorAll('.pk-chk:checked')).map(i => i.value);
+    const ids = Array.from(selectedIds);
     if (ids.length === 0) { pkModal.hidden = true; return; }
     await fetch(base + '/attach_issues', {
       method: 'POST',

@@ -1,5 +1,8 @@
 <% epic_tracker_id = SananAgile::ProjectSettings.load(@project.id)['epic_tracker'].presence&.to_i %>
 <% is_released =  @release.state == 'released' %>
+<% can_manage = User.current.allowed_to?(:manage_releases, @project) %>
+<% can_action = !is_released && can_manage %>
+
 <div class="release-page">
   <div class="release-layout">
     <!-- Main content -->
@@ -34,42 +37,42 @@
             <input id="wi-search" class="ui-input" placeholder="Search work items…" />
 
             <select id="wi-epic-filter" class="ui-select">
-              <option value="">All Epic</option>
+              <option value="">All epics</option>
             </select>
 
             <select id="wi-from-sprint-filter" class="ui-select">
-              <option value="">All From sprint</option>
+              <option value="">All sprints</option>
             </select>
 
             <select id="wi-status-filter" class="ui-select">
-              <option value="">All Status</option>
+              <option value="">All statuses</option>
             </select>
 
             <!-- NEW: Tracker -->
             <select id="wi-tracker-filter" class="ui-select">
-              <option value="">All Tracker</option>
+              <option value="">All trackers</option>
             </select>
 
             <!-- NEW: Priority -->
             <select id="wi-priority-filter" class="ui-select">
-              <option value="">All Priority</option>
+              <option value="">All priorities</option>
             </select>
 
             <select id="wi-assignee-filter" class="ui-select">
-              <option value="">All Assignee</option>
+              <option value="">All assignees</option>
             </select>
 
             <button id="wi-clear" class="button-secondary small">Clear</button>
           </div>
 
           <div class="toolbar-right">
-            <% if !is_released %>
+            <% if can_action %>
               <button id="btn-add-items" class="button-primary icon-only" title="+ Add work items">+</button>
             <% end %>
           </div>
         </div>
 
-        <table id="wi-table" class="wi-table">
+        <table id="wi-table" class="wi-table <%= 'no-manage' unless can_manage %>">
           <thead>
             <tr>
               <th class="col-key">Key</th>
@@ -154,7 +157,7 @@
                   <%= h iss.priority&.name %>
                 </td>
                 <td>
-                  <select class="wi-status ui-select" <%= is_released && "disabled" %>>
+                  <select class="wi-status ui-select" <%= !can_action && "disabled" %>>
                     <% @statuses.each do |st| %>
                       <option value="<%= st.id %>" <%= 'selected' if st.id == iss.status_id %>><%= h st.name %></option>
                     <% end %>
@@ -162,7 +165,7 @@
                 </td>
                 <td class="wi-assignee"><%= h(iss.assigned_to&.name || '-') %></td>
                 <td>
-                  <% if !is_released %>
+                  <% if can_action %>
                     <button class="wi-remove" title="Remove from release">×</button>
                   <% end %>
                 </td>
@@ -216,7 +219,7 @@
                     <%= h ch.priority&.name %>
                   </td>
                   <td>
-                    <select class="wi-status ui-select" <%= is_released && "disabled" %>>
+                    <select class="wi-status ui-select" <%= !can_action && "disabled" %>>
                       <% @statuses.each do |st| %>
                         <option value="<%= st.id %>" <%= 'selected' if st.id == ch.status_id %>><%= h st.name %></option>
                       <% end %>
@@ -237,13 +240,15 @@
     <aside class="release-side">
       <div class="side-card">
         <div class="side-card-header">
+          <% if can_action %>
           <button id="btn-edit-release" class="button-primary" style="width:100%;">✏️ Edit release</button>
+          <% end %>
         </div>
 
         <div class="side-section">
           <div class="kv">
             <span>Status</span>
-            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>">
+            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>" <%= !can_action && "disabled" %>>
               <option value="unreleased" <%= 'selected' if @release.state=='unreleased' %>>Unreleased</option>
               <option value="released"   <%= 'selected' if @release.state=='released' %>>Released</option>
             </select>
@@ -306,7 +311,7 @@
         <option value="">All trackers</option>
       </select>
       <select id="pk-from-sprint">
-        <option value="">From sprint</option>
+        <option value="">All sprints</option>
       </select>
       <select id="pk-priority">
         <option value="">All priorities</option>
@@ -327,7 +332,12 @@
       <table class="wi-table">
         <thead>
           <tr>
-            <th class="col-checkbox"></th>
+            <th class="col-checkbox">
+              <label class="sa-checkbox-all">
+                <input type="checkbox" id="pk-select-all" class="pk-select-all">
+                <span class="sa-checkbox-mark"></span>
+              </label>
+            </th>
             <th class="col-key">Key</th>
             <th class="col-tracker">Tracker</th>
             <th class="col-summary">Summary</th>

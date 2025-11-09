@@ -247,3 +247,42 @@ function saAlertError(title = 'Update failed', message = '', details = null) {
   };
 
 })(window, document);
+
+// Scroll locker an toàn (hỗ trợ nhiều modal lồng/đồng thời)
+const ScrollLock = (() => {
+  let scrollTop = 0;
+  let prevBodyPaddingRight = '';
+  function getScrollbarWidth() {
+    return window.innerWidth - document.documentElement.clientWidth;
+  }
+  return {
+    lock() {
+      if (document.body.classList.contains('modal-open')) {
+        return
+      }
+      scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+
+      // Tránh layout shift khi mất scrollbar
+      const sbw = getScrollbarWidth();
+      prevBodyPaddingRight = document.body.style.paddingRight;
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+
+      // iOS-safe lock: position: fixed + top
+      document.body.classList.add('modal-open');
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollTop}px`;
+      document.body.style.width = '100%';
+    },
+    unlock() {
+      if (!document.body.classList.contains('modal-open')) {
+        return
+      }
+      document.body.classList.remove('modal-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.paddingRight = prevBodyPaddingRight;
+      window.scrollTo(0, scrollTop);
+    }
+  };
+})();

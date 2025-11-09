@@ -59,7 +59,7 @@ class SananAgile::GlobalModal < Redmine::Hook::ViewListener
   private
   def get_project_setting(ctx={})
     c = ctx[:controller]
-    return '' unless c && c.controller_name == 'agile_boards'
+    return '' unless c && %w[agile_boards issues releases].include?(c.controller_name)
 
     project = ctx[:project] ||
               c.instance_variable_get(:@project) ||

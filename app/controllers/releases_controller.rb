@@ -7,7 +7,9 @@ class ReleasesController < ApplicationController
   before_action :authorize
   before_action :find_release, only: [:show, :attach_issues, :detach_item, :reorder,
                                       :update_issue_status, :change_state, :issue_panel, :edit, :update]
-
+  before_action :authorize_view,  only: [:index, :show, :issues_search, :issue_panel]
+  before_action :authorize_manage, only: [:attach_issues, :detach_item, :reorder,
+                                          :update_issue_status, :change_state, :create, :update, :edit, :new]
   # GET /projects/:project_id/releases
   def index
     scope = ::ReleaseVersion.where(project_id: @project.id)
@@ -328,5 +330,12 @@ class ReleasesController < ApplicationController
     return if @settings['sanan_agile_enabled'].to_s == '1'
   
     render_404
+  end
+  def authorize_view
+    render_403 unless User.current.allowed_to?(:view_releases, @project)
+  end
+
+  def authorize_manage
+    render_403 unless User.current.allowed_to?(:manage_releases, @project)
   end
 end

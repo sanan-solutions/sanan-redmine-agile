@@ -63,45 +63,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Scroll locker an toàn (hỗ trợ nhiều modal lồng/đồng thời)
-  const ScrollLock = (() => {
-    let scrollTop = 0;
-    let prevBodyPaddingRight = '';
-    function getScrollbarWidth() {
-      return window.innerWidth - document.documentElement.clientWidth;
-    }
-    return {
-      lock() {
-        if (document.body.classList.contains('modal-open')) {
-          return
-        }
-        scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-
-        // Tránh layout shift khi mất scrollbar
-        const sbw = getScrollbarWidth();
-        prevBodyPaddingRight = document.body.style.paddingRight;
-        if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
-
-        // iOS-safe lock: position: fixed + top
-        document.body.classList.add('modal-open');
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${scrollTop}px`;
-        document.body.style.width = '100%';
-      },
-      unlock() {
-        if (!document.body.classList.contains('modal-open')) {
-          return
-        }
-        document.body.classList.remove('modal-open');
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.paddingRight = prevBodyPaddingRight;
-        window.scrollTo(0, scrollTop);
-      }
-    };
-  })();
-
   function closeModal() {
     ScrollLock.unlock();
     modal.style.display = "none";
@@ -344,19 +305,23 @@ document.addEventListener("DOMContentLoaded", function () {
     // reset
     const isAgileBoardEditIssueBtn = e.target.closest(".edit-issue-link");
     const isAgileBoardCreateIssueBtn = e.target.closest("#new-agile-issue-btn");
-    const isAgileBoardViewIssueByName = e.target.closest('p.name a');
+    const isAgileBoardViewIssueByName = e.target.closest('.issue-card p.name a');
 
     const isListIssuesEditBtn = e.target.closest("#context-menu a.icon-edit");
     const isListIssuesCreateBtn = e.target.closest("a.icon-add.new-issue")
 
-    const isCreateSubTaskBtn = e.target.closest('#issue_tree .contextual a');
-    const formEditRelation = e.target.closest('#relations form')
-    const isCreateRelationBtn = e.target.closest('#relations input[type="submit"]')
+    const isCreateSubTaskBtn = e.target.closest('#global-modal #issue_tree .contextual a');
+    const formEditRelation = e.target.closest('#global-modal #relations form')
+    const isCreateRelationBtn = e.target.closest('#global-modal #relations input[type="submit"]')
+    const isParentIssueInViewIssue = e.target.closest('#global-modal .subject a.issue')
 
-    const isParentIssue = e.target.closest('.sanan-attrs a.sanan-parent-pill')
+    const isParentIssueInIssueCard = e.target.closest('.issue-card .sanan-attrs a.sanan-parent-pill')
+    const isRelatedIssueInIssueCard = e.target.closest('.issue-card .attributes .rel-relates a.issue')
 
     const isReleaseIssueName = e.target.closest('.release-main .wi-table .wi-row .wi-summary')
+    const isReleaseEpicName = e.target.closest('.release-main .wi-table .wi-row .wi-epic')
 
+    console.log("kaka", isReleaseIssueName)
     const getIssueId = () => {
       if (isAgileBoardEditIssueBtn) {
         return isAgileBoardEditIssueBtn.dataset.issueId
@@ -372,6 +337,11 @@ document.addEventListener("DOMContentLoaded", function () {
         return hrefArr[2]
       }
 
+      if (isParentIssueInViewIssue && isParentIssueInViewIssue.getAttribute("href")?.includes("/issues")) {
+        const hrefArr = isParentIssueInViewIssue.getAttribute("href").split('/')
+        return hrefArr[2]
+      }
+
       if (isCreateSubTaskBtn) {
         const hrefArr = isCreateSubTaskBtn.getAttribute("href").split('&')
         const parentIssueQuery = hrefArr[1].split('=')
@@ -383,8 +353,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return action[2]
       }
 
-      if (isParentIssue) {
-        const hrefArr = isParentIssue.getAttribute("href").split('/')
+      if (isParentIssueInIssueCard) {
+        const hrefArr = isParentIssueInIssueCard.getAttribute("href").split('/')
+        return hrefArr[2]
+      }
+
+      if (isRelatedIssueInIssueCard) {
+        const hrefArr = isRelatedIssueInIssueCard.getAttribute("href").split('/')
         return hrefArr[2]
       }
 
@@ -393,6 +368,13 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!row) null
 
         return row.dataset.id
+      }
+
+      if (isReleaseEpicName) {
+        const row = isReleaseEpicName.closest('.wi-row')
+        if (!row) null
+
+        return row.dataset.epicId
       }
 
       return null
@@ -447,12 +429,30 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (isParentIssue) {
+    if (isParentIssueInIssueCard) {
       e.preventDefault()
 
       isWasSubmitted = false
 
       handleViewIssueModal(getIssueId());
+      return;
+    }
+
+    if (isRelatedIssueInIssueCard) {
+      e.preventDefault()
+
+      isWasSubmitted = false
+
+      handleViewIssueModal(getIssueId());
+      return;
+    }
+
+    if (isParentIssueInViewIssue) {
+      e.preventDefault();
+
+      isWasSubmitted = false
+
+      handleViewIssueModal(getIssueId())
       return;
     }
 
@@ -482,7 +482,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 500)
     }
 
-    if (window.location.pathname.includes('/releases/') && isReleaseIssueName) {
+    if (window.location.pathname.includes('/releases/')) {
+      if (!isReleaseIssueName && !isReleaseEpicName) {
+        return;
+      }
+      const issueId = getIssueId()
+      if (!issueId) {
+        return;
+      }
+
       e.preventDefault();
 
       isWasSubmitted = false
