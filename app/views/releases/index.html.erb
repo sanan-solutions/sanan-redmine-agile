@@ -1,0 +1,53 @@
+<div class="releases-page">
+  <h2>Releases</h2>
+
+  <div class="releases-toolbar">
+    <input id="rel-search" class="ui-input" placeholder="Search" value="<%= h params[:q].to_s %>" />
+    <select id="rel-filter" class="ui-select">
+      <option value="" <%= 'selected' if params[:state].blank? %>>All statuses</option>
+      <option value="unreleased" <%= 'selected' if params[:state]=='unreleased' %>>Unreleased</option>
+      <option value="released"   <%= 'selected' if params[:state]=='released' %>>Released</option>
+    </select>
+    <button id="rel-create">Create version</button>
+  </div>
+
+  <table class="releases-table">
+    <thead>
+      <tr><th>Version</th><th>Status</th><th>Progress</th><th>Start</th><th>Release</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <% @releases.each do |r| %>
+        <% pill = case r.state
+                 when 'released' then 'badge--released'
+                 when 'archived' then 'badge--archived'
+                 else 'badge--unreleased' end %>
+        <tr>
+          <td><%= link_to h(r.name), project_release_path(@project, r) %></td>
+          <td><span class="badge <%= pill %>"><%= r.state.upcase %></span></td>
+          <td><div class="bar" style="--w:<%= r.progress %>%"><span></span></div></td>
+          <td><%= r.start_on || '-' %></td>
+          <td><%= r.release_on || '-' %></td>
+          <td class="desc-ellipsis"><%= h r.description.to_s.truncate(80) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <%= pagination_links_full @releases_pages, @releases_count, per_page_links: false %>
+  </div>
+</div>
+
+<div id="rel-modal" class="modal" hidden>
+  <div class="modal__panel">
+    <div class="modal__header">
+      <h3>Create version</h3>
+      <button class="modal__close">×</button>
+    </div>
+    <div class="modal__body" id="rel-modal-body"></div>
+  </div>
+</div>
+
+
+<%= javascript_include_tag 'releases_index', plugin: 'sanan_redmine_agile' %>
+<link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/releases.css">

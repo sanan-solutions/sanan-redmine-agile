@@ -45,6 +45,16 @@ module SananAgile
       'sp_be_actual_version_cfid'=>'',
       'sp_fe_actual_version_cfid'=>'',
       'sp_qa_actual_version_cfid'=>'',
+
+      'test_level_cfid' =>'',
+
+      'release_status_filter_ids' => [],       # danh sách status id hiển thị trong modal pick issue
+      'epic_tracker' => '',
+      'standard_tracker' => [],
+      'subtask_tracker' => [],
+      'release_add_child_issue_standard_tracker' => '0',
+      'release_released_status_id'=> '',
+      'release_close_status_id'=> ''
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

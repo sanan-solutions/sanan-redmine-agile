@@ -9,9 +9,12 @@ require_dependency File.expand_path('lib/sanan_agile/hide_agile_sp_field_hook', 
 require_dependency File.expand_path('lib/sanan_agile/hooks', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/card_color_hooks', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/global_modal', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 
-
+Rails.application.config.to_prepare do
+  require_dependency 'releases_controller'
+end
 
 Redmine::Plugin.register :sanan_redmine_agile do
   name        'Sanan Redmine Agile'
@@ -25,6 +28,30 @@ Redmine::Plugin.register :sanan_redmine_agile do
                { 'sanan_agile/project_settings' => [:update] },
                require: :member
   end
+
+  project_module :releases do
+    # Quyền xem danh sách/chi tiết, gọi datasource picker, và panel phải
+    permission :view_releases,
+               { releases: [:index, :show, :issues_search, :issue_panel,] },
+               require: :member
+
+    # Quyền thao tác quản trị: tạo, gắn/ tháo issues, đổi trạng thái, reorder, quick status
+    permission :manage_releases,
+               { releases: [:new, :create, :attach_issues, :detach_item,
+                            :reorder, :update_issue_status, :change_state, :update,:edit] }
+  end
+
+    # === Menu ở Project ===
+  # Hiện tab "Releases" khi module :releases bật ở project
+  menu :project_menu,
+       :releases,
+       { controller: 'releases', action: 'index' },
+       caption: 'Releases',
+       after: :agile,
+       param: :project_id,
+       if: Proc.new { |project| User.current.allowed_to?(:view_releases, project) && SananAgile::ProjectSettings.load(project.id)['sanan_agile_enabled'].to_s == '1' }
+
+  # Nếu bạn muốn menu luôn hiện với mọi member khi module được bật, bỏ `if: ...` đi.
 
   # Tạo plugin settings key hợp lệ: Setting.plugin_sanan_redmine_agile (Hash)
   settings default: {}, partial: nil

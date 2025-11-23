@@ -4,6 +4,11 @@
 <% tracker_map  = (cfg['card_color_tracker_map']  || {}).stringify_keys %>
 <% trackers     = Tracker.order(:position) %>
 <% mode = (cfg['card_color_tracker_mode'].presence || 'body') %>
+<%
+  issue_cfs = IssueCustomField.order(:position)
+  # gợi ý ưu tiên list-type trước
+  sorted = issue_cfs.sort_by { |cf| cf.field_format == 'list' ? 0 : 1 }
+%>
 
 <div class="box tabular">
   <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
@@ -28,6 +33,51 @@
       <%= check_box_tag 'settings[skip_if_already_set]', '1', (cfg['skip_if_already_set'] == '1') %>
       <em><%= l(:label_skip_note) %></em>
     </p>
+
+    <div class="setting-group">
+      <h3>Working type schemes</h3>
+      <p>
+        <label>Epic Tracker</label>
+        <%= select_tag 'settings[epic_tracker]',
+              options_for_select([['– Không dùng –', '']] + Tracker.all.map { |st| [st.name, st.id] }, cfg['epic_tracker'])
+              %>
+      </p>
+
+  
+      <p>
+        <label>Standard Trackers</label>
+        <%= select_tag 'settings[standard_tracker][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['standard_tracker'])),
+              multiple: true %>
+      </p>
+
+      <p>
+        <label>Sub-task Trackers</label>
+        <%= select_tag 'settings[subtask_tracker][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['subtask_tracker'])),
+              multiple: true %>
+      </p>
+      
+      <p>
+        <label>Cho phép thêm issue con có tracker là standard vào release version</label>
+        <%= hidden_field_tag 'settings[release_add_child_issue_standard_tracker]', '0' %>
+        <%= check_box_tag 'settings[release_add_child_issue_standard_tracker]', '1', cfg['release_add_child_issue_standard_tracker'] == '1' %>
+      </p>
+
+      <p>
+        <label>Issue status cho phép release</label>
+        <%= select_tag 'settings[release_released_status_id]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_released_status_id']),
+              include_blank: true %>
+      </p>
+      <p>
+        <label>Issue status sử dụng khi release version được mark released</label>
+        <%= select_tag 'settings[release_close_status_id]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_close_status_id']),
+              include_blank: true %>
+      </p>
+
+    </div>
 
     <div class="setting-group">
       <div>
@@ -67,6 +117,27 @@
           </tbody>
         </table>
         <p class="info">Ưu tiên màu: <strong>Priority</strong> &gt; <strong>Tracker</strong> &gt; <strong>Status</strong>.</p>
+    </div>
+
+    <div class="setting-group">
+      <p>
+        <label>Chọn Custom Field dùng làm “Test level”</label><br/>
+        <%= select_tag 'settings[test_level_cfid]',
+            options_for_select(
+              [['-- None --', nil]] +
+              sorted.map { |cf|
+                label = "##{cf.id} | #{cf.name} (#{cf.field_format}#{cf.multiple ? ', multiple' : ''})"
+                [label, cf.id]
+              },
+              cfg['test_level_cfid']
+            ),
+            include_blank: false %>
+      </p>
+
+      <p class="info">
+        Gợi ý: nên chọn Custom Field dạng <strong>List</strong> (single hoặc multiple).
+        Plugin chỉ đọc & hiển thị tag trên issue card, không chỉnh sửa dữ liệu.
+      </p>
     </div>
 
     <div class="setting-group">
@@ -299,6 +370,19 @@
                               cfg['uat_done_cfid']) %>
         <br><small>Nếu CF là kiểu <code>Version</code> sẽ ghi ID version; nếu là Text sẽ ghi tên version.</small>
       </p>
+    </div>
+
+    <hr/>
+    <div>
+      <h2>Release Version Management</h2>
+      <div class="setting-group">
+          <p>
+          <label>Hiển thị issue có status:</label>
+           <%= select_tag 'settings[release_status_filter_ids][]',
+        options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['release_status_filter_ids'])),
+        multiple: true %>
+        </p>
+      </div>
     </div>
 
 

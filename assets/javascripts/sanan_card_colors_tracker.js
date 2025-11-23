@@ -31,13 +31,13 @@
     // card.style.color = fg;
     card.style.borderLeft = '0px solid #d1d3e0';
     links.forEach(function (a) {
-      var parentP = a.closest('p');
+      var parentP = a.closest('span.rel-relates') || a.closest('.sanan-parent-pill');
 
       // nếu thẻ cha tồn tại và có class 'attributes' → bỏ qua (không đổi màu)
-      if (parentP && parentP.classList.contains('attributes')) {
+      if (parentP) {
         return; // skip
       }
-    
+
       // ngược lại: đổi màu (hoặc xử lý khác)
       a.style.color = fg;
     });

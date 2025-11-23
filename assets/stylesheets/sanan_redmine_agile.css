@@ -1,0 +1,386 @@
+.issues-board td.issue-status-col {
+  min-width: 260px !important;
+  max-width: 260px !important;
+}
+
+table.list.issues-board th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 260px;
+}
+
+/**********************************************************************/
+/* AGILE BOARD
+/**********************************************************************/
+.agile-card-footer {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.4rem;
+}
+
+.modal-open {
+  overflow: hidden; /* chặn scroll desktop */
+  touch-action: none; /* giảm gesture trên mobile */
+  overscroll-behavior: contain; /* ngăn “giật” khi chạm mép */
+}
+
+.global-modal {
+  position: fixed;
+  z-index: 5000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#context-menu {
+  position: absolute;
+  z-index: 9999 !important;
+  font-size: 0.9em;
+}
+
+.global-modal__content {
+  background-color: #fff;
+  /* width: 600px; */
+  max-width: 90%;
+  border-radius: 8px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.2s ease-out;
+  overflow: hidden; /* chặn scroll desktop */
+}
+
+.content__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  padding: 12px 20px;
+  color: black;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.header__title {
+  line-height: 0;
+  margin: 0;
+}
+
+.header__close-btn {
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+#glocal-modal-content-body {
+  padding: 20px;
+  max-height: 70vh;
+  overflow-y: auto;
+  background-color: #fafafa;
+}
+
+.scroll-top-btn {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  display: none; /* ẩn mặc định */
+  z-index: 9999;
+  transition: opacity 0.2s;
+}
+.scroll-top-btn.show {
+  display: block;
+  opacity: 1;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* CUSTOM */
+.issue-name {
+  margin-bottom: 8px !important;
+  font-size: 14px !important;
+}
+
+.issue-card-context {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 0px;
+  align-items: center;
+}
+
+.issue-card-context .issue-card-context-left {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  align-items: center;
+}
+
+.issue-card-context .issue-card-context-right {
+  display: flex;
+  flex-direction: row;
+  gap: 3px;
+}
+
+.issue-card-context .assigned-user {
+  border-top: 0px;
+  padding-top: 0px;
+  margin-top: 0px;
+}
+
+.sanan-agile-priority .priority {
+  content: ' ';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 5px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 14px;
+}
+
+.issue-card-context .agile-priority-title {
+  display: none;
+}
+
+.sanan-agile-priority .priority-lowest {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23029934' d='M11.707 7.293a.999.999 0 00-1.414 0L8 9.586V2a1 1 0 10-2 0v7.586L3.707 7.293a.999.999 0 10-1.414 1.414l4 4a.997.997 0 001.414 0l4-4a.999.999 0 000-1.414z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-low2 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%2301A671'%3e%3cpath d='M7 12a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 9.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 12z'/%3e%3cpath opacity='.7' d='M7 7a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 4.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 7z'/%3e%3c/g%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-low3 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%2300B3AD' d='M7 9.5a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 7.25l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 9.5z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-default {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%230065FF' d='M11.5 6h-9a1 1 0 110-2h9a1 1 0 110 2zm0 4h-9a1 1 0 110-2h9a1 1 0 110 2z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-high5 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23614BA6' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-high4 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23FC8C12' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-high3 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%23F14F28'%3e%3cpath d='M10.999 7a.994.994 0 01-.599-.2L7 4.25 3.6 6.8a1 1 0 01-1.2-1.6l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01.2 1.399.992.992 0 01-.8.401z'/%3e%3cpath opacity='.7' d='M10.999 12a.994.994 0 01-.599-.2L7 9.25 3.6 11.8a1 1 0 01-1.2-1.599l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01-.6 1.799z'/%3e%3c/g%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-high2 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23E5123D' d='M11.707 5.293l-4-4a.999.999 0 00-1.414 0l-4 4a.999.999 0 101.414 1.414L6 4.414V12a1 1 0 102 0V4.414l2.293 2.293a.997.997 0 001.414 0 .999.999 0 000-1.414z'/%3e%3c/svg%3e");
+}
+
+.sanan-agile-priority .priority-highest {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23BC092E' d='M11.6 4.2l-4-3a.999.999 0 00-1.2 0l-4 3A1 1 0 002 5v7a1.001 1.001 0 001.6.8L7 10.25l3.4 2.55a.995.995 0 001.047.095c.339-.17.553-.516.553-.895V5a1 1 0 00-.4-.8z'/%3e%3c/svg%3e");
+}
+
+/* vùng chứa 2 dòng đặc biệt ở đầu card */
+.agile-board .issue-card .sanan-attrs {
+  display: grid;
+  gap: 7px;
+  margin: 0px 0 8px 0;
+}
+
+/* ===== Parent pill (Jira-like) ===== */
+.agile-board .issue-card {
+  padding: 12px !important;
+}
+
+.agile-board .issue-card .sanan-parent-pill {
+  display: inline-flex;
+  align-items: center;
+  max-width: fit-content;
+  text-decoration: none !important;
+  background: #e9d8ff; /* tím nhạt */
+  color: #3b2a7a; /* tím đậm */
+  border: 1px solid rgba(59, 42, 122, 0.18);
+  border-radius: 5px;
+  padding: 4px 10px;
+  font-weight: 700;
+  max-height: 18px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  box-shadow: inset 0 -1px rgba(255, 255, 255, 0.4);
+  /* margin-bottom: 7px; */
+}
+.agile-board .issue-card .sanan-parent-pill:hover {
+  filter: brightness(0.97);
+}
+.agile-board .issue-card .sanan-parent-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== Due date chip (Jira-like) ===== */
+.agile-board .issue-card .sanan-due-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* max-width:100%; */
+  max-width: fit-content;
+  max-height: 22px;
+  /* background:#eef2f6;              xám nhạt */
+  color: #111827;
+  border: 1px solid #d0d7de;
+  border-radius: 5px;
+  padding: 3px 10px;
+  /* font-weight:600; */
+  font-size: 13px;
+  line-height: 1;
+  /* margin-bottom: 8px; */
+}
+.agile-board .issue-card .sanan-due-chip .sanan-cal-ic {
+  opacity: 0.9;
+  display: inline-flex;
+}
+.agile-board .issue-card .sanan-due-chip .sanan-date-text {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* tránh bị các rule tracker/status cũ đổi màu link trong attributes */
+/* .agile-board .issue-card .sanan-attrs a {
+  color: inherit !important;
+} */
+
+.issue-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  /* margin-bottom: 7px; */
+}
+
+.issue-tags .issue-tag-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.issue-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  white-space: nowrap;
+}
+
+/* .sra-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  background: #eef2ff;
+  color: #3730a3;
+  border: 1px solid #c7d2fe;
+  white-space: nowrap;
+} */
+.sra-tag-more {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+/* .sra-label {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  cursor: default;
+} */
+.sra-label--ut {
+  background: #f1f2f4;
+  color: #172b4d;
+  border-color: #dfe1e6;
+}
+.sra-label--it {
+  background: #e9f2ff;
+  color: #0747a6;
+  border-color: #cde1ff;
+}
+.sra-label--st {
+  background: #e3fcef;
+  color: #006644;
+  border-color: #b3e5d3;
+}
+.sra-label--uat {
+  background: #fffae6;
+  color: #655400;
+  border-color: #f0e6a6;
+}
+.sra-label--production {
+  background: #ffebe6;
+  color: #bf2600;
+  border-color: #f5c0b8;
+}
+.sra-label--prod {
+  background: #ffebe6;
+  color: #bf2600;
+  border-color: #f5c0b8;
+}
+.sra-label:hover {
+  filter: brightness(0.97);
+}
+
+.sra-epic-label {
+  display: inline-block;
+  max-width: 180px; /* ⚙️ tuỳ bạn điều chỉnh */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+.issue-card div.checklist {
+  border-bottom: 1px solid #d5d5d5;
+  margin-bottom: 7px;
+  padding-bottom: 2px;
+}
+
+/* .agile-board .issue-card .sanan-attrs .optional-attribute .rel-relates a{
+  color: white !important
+} */

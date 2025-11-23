@@ -25,11 +25,9 @@
 
   function ensureSync(root) {
     const { header, body } = grabTables(root);
-    console.log("header body", header, body)
     if (!header || !body) return;
 
     const scroller = findScrollParentX(body);
-    console.log("scho", scroller)
 
     // Căn độ rộng header theo nội dung body
     const applyWidths = () => {

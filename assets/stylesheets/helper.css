@@ -1,0 +1,339 @@
+/* ===== Loading overlay (full-screen) ===== */
+.sa-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35); /* slate-900/35% */
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  z-index: 2000; /* cao hơn modal khác */
+}
+
+.sa-overlay__card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.25);
+  padding: 20px 24px;
+  min-width: 260px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sa-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb; /* blue-600 */
+  border-radius: 50%;
+  animation: sa-spin 0.8s linear infinite;
+}
+@keyframes sa-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sa-overlay__text {
+  font-weight: 600;
+  color: #111827;
+}
+
+/* ===== Alert (pretty error modal) ===== */
+.sa-alert {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(2px);
+  z-index: 2100; /* trên cả overlay loading */
+}
+
+.sa-alert__panel {
+  background: #fff;
+  width: min(560px, calc(100vw - 32px));
+  border-radius: 14px;
+  box-shadow: 0 20px 40px rgba(2, 6, 23, 0.35);
+  overflow: hidden;
+}
+
+.sa-alert__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: #fee2e2; /* red-100 */
+  border-bottom: 1px solid #fecaca; /* red-200 */
+}
+.sa-alert__title {
+  font-weight: 700;
+  color: #991b1b; /* red-800 */
+  margin: 0;
+  font-size: 15px;
+}
+.sa-alert__body {
+  padding: 16px;
+  color: #1f2937;
+  max-height: 50vh;
+  overflow: auto;
+}
+.sa-alert__body pre {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 8px 0 0;
+}
+.sa-alert__footer {
+  padding: 12px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.sa-btn {
+  appearance: none;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111827;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sa-btn:hover {
+  background: #f9fafb;
+}
+.sa-btn--primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+.sa-btn--primary:hover {
+  background: #1d4ed8;
+}
+
+/* Khi loading: thân trang tắt scroll và pointer */
+.sa-body-busy {
+  overflow: hidden !important;
+  pointer-events: none;
+}
+
+/* Global tooltip (append vào <body>) */
+.sa-tooltip {
+  position: fixed;
+  z-index: 999999; /* cao hơn modal */
+  background: rgba(17, 24, 39, 0.95);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 6px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 10px));
+  transition: opacity 0.12s ease;
+}
+.sa-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%;
+  border: 6px solid transparent;
+  border-top-color: rgba(17, 24, 39, 0.95);
+}
+.sa-tooltip.is-visible {
+  opacity: 1;
+}
+
+.sa-dialog {
+  max-width: 440px;
+}
+.sa-dialog .modal__body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.sa-dialog__icon {
+  font-size: 28px;
+  line-height: 1;
+  margin-top: 2px;
+}
+.sa-dialog__title {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: 16px;
+}
+.sa-dialog__desc {
+  margin: 0;
+  color: var(--ui-muted);
+}
+.sa-dialog__note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+}
+.sa-dialog__error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-size: 13px;
+}
+
+.sa-blocker {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: grid;
+  place-items: center;
+  z-index: 10001;
+}
+.sa-blocker[hidden] {
+  display: none;
+}
+.sa-spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  border-top-color: #2563eb;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ==== Confirm modal refinement ==== */
+.sa-dialog {
+  max-width: 420px;
+  border-radius: var(--ui-radius-lg);
+  overflow: hidden;
+}
+
+.sa-dialog .modal__header {
+  border-bottom: 1px solid var(--ui-border);
+  background: #f9fafb;
+  padding: 14px 18px;
+}
+
+.sa-dialog .modal__header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.sa-dialog .modal__body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 18px;
+  background: #fff;
+}
+
+.sa-dialog__icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  color: #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sa-dialog__text {
+  flex: 1;
+}
+
+.sa-dialog__title {
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.sa-dialog__note {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #92400e;
+  border: 1px solid #fdba74;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sa-dialog__error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ==== Footer buttons ==== */
+.sa-dialog .actions {
+  padding: 12px 18px;
+  border-top: 1px solid var(--ui-border);
+  background: #f9fafb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Fix nút Cancel hover bị mất màu */
+.sa-dialog .btn-ghost {
+  border: 1px solid var(--ui-border);
+  background: #fff;
+  color: #374151;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 7px 14px;
+  transition: all 0.15s ease;
+}
+
+.sa-dialog .btn-ghost:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+/* Confirm button: consistent */
+.sa-dialog .button-primary {
+  background: var(--ui-primary);
+  border: 1px solid var(--ui-primary);
+  color: #fff;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.sa-dialog .button-primary:hover {
+  filter: brightness(0.95);
+}
+
+/* Responsive fix for narrow screens */
+@media (max-width: 480px) {
+  .sa-dialog {
+    width: 92vw;
+  }
+}

@@ -31,10 +31,18 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :sp_fe_actual_version_cfid,
                   :sp_qa_actual_version_cfid,
                   :card_color_tracker_mode,
+                  :test_level_cfid,
                   { card_color_tracker_map: {} },
-                  befe_trackers: [],
-                  befe_statuses: [],
-                  
+                 
+                  {befe_trackers: []},
+                  {befe_statuses: []},   
+                  {release_status_filter_ids: []},
+                  :epic_tracker,
+                  {standard_tracker: []},
+                  {subtask_tracker: []},
+                  :release_add_child_issue_standard_tracker,
+                  :release_released_status_id,
+                  :release_close_status_id,
                 )
     SananAgile::ProjectSettings.save(@project.id, cfg)
     flash[:notice] = l(:notice_successful_update)

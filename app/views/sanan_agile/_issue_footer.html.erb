@@ -1,6 +1,6 @@
 <%# == Sanan Agile: BE/FE Done footer for Agile cards (custom box, map-based) == %>
 <% prj      = project %>
-<% cfg      = SananAgile::ProjectSettings.load(prj.id) %>
+<% cfg      = SananAgile::ProjectSettings.load(prj&.id) %>
 
 <% sp_be_id   = cfg['sp_be_cfid'].to_i %>
 <% sp_fe_id   = cfg['sp_fe_cfid'].to_i %>
@@ -37,7 +37,7 @@
       align-items:center;
       justify-content:flex-start;
       padding:7px 0 6px;
-      margin:4px 0 8px;
+      margin:4px 0 -10px;
       border-top:1px solid #ddd
     }
     .sanan-issue-card-footer .sag-befe-box{
@@ -160,7 +160,7 @@
 
             render(part);
             if (j.auto_moved) {
-               location.reload();
+              //  location.reload();
             }
           } else {
             render(part); // revert theo map
