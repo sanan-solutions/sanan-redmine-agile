@@ -11,8 +11,6 @@
 <% enabled = cfg['sanan_agile_enabled'] == '1' && (sp_be_id > 0 || sp_fe_id > 0) %>
 
 <% if enabled %>
-  <%= render partial: 'sanan_agile/agile_util' %>
-
   <%# Map: issue_id -> tracker_id %>
   <% tracker_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.tracker_id } %>
   <% status_map  = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.status_id  } %>

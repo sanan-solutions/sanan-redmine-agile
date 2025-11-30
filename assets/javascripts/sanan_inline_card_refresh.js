@@ -69,21 +69,6 @@
     }, 1200);
   }
 
-  async function fetchIssueJSON(id) {
-    return ''
-    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
-    const res = await fetch(`/issues/${id}.json`, {
-      method: 'GET',
-      credentials: 'same-origin', // bắt buộc để gửi cookie session
-      headers: {
-        'X-CSRF-Token': csrf,
-        'Accept': 'application/json'
-      }
-    });
-    if (!res.ok) throw new Error('issue json ' + res.status);
-    return res.json();
-  }
-
   async function fetchCardHTML(issueId, opts) {
     // endpoint của plugin để render lại card theo context
     const url = new URL('/agile/board', window.location.origin);
@@ -136,13 +121,9 @@
   // ---------- PUBLIC API ----------
   // opts: { projectId?, queryId?, scrollIntoView?: true/false, highlight?: true/false }
   async function SANAN_refreshIssueCard(issueId, opts) {
-    const [json, html] = await Promise.all([
-      fetchIssueJSON(issueId),
-      fetchCardHTML(issueId, opts || {})
-    ]);
-    const newHtml = fetchCardHTML(issueId, opts || {})
+    const newHtml = await fetchCardHTML(issueId, opts || {})
     // const statusId = json.issue.status.id;
-    placeCard(issueId, html, opts || {});
+    placeCard(issueId, newHtml, opts || {});
   }
 
   window.SANAN_refreshIssueCard = SANAN_refreshIssueCard;

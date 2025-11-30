@@ -1,16 +1,11 @@
 # frozen_string_literal: true
 require_dependency File.expand_path('lib/sanan_agile/issue_patch', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/version_picker', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/project_settings', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/projects_helper_patch.rb', __dir__)
-
-require_dependency File.expand_path('lib/sanan_agile/agile_data', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/hide_agile_sp_field_hook', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/hooks', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/card_color_hooks', __dir__)
-require_dependency File.expand_path('lib/sanan_agile/global_modal', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/issue_card_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/global_modal_hook', __dir__)
 
 Rails.application.config.to_prepare do
   require_dependency 'releases_controller'

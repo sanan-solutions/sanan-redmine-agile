@@ -8,8 +8,6 @@
 <% enabled = cfg['sanan_agile_enabled'] == '1' && trackers.present? && statuses.present? && cfid > 0 %>
 
 <% if enabled %>
-  <%= render partial: 'sanan_agile/agile_util' %>
-
   <% id_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.tracker_id } %>
   <% st_map = Array(issues).each_with_object({}) { |i,h| h[i.id] = i.status_id  } %>
 
@@ -141,7 +139,8 @@
     }
 
     function reconcile(card){
-      var iid = U.findIssueId(card); if(!iid) return;
+      var iid = U.findIssueId(card); 
+      if(!iid) return;
       var sidNow = U.statusIdFromDOM(card); if (sidNow != null) ISSUE_STATUS[iid] = sidNow;
 
       var tid = ISSUE_TRACKER[iid], sid = ISSUE_STATUS[iid];

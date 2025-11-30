@@ -1,56 +1,55 @@
-<script>
-(function(w,d){
+(function (w, d) {
   if (w.SananAgileUtil) return; // guard chống redefine
 
-  function $(sel, root){ return (root||document).querySelector(sel); }
-  function $all(s, r){ return Array.prototype.slice.call((r||d).querySelectorAll(s)); }
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $all(s, r) { return Array.prototype.slice.call((r || d).querySelectorAll(s)); }
 
-  function debounce(fn, ms){ var t; return function(){ if(t) clearTimeout(t); t = setTimeout(fn, ms); }; }
+  function debounce(fn, ms) { var t; return function () { if (t) clearTimeout(t); t = setTimeout(fn, ms); }; }
 
-  function toggleChecked(el, val){ 
-    el.checked = !!val; 
+  function toggleChecked(el, val) {
+    el.checked = !!val;
     if (el.checked) {
-      el.setAttribute('checked','checked'); 
+      el.setAttribute('checked', 'checked');
       return;
     }
-    
-    el.removeAttribute('checked'); 
+
+    el.removeAttribute('checked');
   }
 
   // Tìm issue_id (support cả div card & tr.issue)
-  function findIssueId(node){
-    if (node.matches && node.matches('tr.issue')){
+  function findIssueId(node) {
+    if (node.matches && node.matches('tr.issue')) {
       var id = node.getAttribute('data-id'); if (id) return id;
-      var m = (node.id||'').match(/issue[-_](\d+)/i); if (m) return m[1];
+      var m = (node.id || '').match(/issue[-_](\d+)/i); if (m) return m[1];
     }
     return node.getAttribute('data-issue-id')
-        || node.getAttribute('data-id')
-        || (function(){
-             var a = node.querySelector('a[href*="/issues/"]');
-             if (!a) return null;
-             var m = a.getAttribute('href').match(/\/issues\/(\d+)/);
-             return m ? m[1] : null;
-           })()
-        || null;
+      || node.getAttribute('data-id')
+      || (function () {
+        var a = node.querySelector('a[href*="/issues/"]');
+        if (!a) return null;
+        var m = a.getAttribute('href').match(/\/issues\/(\d+)/);
+        return m ? m[1] : null;
+      })()
+      || null;
   }
 
   // Container để gắn header/footer
-  function pickHeaderContainer(node){
+  function pickHeaderContainer(node) {
     return node; // header đặt trên cùng của card (div case)
   }
-  function pickFooterContainer(node){
-    if (node.matches && node.matches('tr.issue')){
+  function pickFooterContainer(node) {
+    if (node.matches && node.matches('tr.issue')) {
       return node.querySelector('td.name, td.subject') || node.querySelector('td') || node;
     }
     return node;
   }
 
   // Lấy status_id từ cột (nếu board dạng table)
-  function statusIdFromDOM(card){
+  function statusIdFromDOM(card) {
     var td = card.closest('td');
     if (td) {
       var idx = td.cellIndex;
-      var th = td.closest('table').querySelector('thead th:nth-child(' + (idx+1) + ')');
+      var th = td.closest('table').querySelector('thead th:nth-child(' + (idx + 1) + ')');
       if (th && th.getAttribute('data-column-id')) {
         return parseInt(th.getAttribute('data-column-id'), 10);
       }
@@ -62,22 +61,22 @@
   var components = [];
   let observer = null;
 
-  function register(component){ components.push(component); }
+  function register(component) { components.push(component); }
 
-  function scan(){
+  function scan() {
     var nodes = []
       .concat($all('.agile__issue, .agile-card, .issue-card, .card'))
-      // .concat($all('table.list.issues-board tr.issue'));
+    // .concat($all('table.list.issues-board tr.issue'));
 
-    for (var i=0;i<components.length;i++){
+    for (var i = 0; i < components.length; i++) {
       var rec = components[i];
-      nodes.forEach(function(n){ try{ rec(n); }catch(e){ /* no-op */ }});
+      nodes.forEach(function (n) { try { rec(n); } catch (e) { /* no-op */ } });
     }
   }
 
   var scanDebounced = debounce(scan, 400);
 
-  function boot(usingObserver){
+  function boot(usingObserver) {
     if (d.readyState === 'loading') {
       d.addEventListener('DOMContentLoaded', scan);
     } else {
@@ -85,28 +84,36 @@
     }
 
     try {
-      if(observer || !usingObserver) {
+      if (observer || !usingObserver) {
         return
       }
 
-      observer = new MutationObserver(function(muts){
-        for (var i=0;i<muts.length;i++){
+      var target = d.querySelector('#content') || d.documentElement;
+      if (!target) return;
+
+      observer = new MutationObserver(function (muts) {
+        for (var i = 0; i < muts.length; i++) {
           var m = muts[i];
-          if ((m.addedNodes && m.addedNodes.length) || (m.removedNodes && m.removedNodes.length)) { scanDebounced(); return; }
+          if ((m.addedNodes && m.addedNodes.length) || (m.removedNodes && m.removedNodes.length)) {
+            scanDebounced();
+            return;
+          }
         }
-      }).observe(d.querySelector('#content') || d.documentElement, { childList:true, subtree:true });
-    }catch(_){}
+      });
+
+      observer.observe(target, { childList: true, subtree: true });
+    } catch (_) { }
   }
 
-   /////////
-  function isBR(n){ return n && n.nodeType === 1 && n.tagName === 'BR'; }
-  function isWsText(n){ return n && n.nodeType === 3 && !/\S/.test(n.nodeValue || ''); }
+  /////////
+  function isBR(n) { return n && n.nodeType === 1 && n.tagName === 'BR'; }
+  function isWsText(n) { return n && n.nodeType === 3 && !/\S/.test(n.nodeValue || ''); }
 
-  function tidyAttributesBlock(p){
-    if(!p) return;
+  function tidyAttributesBlock(p) {
+    if (!p) return;
     // 1) bỏ text trắng
     var cur = p.firstChild, next;
-    while(cur){
+    while (cur) {
       next = cur.nextSibling;
       if (isWsText(cur)) p.removeChild(cur);
       cur = next;
@@ -114,9 +121,9 @@
     // 2) gộp các <br> liên tiếp
     var lastWasBR = false;
     cur = p.firstChild;
-    while(cur){
+    while (cur) {
       next = cur.nextSibling;
-      if (isBR(cur)){
+      if (isBR(cur)) {
         if (lastWasBR) { p.removeChild(cur); }
         lastWasBR = true;
       } else {
@@ -126,34 +133,34 @@
     }
     // 3) bỏ <br> đầu/cuối
     while (isBR(p.firstChild)) p.removeChild(p.firstChild);
-    while (isBR(p.lastChild))  p.removeChild(p.lastChild);
+    while (isBR(p.lastChild)) p.removeChild(p.lastChild);
   }
 
-  function findAttributesBlock(card){
+  function findAttributesBlock(card) {
     return card.querySelector('p.attributes');
   }
 
-  function norm(s){ return String(s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
-  function findAttributeLabel(card, attributeName){
+  function norm(s) { return String(s || '').trim().replace(/\s+/g, ' ').toLowerCase(); }
+  function findAttributeLabel(card, attributeName) {
     var p = findAttributesBlock(card);
-    if(!p) return null;
+    if (!p) return null;
     var bs = p.querySelectorAll('b');
-    for (var i=0;i<bs.length;i++){
+    for (var i = 0; i < bs.length; i++) {
       if (norm(bs[i].textContent) === norm(attributeName)) return bs[i];
     }
     return null;
   }
 
   // XÓA CẢ DÒNG (label + value) & dọn <br> thừa
-  function removeAttributeLine(card, attributeName){
+  function removeAttributeLine(card, attributeName) {
     var p = findAttributesBlock(card);
-    if(!p) return;
+    if (!p) return;
     var label = findAttributeLabel(card, attributeName);
-    if(!label) return;
+    if (!label) return;
 
     // xoá label + các node theo sau cho tới <b> kế tiếp
     var n = label, next;
-    while(n){
+    while (n) {
       next = n.nextSibling;
       var stop = (n !== label && n.nodeType === 1 && n.tagName === 'B');
       if (stop) break;
@@ -163,9 +170,9 @@
     // xoá <br> ngay trước label (nếu có)
     var prev = label.previousSibling;
     while (isWsText(prev)) {
-       var _t = prev.previousSibling; 
-       p.removeChild(prev); 
-       prev = _t; 
+      var _t = prev.previousSibling;
+      p.removeChild(prev);
+      prev = _t;
     }
 
     if (isBR(prev)) {
@@ -176,9 +183,9 @@
   }
 
   // THÊM LẠI DÒNG (label + “: ” + <a>) – không sinh thêm dòng trống
-  function addAttributeLine(card, value, href, attributeName){
+  function addAttributeLine(card, value, href, attributeName) {
     var p = findAttributesBlock(card);
-    if(!p) return;
+    if (!p) return;
 
     // clear dòng cũ (nếu có)
     removeAttributeLine(card, attributeName);
@@ -215,4 +222,3 @@
     addAttributeLine,
   };
 })(window, document);
-</script>

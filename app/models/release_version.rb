@@ -63,6 +63,10 @@ class ReleaseVersion < ActiveRecord::Base
     IssueStatus.where(is_closed: false).select(:id)  # subquery dùng trong WHERE
   end
 
+  def close_status_ids_rel
+    IssueStatus.where(is_closed: true).select(:id)  # subquery dùng trong WHERE
+  end
+
   # ---------- VALIDATION: nhanh & ít query ----------
   def validate_ready_to_release
     cfg             = SananAgile::ProjectSettings.load(project_id)
@@ -70,7 +74,7 @@ class ReleaseVersion < ActiveRecord::Base
     subtask_ids     = Array(cfg['subtask_tracker']).map(&:to_i).reject(&:zero?)
     required_status_id = cfg['release_released_status_id'].to_i
     released_status_id   = cfg['release_close_status_id'].to_i      # status sẽ set sau khi release
-    issue_status_id_valid = [required_status_id, released_status_id]
+    issue_status_id_valid = ([required_status_id, released_status_id]+ close_status_ids_rel.pluck(:id)).uniq
 
     # Thiếu cấu hình bắt buộc
     if required_status_id <= 0 || released_status_id <= 0 || standard_ids.blank?

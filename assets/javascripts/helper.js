@@ -122,7 +122,6 @@ function saAlertError(title = 'Update failed', message = '', details = null) {
 })();
 
 // helper.js
-
 (function (w, d) {
   w.SA = w.SA || {};
 

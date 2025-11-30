@@ -1,0 +1,10 @@
+/* Ẩn trực tiếp input + cả block p bao quanh (fallback khi JS chưa chạy) */
+input[name='issue[agile_data_attributes][story_points]'] {
+  display: none !important;
+}
+#issue_agile_data_attributes_story_points {
+  display: none !important;
+}
+label[for='issue[agile_data_attributes]_story_points'] {
+  display: none !important;
+}

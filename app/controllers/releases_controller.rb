@@ -76,6 +76,10 @@ class ReleasesController < ApplicationController
                             .visible(User.current)
                             .where(status_id: all_issue_status_ids)
                             .includes(:status, :tracker, :assigned_to, :priority, :parent)
+                            .left_joins(:parent) # để có parent_id nếu cần
+                            .order(priority_id: :desc)
+                            .order(Arel.sql("COALESCE(issues.parent_id, issues.id) DESC"))
+                            .order(id: :desc)
 
     parent_ids = @issues.map(&:id)
 
@@ -247,6 +251,7 @@ class ReleasesController < ApplicationController
         key:         "##{i.id}",
         subject:     i.subject,
         epic:         epic_label,
+        description: i.description,
         status:      i.status&.name,
         tracker:     i.tracker&.name,
         priority:    i.priority&.name,

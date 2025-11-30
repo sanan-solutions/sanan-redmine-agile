@@ -1,5 +1,5 @@
 // plugin_assets/sanan_redmine_agile/javascripts/agile_release_badges.js
-(function () {
+(function (U) {
   if (window.__saReleaseBadgesLoaded) return; // tránh nạp 2 lần
   window.__saReleaseBadgesLoaded = true;
 
@@ -55,38 +55,58 @@
     return res.json(); // [{issue_id, releases:[{id,name}, ...]}, ...]
   }
 
+  const reconcile = (mapIssueWithRelease, ensureExtraWrap) => (card) => {
+    // Nếu chưa có map thì thôi (chưa fetch xong)
+    if (!mapIssueWithRelease || mapIssueWithRelease.size === 0) return;
 
-  // Render badge cho card
-  function renderBadgesOnCards() {
-    for (const { el, id } of collectIssueEls()) {
-      const entry = mapIssueWithRelease.get(id) ?? mapIssueWithRelease.get(parseInt(el.getAttribute('data-parent-id'), 10))
+    const rawId = U.findIssueId(card);
+    if (!rawId) return;
 
-      // gắn data-release-ids để filter sau này
-      el.dataset.releaseIds = entry ? entry.releases.map(r => r.id).join(',') : '';
-      el.dataset.releaseNames = entry ? entry.releases.map(r => r.name).join('||') : '';
+    const id = parseInt(rawId, 10);
+    if (isNaN(id)) return;
 
-      const host = ensureExtraWrap(el);
+    const parentId = parseInt(card.getAttribute('data-parent-id'), 10);
+    const entry = mapIssueWithRelease.get(id) || (parentId ? mapIssueWithRelease.get(parentId) : null);
 
-      // xóa cũ
-      let wrap = host.querySelector('.sa-release-badges-wrap');
+    const newReleaseIds = entry ? entry.releases.map(r => r.id).join(',') : '';
+    const newReleaseNames = entry ? entry.releases.map(r => r.name).join('||') : '';
+
+    // Nếu không đổi gì so với trước thì không động vào DOM (idempotent)
+    if (card.dataset.releaseIds === newReleaseIds && card.dataset.releaseNames === newReleaseNames) {
+      return;
+    }
+
+    card.dataset.releaseIds = newReleaseIds;
+    card.dataset.releaseNames = newReleaseNames;
+
+    const host = ensureExtraWrap(card);
+    let wrap = host.querySelector('.sa-release-badges-wrap');
+
+    // Nếu không có release nào → xoá wrap nếu có rồi thôi
+    if (!entry || !entry.releases || entry.releases.length === 0) {
       if (wrap) wrap.remove();
+      return;
+    }
 
+    if (!wrap) {
       wrap = document.createElement('div');
       wrap.className = 'sa-release-badges-wrap';
-
-      if (entry && entry.releases.length) {
-        entry.releases.forEach(r => {
-          const b = document.createElement('span');
-          b.className = 'sa-release-badge';
-          b.dataset.tooltip = `In releases: ${escapeHtml(r.name)}`
-          b.title = r.name;
-          b.innerHTML = `<span class="sa-dot"></span><span class="sa-txt">${escapeHtml(r.name)}</span>`;
-          wrap.appendChild(b);
-        });
-      }
-      // Nếu không có release → có thể bỏ qua; hoặc hiển thị nhạt “No release”
       host.appendChild(wrap);
+    } else {
+      // clear nội dung cũ
+      while (wrap.firstChild) {
+        wrap.removeChild(wrap.firstChild);
+      }
     }
+
+    entry.releases.forEach(r => {
+      const b = document.createElement('span');
+      b.className = 'sa-release-badge';
+      b.dataset.tooltip = `In releases: ${escapeHtml(r.name)}`;
+      b.title = r.name;
+      b.innerHTML = `<span class="sa-dot"></span><span class="sa-txt">${escapeHtml(r.name)}</span>`;
+      wrap.appendChild(b);
+    });
   }
 
   function escapeHtml(s) { return String(s).replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
@@ -147,22 +167,6 @@
     });
   }
 
-  // Quan sát thay đổi board (kéo/thả, load cột…) để re-render
-  const observer = new MutationObserver(debounce(loadAndRender, 300));
-  function startObserve() {
-    const root = document.querySelector('.agile-board') || document.getElementById('content');
-    if (root) observer.observe(root, { childList: true, subtree: true });
-  }
-
-  async function loadAndRender() {
-    renderBadgesOnCards();
-    applyFilter();
-  }
-
-  function debounce(fn, ms) {
-    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
-  }
-
   // Kick
   document.addEventListener('DOMContentLoaded', async () => {
     dataRelease = await fetchUnreleasedMap();
@@ -178,7 +182,7 @@
 
     ensureFilterBar(listAllReleases);
 
-    loadAndRender();
-    startObserve(); // theo dõi kéo thả / load thêm cột để cập nhật badge/filter
+    U.register(reconcile(mapIssueWithRelease, ensureExtraWrap));
+    U.boot();
   });
-})();
+})(window.SananAgileUtil);

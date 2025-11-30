@@ -1,4 +1,4 @@
-class SananAgile::GlobalModal < Redmine::Hook::ViewListener
+class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(context = {})
     # cfg = get_project_setting(context)
     # return '' unless %w(1 true yes on).include?(cfg['sanan_agile_enabled'].to_s.strip.downcase)
