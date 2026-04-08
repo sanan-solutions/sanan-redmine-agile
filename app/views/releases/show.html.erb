@@ -75,14 +75,14 @@
         <table id="wi-table" class="wi-table <%= 'no-manage' unless can_manage %>">
           <thead>
             <tr>
-              <th class="col-key">Key</th>
-              <th class="col-tracker">Tracker</th>   <!-- NEW -->
-              <th class="col-summary">Summary</th>
-              <th class="col-epic">Epic</th> 
-              <th class="col-from-sprint">From Sprint</th> 
-              <th class="col-priority">Priority</th>  <!-- NEW -->
-              <th class="col-status">Status</th>
-              <th class="col-assignee">Assignee</th>
+              <th class="col-key sortable" data-sort-key="id">Key</th>
+              <th class="col-tracker sortable" data-sort-key="tracker">Tracker</th>   <!-- NEW -->
+              <th class="col-summary sortable" data-sort-key="summary">Summary</th>
+              <th class="col-epic sortable" data-sort-key="epic">Epic</th> 
+              <th class="col-from-sprint sortable" data-sort-key="fromSprint">From Sprint</th> 
+              <th class="col-priority sortable" data-sort-key="priorityPos">Priority</th>  <!-- NEW -->
+              <th class="col-status sortable" data-sort-key="status">Status</th>
+              <th class="col-assignee sortable" data-sort-key="assignee">Assignee</th>
               <th class="col-action"></th>
             </tr>
           </thead>
@@ -248,7 +248,7 @@
         <div class="side-section">
           <div class="kv">
             <span>Status</span>
-            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>" <%= !can_action && "disabled" %>>
+            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>" <%= !can_manage && "disabled" %>>
               <option value="unreleased" <%= 'selected' if @release.state=='unreleased' %>>Unreleased</option>
               <option value="released"   <%= 'selected' if @release.state=='released' %>>Released</option>
             </select>

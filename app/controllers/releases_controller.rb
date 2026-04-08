@@ -6,10 +6,10 @@ class ReleasesController < ApplicationController
   before_action :ensure_sanan_agile_enabled
   before_action :authorize
   before_action :find_release, only: [:show, :attach_issues, :detach_item, :reorder,
-                                      :update_issue_status, :change_state, :issue_panel, :edit, :update]
+                                      :update_issue_status, :change_state, :issue_panel, :edit, :update, :destroy]
   before_action :authorize_view,  only: [:index, :show, :issues_search, :issue_panel]
   before_action :authorize_manage, only: [:attach_issues, :detach_item, :reorder,
-                                          :update_issue_status, :change_state, :create, :update, :edit, :new]
+                                          :update_issue_status, :change_state, :create, :update, :edit, :new, :destroy]
   # GET /projects/:project_id/releases
   def index
     scope = ::ReleaseVersion.where(project_id: @project.id)
@@ -26,7 +26,9 @@ class ReleasesController < ApplicationController
       scope = scope.where('LOWER(name) LIKE ?', "%#{params[:q].to_s.downcase}%")
     end
 
-    scope = scope.order(created_at: :desc)
+    @releases_sort_column = releases_sort_column_param
+    @releases_sort_direction = releases_sort_direction_param
+    scope = apply_releases_sort(scope)
 
     @per_page       = 20
     @releases_count = scope.count
@@ -100,7 +102,7 @@ class ReleasesController < ApplicationController
 
     # settings = SananAgile::ProjectSettings.load(@project.id)
 
-      # ===== ONLY PARENTS =====
+    # ===== ONLY PARENTS =====
     dev_done_cfid = @settings['development_done_cfid'].to_i
     @from_sprint_by_issue = {}
     if dev_done_cfid.positive? && parent_ids.any?
@@ -148,6 +150,16 @@ class ReleasesController < ApplicationController
     else
       render json: { ok: false, errors: @release.errors.full_messages }, status: 422
     end
+  end
+
+  def destroy
+    if @release.destroy
+      flash[:notice] = l(:notice_successful_delete)
+    else
+      flash[:error] = @release.errors.full_messages.join(', ').presence || l(:notice_unsuccessful_delete)
+    end
+    redirect_opts = { q: params[:q], state: params[:state], sort: params[:sort], direction: params[:direction], page: params[:page] }
+    redirect_to project_releases_path(@project, redirect_opts.reject { |_, v| v.blank? })
   end
 
   # --- data source cho picker
@@ -328,6 +340,54 @@ class ReleasesController < ApplicationController
   end
 
   private
+
+  RELEASE_SORTABLE = %w[name state progress start_on release_on description created_at].freeze
+
+  def releases_sort_column_param
+    col = params[:sort].to_s
+    RELEASE_SORTABLE.include?(col) ? col : 'created_at'
+  end
+
+  def releases_sort_direction_param
+    dir = params[:direction].to_s.downcase
+    return dir if %w[asc desc].include?(dir)
+
+    col = releases_sort_column_param
+    if col == 'created_at' && params[:sort].blank?
+      'desc'
+    else
+      %w[created_at start_on release_on progress].include?(col) ? 'desc' : 'asc'
+    end
+  end
+
+  def apply_releases_sort(scope)
+    col = @releases_sort_column
+    dir = @releases_sort_direction == 'asc' ? 'ASC' : 'DESC'
+    case col
+    when 'name'
+      scope.reorder(Arel.sql("release_versions.name #{dir}"))
+    when 'state'
+      scope.reorder(Arel.sql("release_versions.state #{dir}"))
+    when 'progress'
+      scope.reorder(Arel.sql(<<~SQL.squish))
+        (SELECT COALESCE(AVG(i.done_ratio), 0)
+         FROM release_items ri
+         INNER JOIN issues i ON i.id = ri.issue_id
+         WHERE ri.release_version_id = release_versions.id) #{dir}
+      SQL
+    when 'start_on'
+      scope.reorder(Arel.sql("release_versions.start_on #{dir}"))
+    when 'release_on'
+      scope.reorder(Arel.sql("release_versions.release_on #{dir}"))
+    when 'description'
+      scope.reorder(Arel.sql("release_versions.description #{dir}"))
+    when 'created_at'
+      scope.reorder(Arel.sql("release_versions.created_at #{dir}"))
+    else
+      scope.reorder(Arel.sql('release_versions.created_at DESC'))
+    end
+  end
+
   def find_project ; @project = Project.find(params[:project_id]) ; end
   def find_release ; @release = ReleaseVersion.find(params[:id]) ; end
   def find_project_settings ; @settings = SananAgile::ProjectSettings.load(@project&.id) || {}; end

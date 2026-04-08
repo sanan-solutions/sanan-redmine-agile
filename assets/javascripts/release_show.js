@@ -254,6 +254,80 @@
   allFilterInput.forEach(sel => sel && sel.addEventListener('change', applyFilters));
 
   applyFilters(); // lần đầu
+
+  // --- SORTING (parents only, children follow) ---
+  const sortHeaders = table.querySelectorAll('thead th[data-sort-key]');
+  let currentSortKey = null;
+  let currentSortAsc = true;
+
+  const sortMap = {
+    id: { prop: 'sortId', type: 'number' },
+    tracker: { prop: 'sortTracker', type: 'string' },
+    summary: { prop: 'sortSummary', type: 'string' },
+    epic: { prop: 'epic', type: 'string' },
+    fromSprint: { prop: 'fromSprint', type: 'string' },
+    priorityPos: { prop: 'sortPriorityPos', type: 'number' },
+    status: { prop: 'sortStatus', type: 'string' },
+    assignee: { prop: 'sortAssignee', type: 'string' }
+  };
+
+  sortHeaders.forEach(th => {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', () => {
+      const key = th.dataset.sortKey;
+      if (currentSortKey === key) {
+        currentSortAsc = !currentSortAsc;
+      } else {
+        currentSortKey = key;
+        currentSortAsc = true;
+      }
+
+      // Update UI caret
+      sortHeaders.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        const oldCaret = h.querySelector('.sort-caret');
+        if (oldCaret) oldCaret.remove();
+      });
+      th.classList.add(currentSortAsc ? 'sort-asc' : 'sort-desc');
+      th.insertAdjacentHTML('beforeend', `<span class="sort-caret">${currentSortAsc ? ' &uarr;' : ' &darr;'}</span>`);
+
+      sortRows();
+    });
+  });
+
+  function sortRows() {
+    if (!currentSortKey) return;
+
+    const parentRowsArray = Array.from(table.querySelectorAll('tr.wi-row-parent'));
+    const config = sortMap[currentSortKey];
+    if (!config) return;
+
+    parentRowsArray.sort((a, b) => {
+      let valA = a.dataset[config.prop] || '';
+      let valB = b.dataset[config.prop] || '';
+
+      if (config.type === 'number') {
+        valA = parseFloat(valA) || 0;
+        valB = parseFloat(valB) || 0;
+        return currentSortAsc ? valA - valB : valB - valA;
+      } else {
+        valA = String(valA).toLowerCase();
+        valB = String(valB).toLowerCase();
+        if (valA < valB) return currentSortAsc ? -1 : 1;
+        if (valA > valB) return currentSortAsc ? 1 : -1;
+        return 0;
+      }
+    });
+
+    // Reattach elements to DOM
+    parentRowsArray.forEach(p => {
+      tbody.appendChild(p);
+      const pid = p.dataset.id;
+      // Find children of this parent and append them right after the parent
+      const children = Array.from(table.querySelectorAll(`tr.wi-row-child[data-parent-id="${pid}"]`));
+      children.forEach(ch => tbody.appendChild(ch));
+    });
+  }
 })();
 
 ////////////////////////////////////// FOR PICKER MODAL /////////////////////////////////////////

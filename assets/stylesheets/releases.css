@@ -79,6 +79,36 @@
 .releases-table tbody tr:hover {
   background: #fcfcff;
 }
+.releases-table thead th a.rel-sort {
+  color: inherit;
+  text-decoration: none;
+}
+.releases-table thead th a.rel-sort:hover {
+  text-decoration: underline;
+  color: var(--ui-primary);
+}
+.releases-table__actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+.rel-delete-form {
+  display: inline;
+  margin: 0;
+}
+.rel-delete-btn {
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid #fecaca;
+  background: #fff;
+  color: var(--ui-danger);
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.rel-delete-btn:hover {
+  background: #fef2f2;
+}
 .desc-ellipsis {
   max-width: 520px;
   white-space: nowrap;

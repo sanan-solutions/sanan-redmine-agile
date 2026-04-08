@@ -15,9 +15,19 @@
     <% end %>
   </div>
 
-  <table class="releases-table">
+  <table class="releases-table <%= 'releases-table--manage' if can_manage %>">
     <thead>
-      <tr><th>Version</th><th>Status</th><th>Progress</th><th>Start</th><th>Release</th><th>Description</th></tr>
+      <tr>
+        <th class="<%= release_sort_th_class('name') %>"><%= release_sort_link 'Version', 'name', @project %></th>
+        <th class="<%= release_sort_th_class('state') %>"><%= release_sort_link 'Status', 'state', @project %></th>
+        <th class="<%= release_sort_th_class('progress') %>"><%= release_sort_link 'Progress', 'progress', @project %></th>
+        <th class="<%= release_sort_th_class('start_on') %>"><%= release_sort_link 'Start', 'start_on', @project %></th>
+        <th class="<%= release_sort_th_class('release_on') %>"><%= release_sort_link 'Release', 'release_on', @project %></th>
+        <th class="<%= release_sort_th_class('description') %>"><%= release_sort_link 'Description', 'description', @project %></th>
+        <% if can_manage %>
+          <th class="releases-table__actions"><%= l(:button_actions) %></th>
+        <% end %>
+      </tr>
     </thead>
     <tbody>
       <% @releases.each do |r| %>
@@ -32,6 +42,18 @@
           <td><%= r.start_on || '-' %></td>
           <td><%= r.release_on || '-' %></td>
           <td class="desc-ellipsis"><%= h r.description.to_s.truncate(80) %></td>
+          <% if can_manage %>
+            <td class="releases-table__actions">
+              <%= button_to project_release_path(@project, r, q: params[:q], state: params[:state], sort: params[:sort], direction: params[:direction]),
+                  method: :delete,
+                  class: 'wi-remove',
+                  title: l(:button_delete),
+                  form: { class: 'rel-delete-form' },
+                  data: { confirm: 'Bạn có chắc muốn xóa phiên bản release này? Các issue sẽ được gỡ khỏi release (không xóa issue).' } do %>
+                ×
+              <% end %>
+            </td>
+          <% end %>
         </tr>
       <% end %>
     </tbody>

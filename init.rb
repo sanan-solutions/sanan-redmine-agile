@@ -33,7 +33,7 @@ Redmine::Plugin.register :sanan_redmine_agile do
     # Quyền thao tác quản trị: tạo, gắn/ tháo issues, đổi trạng thái, reorder, quick status
     permission :manage_releases,
                { releases: [:new, :create, :attach_issues, :detach_item,
-                            :reorder, :update_issue_status, :change_state, :update,:edit] }
+                            :reorder, :update_issue_status, :change_state, :update, :edit, :destroy] }
   end
 
     # === Menu ở Project ===

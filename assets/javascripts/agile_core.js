@@ -72,6 +72,68 @@
       var rec = components[i];
       nodes.forEach(function (n) { try { rec(n); } catch (e) { /* no-op */ } });
     }
+
+    try {
+      sortAgileBoardColumnsByPriority();
+    } catch (e) {}
+  }
+
+  function sortAgileBoardColumnsByPriority() {
+    var pMap = {
+      'priority-highest': 5,
+      'priority-high2': 4,
+      'priority-high3': 3,
+      'priority-default': 2,
+      'priority-lowest': 1
+    };
+
+    var columns = d.querySelectorAll('table.issues-board tbody tr td');
+    if (!columns || columns.length === 0) return;
+
+    columns.forEach(function(col) {
+      // Find all issue cards directly inside this column (or inside a list container if applicable)
+      // Usually redmine_agile places them right inside `td` or a `ul`/`div` container.
+      // We will select the immediate parent of issue cards and sort its children.
+      var firstCard = col.querySelector('.issue-card');
+      if (!firstCard) return;
+
+      var container = firstCard.parentNode;
+      var cards = Array.prototype.slice.call(container.querySelectorAll('.issue-card'));
+      if (cards.length < 2) return;
+
+      var currentOrder = cards.map(function(c) { return c.getAttribute('data-id'); }).join(',');
+
+      // Map format with index for stable sorting
+      var mapped = cards.map(function(el, i) {
+        var w = 0;
+        var pNode = el.querySelector('.priority');
+        if (pNode) {
+          var cls = pNode.className.split(' ');
+          for(var j = 0; j < cls.length; j++) {
+            if(pMap[cls[j]] !== undefined) {
+              w = pMap[cls[j]];
+              break;
+            }
+          }
+        }
+        return { el: el, index: i, weight: w };
+      });
+
+      mapped.sort(function(a, b) {
+        if (a.weight !== b.weight) {
+          return b.weight - a.weight; // Descending
+        }
+        return a.index - b.index; // Stable sort
+      });
+
+      var newOrder = mapped.map(function(item) { return item.el.getAttribute('data-id'); }).join(',');
+
+      if (currentOrder !== newOrder) {
+        mapped.forEach(function(item) {
+          container.appendChild(item.el);
+        });
+      }
+    });
   }
 
   var scanDebounced = debounce(scan, 400);
