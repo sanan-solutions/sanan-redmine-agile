@@ -177,8 +177,39 @@
       </p>
 
       <hr/>
+      <h4>Version CF — SP Commit (snapshot khi đóng sprint)</h4>
       <p>
-        <label for="settings_sp_total_version_cfid">SP Total (Version CF)</label><br>
+        <label>SP Commit (Version CF)</label><br>
+        <%= select_tag 'settings[sp_commit_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_commit_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+      <p>
+        <label>SP BE Commit (Version CF)</label><br>
+        <%= select_tag 'settings[sp_be_commit_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_be_commit_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+      <p>
+        <label>SP FE Commit (Version CF)</label><br>
+        <%= select_tag 'settings[sp_fe_commit_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_fe_commit_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+      <p>
+        <label>SP QA Commit (Version CF)</label><br>
+        <%= select_tag 'settings[sp_qa_commit_version_cfid]',
+            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
+                              cfg['sp_qa_commit_version_cfid']),
+            include_blank: false, class: 'select' %>
+      </p>
+
+      <h4>Version CF — SP Actual (snapshot khi đóng sprint)</h4>
+      <p>
+        <label for="settings_sp_total_version_cfid">SP Actual (Version CF)</label><br>
         <%= select_tag 'settings[sp_actual_version_cfid]',
             options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
                               cfg['sp_actual_version_cfid']),
@@ -186,7 +217,7 @@
       </p>
 
       <p>
-        <label for="settings_sp_be_total_version_cfid">SP BE Total (Version CF)</label><br>
+        <label for="settings_sp_be_total_version_cfid">SP BE Actual (Version CF)</label><br>
         <%= select_tag 'settings[sp_be_actual_version_cfid]',
             options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
                               cfg['sp_be_actual_version_cfid']),
@@ -194,7 +225,7 @@
       </p>
 
       <p>
-        <label for="settings_sp_fe_total_version_cfid">SP FE Total (Version CF)</label><br>
+        <label for="settings_sp_fe_total_version_cfid">SP FE Actual (Version CF)</label><br>
         <%= select_tag 'settings[sp_fe_actual_version_cfid]',
             options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
                               cfg['sp_fe_actual_version_cfid']),
@@ -202,7 +233,7 @@
       </p>
 
       <p>
-        <label for="settings_sp_test_total_version_cfid">SP Test Total (Version CF)</label><br>
+        <label for="settings_sp_test_total_version_cfid">SP QA Actual (Version CF)</label><br>
         <%= select_tag 'settings[sp_qa_actual_version_cfid]',
             options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
                               cfg['sp_qa_actual_version_cfid']),
@@ -234,6 +265,14 @@
           <%= select_tag 'settings[done_fe_cfid]',
                 options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
                               cfg['done_fe_cfid']),
+                include_blank: true %>
+        </p>
+
+        <p>
+          <label>Done QA In Sprint (CF)</label>
+          <%= select_tag 'settings[done_qa_cfid]',
+                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
+                              cfg['done_qa_cfid']),
                 include_blank: true %>
         </p>
 

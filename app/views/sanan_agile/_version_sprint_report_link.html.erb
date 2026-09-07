@@ -1,0 +1,10 @@
+<%
+  cfg = SananAgile::ProjectSettings.load(project.id)
+  show_link = cfg['sanan_agile_enabled'].to_s == '1' &&
+              User.current.allowed_to?(:view_sprint_reports, project)
+%>
+<% if show_link %>
+  <%= link_to l(:label_sprint_report),
+              project_sprint_report_path(project, version),
+              class: 'icon icon-stats' %>
+<% end %>

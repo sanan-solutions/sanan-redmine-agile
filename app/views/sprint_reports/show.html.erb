@@ -1,0 +1,195 @@
+<% html_title "#{l(:label_sprint_report)}: #{@version.name}" %>
+<%= stylesheet_link_tag 'sprint_report', plugin: 'sanan_redmine_agile' %>
+<%= javascript_include_tag 'chart.umd.min', plugin: 'sanan_redmine_agile' %>
+<%= javascript_include_tag 'sprint_report_charts', plugin: 'sanan_redmine_agile' %>
+
+<div class="sanan-sprint-report">
+  <div class="contextual">
+    <%= link_to l(:label_version), version_path(@version), class: 'icon icon-package' %>
+  </div>
+
+  <h2><%= l(:label_sprint_report) %>: <%= h @version.name %></h2>
+
+  <div class="sprint-report-meta box">
+    <p>
+      <span class="badge badge-<%= @version.status %>"><%= l("version_status_#{@version.status}") rescue @version.status %></span>
+      <% dates = sprint_report_dates(@version) %>
+      <% if dates.present? %>
+        <span class="sprint-report-dates"><%= dates %></span>
+      <% end %>
+      <% if @report.from_snapshot %>
+        <span class="info"><%= l(:label_sprint_report_from_snapshot) %></span>
+      <% else %>
+        <span class="info"><%= l(:label_sprint_report_live) %></span>
+      <% end %>
+    </p>
+    <p class="sprint-report-participants">
+      <strong><%= l(:label_sprint_report_participants) %>:</strong>
+      <%= l(:label_sprint_report_participant_count, count: @report.participants.size) %>
+      <% if @report.participants.any? %>
+        <span class="sprint-participant-list">
+          <%= safe_join(@report.participants.map { |u| link_to_user(u) }, ', ') %>
+        </span>
+      <% else %>
+        <em class="info"><%= l(:label_sprint_report_no_participants) %></em>
+      <% end %>
+    </p>
+    <% if @version.description.present? %>
+      <div class="wiki"><%= textilizable @version, :description %></div>
+    <% end %>
+  </div>
+
+  <div class="sprint-report-metrics">
+    <div class="box sprint-metric-card">
+      <h3><%= l(:label_sprint_report_commit) %></h3>
+      <table class="list sprint-metric-table">
+        <tbody>
+          <tr><th><%= l(:label_sprint_report_sp) %></th><td><%= sprint_report_number(@report.commit_sp) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_be) %></th><td><%= sprint_report_number(@report.commit_be) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_fe) %></th><td><%= sprint_report_number(@report.commit_fe) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_qa) %></th><td><%= sprint_report_number(@report.commit_qa) %></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="box sprint-metric-card">
+      <h3><%= l(:label_sprint_report_actual) %></h3>
+      <table class="list sprint-metric-table">
+        <tbody>
+          <tr><th><%= l(:label_sprint_report_sp) %></th><td><%= sprint_report_number(@report.actual_sp) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_be) %></th><td><%= sprint_report_number(@report.actual_be) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_fe) %></th><td><%= sprint_report_number(@report.actual_fe) %></td></tr>
+          <tr><th><%= l(:label_sprint_report_sp_qa) %></th><td><%= sprint_report_number(@report.actual_qa) %></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <% if @history.present? %>
+    <div class="box sprint-report-history">
+      <h3><%= l(:label_sprint_report_history, count: @history.size) %></h3>
+      <div class="autoscroll">
+        <table class="list sprint-history-table">
+          <thead>
+            <tr>
+              <th><%= l(:label_version) %></th>
+              <th><%= l(:label_sprint_report_commit) %> SP</th>
+              <th><%= l(:label_sprint_report_actual) %> SP</th>
+              <th><%= l(:label_sprint_report_completion_pct) %></th>
+              <th><%= l(:label_sprint_report_sp_be) %></th>
+              <th><%= l(:label_sprint_report_sp_fe) %></th>
+              <th><%= l(:label_sprint_report_sp_qa) %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @history.each do |row| %>
+              <tr class="<%= cycle('odd', 'even') %> <%= 'sprint-history-current' if row.current %>">
+                <td>
+                  <% if row.current %>
+                    <strong><%= h row.version.name %></strong>
+                  <% else %>
+                    <%= link_to h(row.version.name), project_sprint_report_path(@project, row.version) %>
+                  <% end %>
+                </td>
+                <td class="num"><%= sprint_report_number(row.commit_sp) %></td>
+                <td class="num"><%= sprint_report_number(row.actual_sp) %></td>
+                <td class="num"><%= sprint_report_pct(row.completion_pct) %></td>
+                <td class="num"><%= sprint_report_number(row.actual_be) %></td>
+                <td class="num"><%= sprint_report_number(row.actual_fe) %></td>
+                <td class="num"><%= sprint_report_number(row.actual_qa) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sprint-report-charts">
+        <div class="sprint-chart-card">
+          <h4><%= l(:label_sprint_chart_commit_actual) %></h4>
+          <div class="sprint-chart-wrap"><canvas id="sanan-chart-commit-actual"></canvas></div>
+        </div>
+        <div class="sprint-chart-card">
+          <h4><%= l(:label_sprint_chart_roles) %></h4>
+          <div class="sprint-chart-wrap"><canvas id="sanan-chart-roles"></canvas></div>
+        </div>
+        <div class="sprint-chart-card">
+          <h4><%= l(:label_sprint_chart_completion) %></h4>
+          <div class="sprint-chart-wrap"><canvas id="sanan-chart-completion"></canvas></div>
+        </div>
+        <% if @report.members.any? %>
+          <div class="sprint-chart-card">
+            <h4><%= l(:label_sprint_chart_members) %></h4>
+            <div class="sprint-chart-wrap"><canvas id="sanan-chart-members"></canvas></div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <script>
+      window.SANAN_SPRINT_CHARTS = <%= raw sprint_report_chart_payload(@history, @report).to_json %>;
+    </script>
+  <% end %>
+
+  <div class="box">
+    <h3><%= l(:label_sprint_report_completed_tickets) %> (<%= @report.completed_issues.size %>)</h3>
+    <% if @report.completed_issues.empty? %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% else %>
+      <table class="list issues">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><%= l(:field_tracker) %></th>
+            <th><%= l(:field_subject) %></th>
+            <th><%= l(:field_status) %></th>
+            <th><%= l(:field_assigned_to) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report.completed_issues.each do |issue| %>
+            <tr class="<%= cycle('odd', 'even') %>">
+              <td class="id"><%= link_to issue.id, issue_path(issue) %></td>
+              <td class="tracker"><%= h issue.tracker %></td>
+              <td class="subject"><%= link_to_issue(issue, subject: false) %> <%= h issue.subject %></td>
+              <td class="status"><%= h issue.status %></td>
+              <td class="assigned_to"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '-' %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+
+  <div class="box">
+    <h3><%= l(:label_sprint_report_members) %></h3>
+    <% if @report.members.empty? %>
+      <p class="nodata"><%= l(:label_no_data) %></p>
+    <% else %>
+      <table class="list">
+        <thead>
+          <tr>
+            <th><%= l(:field_user) %></th>
+            <th><%= l(:label_sprint_report_issue_count) %></th>
+            <th><%= l(:label_sprint_report_sp) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report.members.each do |row| %>
+            <tr class="<%= cycle('odd', 'even') %>">
+              <td><%= sprint_report_member_name(row) %></td>
+              <td><%= row.issue_count %></td>
+              <td><%= sprint_report_number(row.sp) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th><%= l(:label_total) %></th>
+            <th><%= @report.members.sum(&:issue_count) %></th>
+            <th><%= sprint_report_number(@report.members.sum(&:sp)) %></th>
+          </tr>
+        </tfoot>
+      </table>
+    <% end %>
+  </div>
+</div>

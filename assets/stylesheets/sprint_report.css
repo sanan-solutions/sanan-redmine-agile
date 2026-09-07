@@ -1,0 +1,92 @@
+.sanan-sprint-report .sprint-report-meta {
+  margin-bottom: 1rem;
+}
+
+.sanan-sprint-report .sprint-report-meta .badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background: #eee;
+  margin-right: 0.5rem;
+  text-transform: capitalize;
+}
+
+.sanan-sprint-report .sprint-report-meta .badge-closed {
+  background: #dff0d8;
+  color: #3c763d;
+}
+
+.sanan-sprint-report .sprint-report-meta .badge-open {
+  background: #d9edf7;
+  color: #31708f;
+}
+
+.sanan-sprint-report .sprint-report-dates {
+  margin-right: 0.75rem;
+}
+
+.sanan-sprint-report .sprint-report-participants {
+  margin: 0.5rem 0 0;
+}
+
+.sanan-sprint-report .sprint-participant-list {
+  display: inline;
+  margin-left: 0.35rem;
+}
+
+.sanan-sprint-report .sprint-report-metrics {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.sanan-sprint-report .sprint-metric-card {
+  flex: 1 1 280px;
+  margin: 0;
+}
+
+.sanan-sprint-report .sprint-metric-table th {
+  width: 60%;
+  text-align: left;
+}
+
+.sanan-sprint-report .sprint-metric-table td {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-sprint-report .sprint-history-table td.num,
+.sanan-sprint-report .sprint-history-table th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-sprint-report .sprint-history-current td {
+  background: #f5f9fc;
+}
+
+.sanan-sprint-report .sprint-report-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sanan-sprint-report .sprint-chart-card {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 0.75rem 1rem 1rem;
+  background: #fff;
+}
+
+.sanan-sprint-report .sprint-chart-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 13px;
+}
+
+.sanan-sprint-report .sprint-chart-wrap {
+  position: relative;
+  height: 260px;
+}

@@ -31,6 +31,7 @@ module SananAgile
       'sp_fe_cfid'            => '',  # Story point Frontend
       'done_be_cfid'          => '',  # Done Backend In Sprint
       'done_fe_cfid'          => '',  # Done Frontend In Sprint
+      'done_qa_cfid'          => '',  # Done QA In Sprint
 
       # show checkboxes only for these trackers (optional)
       'befe_trackers'         => [],  # [tracker_id,...] (để trống = tất cả)
@@ -40,11 +41,17 @@ module SananAgile
       'auto_move_enabled'     => '0',
       'auto_move_status_id'   => '',  # issue status id đích
 
-      # version attribute
+      # version attribute — actual (snapshot on close)
       'sp_actual_version_cfid'=>'',
       'sp_be_actual_version_cfid'=>'',
       'sp_fe_actual_version_cfid'=>'',
       'sp_qa_actual_version_cfid'=>'',
+
+      # version attribute — commit (snapshot on close)
+      'sp_commit_version_cfid'=>'',
+      'sp_be_commit_version_cfid'=>'',
+      'sp_fe_commit_version_cfid'=>'',
+      'sp_qa_commit_version_cfid'=>'',
 
       'test_level_cfid' =>'',
 

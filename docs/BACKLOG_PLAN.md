@@ -170,7 +170,8 @@ config/locales/en.yml, vi.yml
 - [ ] Create sprint (Version) từ UI backlog
 - [ ] Sprint goal (Version CF hoặc description convention)
 - [ ] Start sprint / Complete sprint
-  - Complete: đóng version; option move unfinished → backlog hoặc sprint khác
+  - Start: đánh dấu sprint active (Commit **không** freeze — tính live theo `fixed_version`)
+  - Complete: đóng version; mở **Sprint Close Report** (snapshot Commit/Actual lúc close); option move unfinished
 - [ ] Epic side panel + filter click
 - [ ] Quick create issue vào backlog / sprint đang chọn
 - [ ] Bulk move selected issues
@@ -182,7 +183,7 @@ config/locales/en.yml, vi.yml
 
 - [ ] View “issues in this sprint chưa vào release”
 - [ ] Action: add selected → ReleaseVersion (tái sử dụng attach API)
-- [ ] Rollup: SP planned / done theo sprint
+- [ ] Sprint Close Report đầy đủ (Commit/Actual/Tickets/Members) — `docs/SPRINT_CLOSE_REPORT_PLAN.md`
 - [ ] Hook nhẹ với Agile Metrics (nếu cần)
 
 ---

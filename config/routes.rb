@@ -28,6 +28,11 @@ Rails.application.routes.draw do
         put  :update        # submit edit
       end
     end
+
+    # Sprint close report (version id)
+    get 'sprints/:id/report',
+        to: 'sprint_reports#show',
+        as: :sprint_report
   end
 
   namespace :sanan_agile do
