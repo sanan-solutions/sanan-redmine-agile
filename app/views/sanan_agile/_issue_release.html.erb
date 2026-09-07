@@ -1,0 +1,31 @@
+<%#
+  Hiển thị Release version trên màn hình issue detail.
+  Locals từ hook: issue
+%>
+<% issue = local_assigns[:issue] || @issue %>
+<% project = issue&.project %>
+<% if issue && project %>
+  <% cfg = SananAgile::ProjectSettings.load(project.id) %>
+  <% enabled = %w[1 true yes on].include?(cfg['sanan_agile_enabled'].to_s.strip.downcase) %>
+  <% if enabled && User.current.allowed_to?(:view_releases, project) %>
+    <% release = ReleaseVersion.for_issue(issue) %>
+    <% if release %>
+      <% state_class = case release.state
+                       when 'released' then 'badge--released'
+                       when 'archived' then 'badge--archived'
+                       else 'badge--unreleased'
+                       end %>
+      <% value = capture do %>
+        <span class="sa-issue-release">
+          <%= link_to h(release.name), project_release_path(project, release) %>
+          <span class="badge <%= state_class %>"><%= release.state.to_s.upcase %></span>
+        </span>
+      <% end %>
+    <% else %>
+      <% value = l(:label_not_in_release) %>
+    <% end %>
+    <%= issue_fields_rows do |rows|
+      rows.left l(:label_release_version), value, class: 'release-version'
+    end %>
+  <% end %>
+<% end %>

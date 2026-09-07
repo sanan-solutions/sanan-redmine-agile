@@ -162,4 +162,40 @@
   background-color: #e3e8ff;
 }
 
+/* ===== Issue detail: Release version row ===== */
+.sa-issue-release {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sa-issue-release .badge {
+  display: inline-block;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.sa-issue-release .badge--unreleased {
+  background: #fff7ed;
+  color: #b45309;
+  border: 1px solid #ffedd5;
+}
+
+.sa-issue-release .badge--released {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #d1fae5;
+}
+
+.sa-issue-release .badge--archived {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
 

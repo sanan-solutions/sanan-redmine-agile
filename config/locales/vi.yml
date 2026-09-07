@@ -1,4 +1,6 @@
 vi:
+  label_release_version: "Phiên bản release"
+  label_not_in_release: "Not in release"
   label_sanan_agile_settings: "Sanan Agile"
   label_enabled_for_project: "Bật cho project này"
   label_trigger_status_name: "Tên trạng thái kích hoạt"

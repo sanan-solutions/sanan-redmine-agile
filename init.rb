@@ -1,14 +1,19 @@
 # frozen_string_literal: true
 require_dependency File.expand_path('lib/sanan_agile/issue_patch', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/project_settings', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/projects_helper_patch.rb', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_card_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/issue_show_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/global_modal_hook', __dir__)
 
 Rails.application.config.to_prepare do
   require_dependency 'releases_controller'
+  require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
 end
 
 Redmine::Plugin.register :sanan_redmine_agile do

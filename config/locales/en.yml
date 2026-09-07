@@ -1,4 +1,6 @@
 en:
+  label_release_version: "Release version"
+  label_not_in_release: "Not in release"
   label_sanan_agile_settings: "Sanan Agile"
   label_enabled_for_project: "Enable for this project"
   label_trigger_status_name: "Trigger status name"

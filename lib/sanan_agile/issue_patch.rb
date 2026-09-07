@@ -10,6 +10,11 @@ module SananAgile
       end
     end
 
+    # Used by IssueQuery column `:sanan_release_version`
+    def sanan_release_version
+      ReleaseVersion.for_issue(self)
+    end
+
     # “present?” cho CF, coi "0" cũng là có
     def cf_present?(cfid)
       id = cfid.to_i
@@ -115,7 +120,7 @@ module SananAgile
       if will_check_resolve_rule?
         sanan_require_done_parts_on_resolve()
       end
-      
+
       handle_change_status(cfg, picked_version, 'code_done_status_name', 'code_done_cfid')
     end
 

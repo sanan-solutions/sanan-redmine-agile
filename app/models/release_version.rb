@@ -43,6 +43,65 @@ class ReleaseVersion < ActiveRecord::Base
     scope.average(:done_ratio).to_f.round
   end
 
+  # Release gắn trực tiếp qua release_items; issue con (standard tracker) kế thừa từ cha.
+  def self.for_issue(issue)
+    return nil unless issue&.id
+
+    cached = issue.instance_variable_get(:@sanan_release_version_cache)
+    return nil if cached == :none
+    return cached if cached
+
+    rv = resolve_for_issue(issue)
+    issue.instance_variable_set(:@sanan_release_version_cache, rv || :none)
+    rv
+  end
+
+  # Preload release mapping for issue lists (avoids N+1).
+  def self.preload_for_issues!(issues)
+    issues = Array(issues).compact
+    return if issues.empty?
+
+    ids = issues.map(&:id)
+    parent_ids = issues.map(&:parent_id).compact.uniq
+    map = ReleaseItem.includes(:release_version)
+                     .where(issue_id: (ids + parent_ids).uniq)
+                     .each_with_object({}) { |ri, h| h[ri.issue_id] = ri.release_version }
+
+    issues.each do |issue|
+      rv = map[issue.id]
+      if rv.nil? && issue.parent_id
+        cfg = SananAgile::ProjectSettings.load(issue.project_id)
+        standard_ids = Array(cfg['standard_tracker']).map(&:to_i).reject(&:zero?)
+        rv = map[issue.parent_id] if standard_ids.include?(issue.tracker_id.to_i)
+      end
+      issue.instance_variable_set(:@sanan_release_version_cache, rv || :none)
+    end
+  end
+
+  def self.resolve_for_issue(issue)
+    if issue.association(:release_item).loaded?
+      rv = issue.release_version
+      return rv if rv
+    else
+      item = ReleaseItem.includes(:release_version).find_by(issue_id: issue.id)
+      return item.release_version if item&.release_version
+    end
+
+    return nil unless issue.parent_id
+
+    cfg = SananAgile::ProjectSettings.load(issue.project_id)
+    standard_ids = Array(cfg['standard_tracker']).map(&:to_i).reject(&:zero?)
+    return nil if standard_ids.blank? || !standard_ids.include?(issue.tracker_id.to_i)
+
+    if issue.association(:parent).loaded? && issue.parent
+      return for_issue(issue.parent) if issue.parent.association(:release_item).loaded?
+    end
+
+    parent_item = ReleaseItem.includes(:release_version).find_by(issue_id: issue.parent_id)
+    parent_item&.release_version
+  end
+  private_class_method :resolve_for_issue
+
   private
 
   # ---------- Scopes (chỉ là subquery, không load record) ----------
