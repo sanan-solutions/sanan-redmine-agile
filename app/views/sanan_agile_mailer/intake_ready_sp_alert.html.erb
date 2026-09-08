@@ -1,0 +1,9 @@
+<p><%= l(:mail_body_intake_ready_sp_alert,
+         lane: @lane_label,
+         sp: @ready_sp,
+         threshold: @threshold,
+         project: @project.name) %></p>
+<p>
+  <%= link_to l(:label_intake_open_queue), @url %><br>
+  <%= link_to l(:label_intake_pull), @pull_url %>
+</p>

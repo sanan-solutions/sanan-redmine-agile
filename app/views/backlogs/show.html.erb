@@ -53,6 +53,26 @@
 
   <h2><%= l(:label_backlog) %></h2>
 
+  <% Array(@intake_alerts).each do |alert| %>
+    <div class="flash warning intake-alert-banner">
+      <% lane_label = alert.lane == 'sale' ? l(:label_sale_backlog) : l(:label_cs_backlog) %>
+      <% if alert.over_threshold %>
+        <%= l(:warning_intake_ready_sp_over,
+              lane: lane_label,
+              sp: backlog_sp_number(alert.ready_sp),
+              threshold: backlog_sp_number(alert.threshold),
+              count: alert.ready_count) %>
+      <% end %>
+      <% if alert.over_sla_count.positive? %>
+        <%= l(:warning_intake_ready_sla_over,
+              lane: lane_label,
+              count: alert.over_sla_count,
+              days: alert.sla_days) %>
+      <% end %>
+      <%= link_to l(:label_intake_pull), '#', class: 'backlog-pull-intake-open' if @can_manage %>
+    </div>
+  <% end %>
+
   <div class="backlog-layout">
     <% if epic_tracker_id > 0 %>
       <aside class="box backlog-card backlog-epic-panel" id="backlog-epic-panel">

@@ -1939,3 +1939,20 @@ body.backlog-complete-modal-open {
 .sanan-backlog .sanan-agile-priority .priority {
   flex: 0 0 auto;
 }
+
+.sanan-backlog .intake-age {
+  font-variant-numeric: tabular-nums;
+  color: #626f86;
+  font-weight: 600;
+}
+
+.sanan-backlog .intake-age.is-breach {
+  color: #bf2600;
+  background: #ffebe6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.sanan-backlog .intake-alert-banner {
+  margin-bottom: 0.75rem;
+}

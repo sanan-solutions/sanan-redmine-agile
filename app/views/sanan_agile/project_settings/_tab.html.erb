@@ -132,6 +132,25 @@
         <label>Default Sale quota SP / sprint</label>
         <%= text_field_tag 'settings[default_sale_quota_sp]', cfg['default_sale_quota_sp'], size: 6 %>
       </p>
+      <p>
+        <label><%= l(:label_intake_ready_sla_days) %></label>
+        <%= text_field_tag 'settings[intake_ready_sla_days]', cfg['intake_ready_sla_days'], size: 4 %>
+        <em><%= l(:text_intake_ready_sla_days_hint) %></em>
+      </p>
+      <p>
+        <label><%= l(:label_cs_ready_sp_alert_threshold) %></label>
+        <%= text_field_tag 'settings[cs_ready_sp_alert_threshold]', cfg['cs_ready_sp_alert_threshold'], size: 6 %>
+      </p>
+      <p>
+        <label><%= l(:label_sale_ready_sp_alert_threshold) %></label>
+        <%= text_field_tag 'settings[sale_ready_sp_alert_threshold]', cfg['sale_ready_sp_alert_threshold'], size: 6 %>
+      </p>
+      <p>
+        <label><%= l(:label_intake_ready_sp_alert_mail) %></label>
+        <%= hidden_field_tag 'settings[intake_ready_sp_alert_mail]', '0' %>
+        <%= check_box_tag 'settings[intake_ready_sp_alert_mail]', '1', cfg['intake_ready_sp_alert_mail'].to_s == '1' %>
+        <em><%= l(:text_intake_ready_sp_alert_mail_hint) %></em>
+      </p>
       
       <p>
         <label>Cho phép thêm issue con có tracker là standard vào release version</label>

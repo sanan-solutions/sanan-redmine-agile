@@ -1,6 +1,8 @@
 <% html_title intake_lane_title %>
 <% edit = @can_manage %>
-<% col_count = edit ? 9 : 8 %>
+<% ready_ids = @ready_status_ids || [] %>
+<% show_age = true %>
+<% col_count = (edit ? 9 : 8) + (show_age ? 1 : 0) %>
 
 <div class="sanan-backlog sanan-intake-backlog"
      id="sanan-backlog"
@@ -30,6 +32,26 @@
 
   <% unless @queue_version %>
     <div class="flash warning"><%= l(:warning_intake_queue_version_missing) %></div>
+  <% end %>
+
+  <% if @lane_health %>
+    <% if @lane_health.over_threshold %>
+      <div class="flash warning intake-alert-banner">
+        <%= l(:warning_intake_ready_sp_over,
+              lane: intake_lane_title,
+              sp: backlog_sp_number(@lane_health.ready_sp),
+              threshold: backlog_sp_number(@lane_health.threshold),
+              count: @lane_health.ready_count) %>
+      </div>
+    <% end %>
+    <% if @lane_health.over_sla_count.positive? %>
+      <div class="flash warning intake-alert-banner">
+        <%= l(:warning_intake_ready_sla_over,
+              lane: intake_lane_title,
+              count: @lane_health.over_sla_count,
+              days: @lane_health.sla_days) %>
+      </div>
+    <% end %>
   <% end %>
 
   <div class="backlog-filters">
@@ -67,6 +89,9 @@
                 <th class="assigned_to"><%= l(:field_assigned_to) %></th>
                 <th class="sp"><%= l(:label_backlog_sp_total) %></th>
                 <th class="status"><%= l(:field_status) %></th>
+                <% if section.key == 'queue' %>
+                  <th class="age"><%= l(:label_intake_age) %></th>
+                <% end %>
                 <% if section.key == 'in_product' %>
                   <th class="sprint"><%= l(:label_intake_product_sprint) %></th>
                   <th class="progress"><%= l(:field_done_ratio) %></th>
@@ -76,7 +101,7 @@
             <tbody class="backlog-section-list">
               <% if section.issues.blank? %>
                 <tr class="backlog-empty-row">
-                  <td colspan="<%= section.key == 'in_product' ? col_count + 1 : col_count - 1 %>"><%= l(:label_no_data) %></td>
+                  <td colspan="<%= section.key == 'in_product' ? col_count + 1 : col_count %>"><%= l(:label_no_data) %></td>
                 </tr>
               <% else %>
                 <% section.issues.each do |issue| %>
@@ -110,6 +135,9 @@
                         <% if cell_edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>
                       <span class="backlog-cell-edit__display"><%= h issue.status %></span>
                     </td>
+                    <% if section.key == 'queue' %>
+                      <td class="age"><%= intake_ready_age_cell(issue, @queue_health, ready_ids) %></td>
+                    <% end %>
                     <% if section.key == 'in_product' %>
                       <td class="sprint">
                         <%= issue.fixed_version ? h(issue.fixed_version.name) : l(:label_backlog_unscheduled) %>

@@ -24,6 +24,7 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_pull', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_candidates', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/intake_queue_health', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
   unless VersionsController.ancestors.include?(SananAgile::VersionsControllerPatch)
     VersionsController.prepend(SananAgile::VersionsControllerPatch)

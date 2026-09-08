@@ -78,7 +78,11 @@ module SananAgile
       'sale_ready_status_ids' => [],
       'default_cs_quota_sp' => '10',
       'default_sale_quota_sp' => '8',
-      'allow_quota_override' => '0'
+      'allow_quota_override' => '0',
+      'intake_ready_sla_days' => '3',
+      'cs_ready_sp_alert_threshold' => '20',
+      'sale_ready_sp_alert_threshold' => '15',
+      'intake_ready_sp_alert_mail' => '0'
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

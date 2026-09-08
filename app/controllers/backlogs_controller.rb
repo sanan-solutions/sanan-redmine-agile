@@ -47,6 +47,7 @@ class BacklogsController < ApplicationController
     end
     preload_releases!
     annotate_without_release_counts!
+    load_intake_alerts!
   end
 
   def reorder
@@ -747,5 +748,20 @@ class BacklogsController < ApplicationController
     @data[:future].each { |s| issues.concat(s.issues) }
     issues.concat(@data[:backlog].issues)
     ReleaseVersion.preload_for_issues!(issues) if issues.any? && defined?(ReleaseVersion)
+  end
+
+  def load_intake_alerts!
+    @intake_alerts = []
+    return unless @intake
+
+    health = SananAgile::IntakeQueueHealth.for_project(@project, cfg: @settings)
+    %w[cs sale].each do |lane|
+      next unless @intake[:"#{lane}_enabled"]
+
+      h = health.maybe_alert!(lane)
+      next unless h.over_threshold || h.over_sla_count.positive?
+
+      @intake_alerts << h
+    end
   end
 end

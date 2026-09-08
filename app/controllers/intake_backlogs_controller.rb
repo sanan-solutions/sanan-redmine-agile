@@ -24,6 +24,9 @@ class IntakeBacklogsController < ApplicationController
     }
     @data = SananAgile::IntakeBacklogQuery.call(@project, lane: @lane, cfg: @settings, filters: @filters)
     @queue_version = @data[:queue_version]
+    @queue_health = SananAgile::IntakeQueueHealth.for_project(@project, cfg: @settings)
+    @lane_health = @queue_health.maybe_alert!(@lane)
+    @ready_status_ids = Array(@settings["#{@lane}_ready_status_ids"]).map(&:to_i).reject(&:zero?)
     render template: 'intake_backlogs/show'
   end
 

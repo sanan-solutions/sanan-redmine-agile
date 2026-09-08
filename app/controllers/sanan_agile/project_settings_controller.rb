@@ -60,6 +60,10 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :default_cs_quota_sp,
                   :default_sale_quota_sp,
                   :allow_quota_override,
+                  :intake_ready_sla_days,
+                  :cs_ready_sp_alert_threshold,
+                  :sale_ready_sp_alert_threshold,
+                  :intake_ready_sp_alert_mail,
                 )
     SananAgile::ProjectSettings.save(@project.id, cfg)
     flash[:notice] = l(:notice_successful_update)
