@@ -57,6 +57,25 @@
               options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['subtask_tracker'])),
               multiple: true %>
       </p>
+
+      <hr/>
+      <h4>Backlog</h4>
+      <p>
+        <label>Enable Backlog</label>
+        <%= hidden_field_tag 'settings[backlog_enabled]', '0' %>
+        <%= check_box_tag 'settings[backlog_enabled]', '1', cfg['backlog_enabled'].to_s != '0' %>
+      </p>
+      <p>
+        <label>Backlog Trackers (empty = Standard)</label>
+        <%= select_tag 'settings[backlog_trackers][]',
+              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['backlog_trackers'])),
+              multiple: true %>
+      </p>
+      <p>
+        <label>Hide subtasks on Backlog</label>
+        <%= hidden_field_tag 'settings[backlog_hide_subtasks]', '0' %>
+        <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
+      </p>
       
       <p>
         <label>Cho phép thêm issue con có tracker là standard vào release version</label>

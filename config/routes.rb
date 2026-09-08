@@ -33,6 +33,22 @@ Rails.application.routes.draw do
     get 'sprints/:id/report',
         to: 'sprint_reports#show',
         as: :sprint_report
+
+    # Backlog (Sprint = Version)
+    get 'backlog', to: 'backlogs#show', as: :backlog
+    patch 'backlog/reorder', to: 'backlogs#reorder', as: :backlog_reorder
+    post 'backlog/sprints', to: 'backlogs#create_sprint', as: :backlog_create_sprint
+    post 'backlog/sprints/:version_id/start', to: 'backlogs#start_sprint', as: :backlog_start_sprint
+    post 'backlog/sprints/:version_id/complete', to: 'backlogs#complete_sprint', as: :backlog_complete_sprint
+    post 'backlog/issues', to: 'backlogs#create_issue', as: :backlog_create_issue
+    post 'backlog/epics', to: 'backlogs#create_epic', as: :backlog_create_epic
+    post 'backlog/bulk_move', to: 'backlogs#bulk_move', as: :backlog_bulk_move
+    post 'backlog/attach_to_release', to: 'backlogs#attach_to_release', as: :backlog_attach_to_release
+    post 'backlog/bulk_update_status', to: 'backlogs#bulk_update_status', as: :backlog_bulk_update_status
+    post 'backlog/bulk_update_priority', to: 'backlogs#bulk_update_priority', as: :backlog_bulk_update_priority
+    post 'backlog/bulk_update_tracker', to: 'backlogs#bulk_update_tracker', as: :backlog_bulk_update_tracker
+    post 'backlog/bulk_destroy', to: 'backlogs#bulk_destroy', as: :backlog_bulk_destroy
+    post 'backlog/quick_update', to: 'backlogs#quick_update', as: :backlog_quick_update
   end
 
   namespace :sanan_agile do

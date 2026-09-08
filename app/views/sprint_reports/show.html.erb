@@ -5,6 +5,12 @@
 
 <div class="sanan-sprint-report">
   <div class="contextual">
+    <%= link_to l(:label_backlog), project_backlog_path(@project), class: 'icon icon-projects' if User.current.allowed_to?(:view_backlog, @project) %>
+    <% if sprint_report_agile_metrics_available?(@project) %>
+      <%= link_to l(:label_agile_metrics),
+            sprint_report_agile_metrics_path_for(@project, @version),
+            class: 'icon icon-stats' %>
+    <% end %>
     <%= link_to l(:label_version), version_path(@version), class: 'icon icon-package' %>
   </div>
 

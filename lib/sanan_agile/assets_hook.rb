@@ -22,12 +22,21 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
       agile_board_assets(cfg)
     when 'issues'
       c.action_name == 'show' ? issue_show_assets : ''
+    when 'backlogs'
+      backlog_assets
     else
       ''
     end
   end
 
   private
+
+  def backlog_assets
+    (
+      stylesheet_link_tag('backlog', plugin: 'sanan_redmine_agile') +
+      javascript_include_tag('backlog', plugin: 'sanan_redmine_agile')
+    ).html_safe
+  end
 
   def agile_board_assets(cfg)
     all_css = ''

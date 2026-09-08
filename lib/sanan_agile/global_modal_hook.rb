@@ -21,13 +21,13 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
     enable = sanan_truthy?(cfg['sanan_agile_enabled'])
 
     modal_js = if enable
-      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js'
+      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js?v=20260908d'
     else
       '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal_mini.js'
     end
 
     modal_css = if enable
-      '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile.css'
+      '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile.css?v=20260908d'
     else
       '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile_mini.css'
     end
@@ -39,8 +39,17 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
             <h2 class="header__title">Edit Issue</h2>
             <div class="header__close-btn">&times;</div>
           </div>
-          <div id="glocal-modal-content-body" class="content__body">
-            <p>Loading content...</p>
+          <div class="global-modal__body">
+            <div id="glocal-modal-content-body" class="content__body">
+              <p>Loading content...</p>
+            </div>
+            <aside id="global-modal-ticket-nav" class="global-modal__ticket-nav" hidden>
+              <div class="ticket-nav__meta">
+                <div class="ticket-nav__section" id="global-modal-ticket-nav-section"></div>
+                <div class="ticket-nav__count" id="global-modal-ticket-nav-count"></div>
+              </div>
+              <ul class="ticket-nav__list" id="global-modal-ticket-nav-list"></ul>
+            </aside>
           </div>
           <button id="modal-scroll-top" class="scroll-top-btn" aria-label="Scroll to top">
           ↑
@@ -59,7 +68,7 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
   private
   def get_project_setting(ctx={})
     c = ctx[:controller]
-    return '' unless c && %w[agile_boards issues releases].include?(c.controller_name)
+    return '' unless c && %w[agile_boards issues releases backlogs].include?(c.controller_name)
 
     project = ctx[:project] ||
               c.instance_variable_get(:@project) ||

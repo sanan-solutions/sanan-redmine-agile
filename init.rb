@@ -19,6 +19,7 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/calculator', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
   unless VersionsController.ancestors.include?(SananAgile::VersionsControllerPatch)
     VersionsController.prepend(SananAgile::VersionsControllerPatch)
@@ -43,6 +44,17 @@ Redmine::Plugin.register :sanan_redmine_agile do
     permission :view_sprint_reports,
                { sprint_reports: [:show] },
                require: :member
+
+    permission :view_backlog,
+               { backlogs: [:show] },
+               require: :member
+
+    permission :manage_backlog,
+               { backlogs: [:reorder, :create_sprint, :start_sprint, :complete_sprint,
+                            :create_issue, :create_epic, :bulk_move, :attach_to_release,
+                            :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
+                            :bulk_destroy, :quick_update] },
+               require: :member
   end
 
   project_module :releases do
@@ -60,10 +72,23 @@ Redmine::Plugin.register :sanan_redmine_agile do
     # === Menu ở Project ===
   # Hiện tab "Releases" khi module :releases bật ở project
   menu :project_menu,
+       :backlog,
+       { controller: 'backlogs', action: 'show' },
+       caption: :label_backlog,
+       after: :agile,
+       param: :project_id,
+       if: Proc.new { |project|
+         cfg = SananAgile::ProjectSettings.load(project.id)
+         User.current.allowed_to?(:view_backlog, project) &&
+           cfg['sanan_agile_enabled'].to_s == '1' &&
+           cfg['backlog_enabled'].to_s != '0'
+       }
+
+  menu :project_menu,
        :releases,
        { controller: 'releases', action: 'index' },
        caption: 'Releases',
-       after: :agile,
+       after: :backlog,
        param: :project_id,
        if: Proc.new { |project| User.current.allowed_to?(:view_releases, project) && SananAgile::ProjectSettings.load(project.id)['sanan_agile_enabled'].to_s == '1' }
 

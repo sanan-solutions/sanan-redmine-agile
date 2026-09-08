@@ -25,6 +25,20 @@ module SprintReportsHelper
     "#{sprint_report_number(n)}%"
   end
 
+  def sprint_report_agile_metrics_available?(project = @project)
+    return false unless project
+    return false unless Redmine::Plugin.installed?(:redmine_agile_metrics)
+    User.current.allowed_to?(:view_agile_metrics, project)
+  rescue StandardError
+    false
+  end
+
+  def sprint_report_agile_metrics_path_for(project, version = nil)
+    opts = {}
+    opts[:version_id] = version.id if version
+    project_agile_metrics_path(project, opts)
+  end
+
   def sprint_report_chart_payload(history_rows, report)
     labels = history_rows.map { |r| r.version.name }
     completion_values = history_rows.map { |r| r.completion_pct }

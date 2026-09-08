@@ -38,14 +38,16 @@ module SananAgile
 
       return if cfg['sanan_agile_enabled'] == '0'
 
-      # Lấy Version để ghi:
-      # - Ưu tiên Default Version của project
-      # - Nếu không có, fallback theo pick_version như Dev Done
-      picked_version = pick_version(cfg) || project.default_version
-      return unless picked_version
-
       begin
         self._sanan_agile_internal = true
+
+        maybe_close_parent_epic!(cfg)
+
+        # Lấy Version để ghi:
+        # - Ưu tiên Default Version của project
+        # - Nếu không có, fallback theo pick_version như Dev Done
+        picked_version = pick_version(cfg) || project.default_version
+        return unless picked_version
 
         sync_story_points_from_cf(cfg)
         handle_dev_done(cfg, picked_version)
@@ -53,6 +55,65 @@ module SananAgile
         handle_code_done(cfg, picked_version)
       ensure
         self._sanan_agile_internal = false
+      end
+    end
+
+    # When all epic children (standard/backlog trackers) are closed → close epic.
+    def maybe_close_parent_epic!(cfg)
+      return unless status_id_just_changed?
+      return unless status&.is_closed?
+
+      epic = parent
+      return unless epic
+
+      epic_tracker = cfg['epic_tracker'].to_i
+      return if epic_tracker <= 0
+      return unless epic.tracker_id == epic_tracker
+      return if epic.closed?
+
+      children = epic_children_for_autoclose(epic, cfg)
+      return if children.none?
+      return if children.any? { |c| !c.closed? }
+
+      closed_status = IssueStatus.where(is_closed: true).sorted.first ||
+                      IssueStatus.where(is_closed: true).first
+      return unless closed_status
+
+      epic.init_journal(
+        User.current || User.anonymous,
+        '[sanan] Auto-close epic: all children closed'
+      )
+      epic.status = closed_status
+      epic._sanan_agile_internal = true if epic.respond_to?(:_sanan_agile_internal=)
+      unless epic.save
+        Rails.logger.warn(
+          "[sanan_agile] Failed to auto-close epic ##{epic.id}: #{epic.errors.full_messages.join(', ')}"
+        )
+      end
+    ensure
+      epic._sanan_agile_internal = false if epic && epic.respond_to?(:_sanan_agile_internal=)
+    end
+
+    def epic_children_for_autoclose(epic, cfg)
+      scope = Issue.where(parent_id: epic.id, project_id: project.id)
+
+      allowed = Array(cfg['backlog_trackers']).map(&:to_i).reject(&:zero?)
+      allowed = Array(cfg['standard_tracker']).map(&:to_i).reject(&:zero?) if allowed.blank?
+      scope = scope.where(tracker_id: allowed) if allowed.any?
+
+      subtask_ids = Array(cfg['subtask_tracker']).map(&:to_i).reject(&:zero?)
+      if cfg['backlog_hide_subtasks'].to_s != '0' && subtask_ids.any?
+        scope = scope.where.not(tracker_id: subtask_ids)
+      end
+
+      scope.includes(:status).to_a
+    end
+
+    def status_id_just_changed?
+      if respond_to?(:saved_change_to_status_id?)
+        saved_change_to_status_id?
+      else
+        previous_changes.key?('status_id') || changes.key?('status_id')
       end
     end
 

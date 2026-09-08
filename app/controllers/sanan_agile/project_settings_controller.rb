@@ -47,6 +47,9 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :release_add_child_issue_standard_tracker,
                   :release_released_status_id,
                   :release_close_status_id,
+                  :backlog_enabled,
+                  {backlog_trackers: []},
+                  :backlog_hide_subtasks,
                 )
     SananAgile::ProjectSettings.save(@project.id, cfg)
     flash[:notice] = l(:notice_successful_update)

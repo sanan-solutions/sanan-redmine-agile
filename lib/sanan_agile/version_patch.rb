@@ -4,8 +4,32 @@ module SananAgile
   module VersionPatch
     def self.included(base)
       base.class_eval do
+        has_one :sanan_agile_version_meta,
+                class_name: 'SananAgileVersionMeta',
+                dependent: :destroy,
+                inverse_of: :version
+
         before_update :sanan_aggr_points_on_close, if: :sanan_will_close?
       end
+    end
+
+    def sanan_sprint_start_date
+      sanan_agile_version_meta&.start_date
+    end
+
+    def sanan_sprint_start_date=(value)
+      meta = sanan_agile_version_meta || build_sanan_agile_version_meta
+      meta.start_date = value
+      meta
+    end
+
+    def save_sanan_sprint_start_date!
+      meta = sanan_agile_version_meta
+      return true unless meta
+      return true if meta.start_date.blank? && meta.new_record?
+
+      meta.version_id = id
+      meta.save
     end
 
     private

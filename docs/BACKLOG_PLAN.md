@@ -36,19 +36,16 @@ Plugin đã có: Releases, Epic/Standard/Subtask trackers, DoD, release badges, 
 
 ---
 
-## 3. Quyết định thiết kế (cần chốt)
+## 3. Quyết định thiết kế (đã chốt)
 
-| # | Câu hỏi | Đề xuất mặc định |
+| # | Câu hỏi | Quyết định |
 |---|---|---|
-| D1 | Sprint source of truth? | **Redmine Version** (không tạo entity Sprint mới) |
+| D1 | Sprint source of truth? | **Redmine Version** |
 | D2 | Rank lưu ở đâu? | **`agile_data.position`** |
-| D3 | Issue nào vào Backlog? | Tracker thuộc **standard** (+ optional epic/bug qua settings) |
-| D4 | Subtask hiện trên Backlog? | **Không** (chỉ parent/standard; giống Jira) |
-| D5 | Rank scope? | Rank **theo section** (trong Backlog / trong từng Sprint) — đơn giản hơn rank global |
-| D6 | Active sprint xác định thế nào? | Version `open` được đánh dấu active (CF/setting) hoặc “default version” / nearest open |
-
-> Nếu team muốn dùng `agile_sprints` của redmine_agile thay Version → điều chỉnh D1 trước khi code Phase 1.
-
+| D3 | Issue nào vào Backlog? | Tracker **standard** (`standard_tracker`; optional `backlog_trackers`) |
+| D4 | Subtask hiện trên Backlog? | **Không** |
+| D5 | Rank scope? | **Theo section** (Backlog / từng Sprint) |
+| D6 | Active sprint? | **`project.default_version`** |
 ---
 
 ## 4. UX đề xuất
@@ -115,14 +112,14 @@ Tab project: **Backlog** (sau Agile, trước hoặc cạnh Releases).
 
 **Scope**
 
-- [ ] Menu + quyền `view_backlog`, `manage_backlog`
-- [ ] Trang Backlog: sections **Active/Future Sprint(s)** + **Backlog**
-- [ ] Load issues theo filter tracker (settings) , loại subtask
-- [ ] Drag & drop reorder → API cập nhật `agile_data.position`
-- [ ] Drag & drop đổi section → API cập nhật `fixed_version_id` (+ rank)
-- [ ] Filter: epic, tracker, assignee, text
-- [ ] Hiển thị SP + tổng SP theo section
-- [ ] Project settings: bật Backlog, chọn tracker nằm trong backlog
+- [x] Menu + quyền `view_backlog`, `manage_backlog`
+- [x] Trang Backlog: sections **Active/Future Sprint(s)** + **Backlog**
+- [x] Load issues theo filter tracker (settings) , loại subtask
+- [x] Drag & drop reorder → API cập nhật `agile_data.position`
+- [x] Drag & drop đổi section → API cập nhật `fixed_version_id` (+ rank)
+- [x] Filter: epic, tracker, assignee, text
+- [x] Hiển thị SP + tổng SP theo section
+- [x] Project settings: bật Backlog, chọn tracker nằm trong backlog
 
 **Non-goals Phase 1**
 
@@ -167,24 +164,24 @@ config/locales/en.yml, vi.yml
 
 ### Phase 2 — Sprint lifecycle & UX nâng cao
 
-- [ ] Create sprint (Version) từ UI backlog
-- [ ] Sprint goal (Version CF hoặc description convention)
-- [ ] Start sprint / Complete sprint
-  - Start: đánh dấu sprint active (Commit **không** freeze — tính live theo `fixed_version`)
-  - Complete: đóng version; mở **Sprint Close Report** (snapshot Commit/Actual lúc close); option move unfinished
-- [ ] Epic side panel + filter click
-- [ ] Quick create issue vào backlog / sprint đang chọn
-- [ ] Bulk move selected issues
-- [ ] Badge Release version trên row
+- [x] Create sprint (Version) từ UI backlog
+- [x] Sprint goal (Version `description`)
+- [x] Start sprint / Complete sprint
+  - Start: set `project.default_version` (Commit **không** freeze)
+  - Complete: đóng version; mở **Sprint Close Report**; option move unfinished
+- [x] Epic side panel + filter click
+- [x] Quick create issue vào backlog / sprint đang chọn
+- [x] Bulk move selected issues
+- [x] Badge Release version trên row
 
 ---
 
 ### Phase 3 — Liên kết Releases & báo cáo
 
-- [ ] View “issues in this sprint chưa vào release”
-- [ ] Action: add selected → ReleaseVersion (tái sử dụng attach API)
-- [ ] Sprint Close Report đầy đủ (Commit/Actual/Tickets/Members) — `docs/SPRINT_CLOSE_REPORT_PLAN.md`
-- [ ] Hook nhẹ với Agile Metrics (nếu cần)
+- [x] View “issues in this sprint chưa vào release”
+- [x] Action: add selected → ReleaseVersion (tái sử dụng attach API)
+- [x] Sprint Close Report đầy đủ (Commit/Actual/Tickets/Members) — `docs/SPRINT_CLOSE_REPORT_PLAN.md`
+- [x] Hook nhẹ với Agile Metrics (link Backlog / Sprint Report → Metrics theo version)
 
 ---
 
@@ -241,12 +238,13 @@ config/locales/en.yml, vi.yml
 
 ---
 
-## 11. Open questions (trả lời trước khi code Phase 1)
+## 11. Open questions — đã chốt
 
-1. Sprint = **Version** (đề xuất) hay **agile_sprints**?
-2. Subtask: **ẩn** (đề xuất) hay hiện dưới parent?
-3. Rank: **theo section** (đề xuất) hay global?
-4. Có cần Create Sprint ngay trong Phase 1 không, hay chỉ dùng Version có sẵn?
+1. Sprint = **Version**
+2. Subtask: **ẩn**
+3. Rank: **theo section** (`agile_data.position`)
+4. Create Sprint: Phase 2 — Phase 1 dùng Version có sẵn
+5. Active sprint = **default version**
 
 ---
 

@@ -1,0 +1,1840 @@
+.sanan-backlog {
+  --bl-surface: #ffffff;
+  --bl-surface-muted: #f7f8f9;
+  --bl-border: #e6e8ec;
+  --bl-border-strong: #dfe1e6;
+  --bl-text: #172b4d;
+  --bl-text-subtle: #626f86;
+  --bl-accent: #0c66e4;
+  --bl-accent-soft: #e9f2ff;
+  --bl-radius: 14px;
+  --bl-shadow: 0 1px 2px rgba(9, 30, 66, 0.06), 0 8px 24px rgba(9, 30, 66, 0.04);
+  color: var(--bl-text);
+}
+
+.sanan-backlog > h2 {
+  margin: 0 0 1rem;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--bl-text);
+}
+
+.sanan-backlog .backlog-layout {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+/* ===== Modern cards ===== */
+.sanan-backlog .backlog-card.box,
+.sanan-backlog .box.backlog-card {
+  background: var(--bl-surface) !important;
+  border: 1px solid var(--bl-border) !important;
+  border-radius: var(--bl-radius) !important;
+  box-shadow: var(--bl-shadow);
+  padding: 0 !important;
+  margin: 0 0 16px !important;
+  color: var(--bl-text);
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-card > h3 {
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-bottom: 1px solid #f1f2f4;
+  background: var(--bl-surface-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bl-text-subtle);
+}
+
+.sanan-backlog .backlog-create-sprint form {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+/* Redmine #wrapper/#content overflow breaks CSS sticky — unpin on backlog pages */
+body.controller-backlogs #wrapper {
+  overflow: visible !important;
+}
+
+body.controller-backlogs #content {
+  overflow-x: visible !important;
+}
+
+.sanan-backlog .backlog-filters-host {
+  margin-bottom: 16px;
+}
+
+.sanan-backlog .backlog-filters.backlog-card {
+  position: relative;
+  top: auto;
+  z-index: 30;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 12px 16px !important;
+  height: auto !important;
+  align-self: flex-start;
+  overflow: visible !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 1px 2px rgba(9, 30, 66, 0.06),
+    0 8px 20px rgba(9, 30, 66, 0.06);
+  box-sizing: border-box;
+}
+
+.sanan-backlog .backlog-filters.is-pinned {
+  position: fixed !important;
+  top: 8px;
+  z-index: 120;
+  margin: 0 !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 2px 6px rgba(9, 30, 66, 0.1),
+    0 12px 28px rgba(9, 30, 66, 0.12);
+}
+
+.sanan-backlog .backlog-create-sprint form {
+  padding: 14px 0 16px;
+}
+
+.sanan-backlog .backlog-create-sprint form > p {
+  margin: 0 0 12px;
+}
+
+.sanan-backlog .backlog-create-sprint form label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bl-text-subtle);
+}
+
+.sanan-backlog .backlog-create-sprint input[type="text"],
+.sanan-backlog .backlog-create-sprint input[type="date"],
+.sanan-backlog .backlog-create-sprint textarea {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  min-height: 34px;
+  border: 1px solid var(--bl-border-strong);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  color: var(--bl-text);
+}
+
+.sanan-backlog .backlog-create-sprint textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.sanan-backlog #backlog-create-sprint.backlog-card {
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 48%) !important;
+  border-color: #cfe0ff !important;
+  box-shadow:
+    0 1px 2px rgba(12, 102, 228, 0.06),
+    0 10px 28px rgba(12, 102, 228, 0.06);
+}
+
+.sanan-backlog #backlog-create-sprint.backlog-card > h3 {
+  background: transparent;
+  border-bottom-color: #e6efff;
+  color: var(--bl-accent);
+}
+
+/* ===== Shared buttons ===== */
+.sanan-backlog .backlog-btn,
+.sanan-backlog a.backlog-btn,
+.sanan-backlog button.backlog-btn,
+.sanan-backlog input.backlog-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #f4f5f7;
+  color: #172b4d;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none !important;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+  box-shadow: none;
+  vertical-align: middle;
+}
+
+.sanan-backlog .backlog-btn:hover,
+.sanan-backlog a.backlog-btn:hover,
+.sanan-backlog button.backlog-btn:hover,
+.sanan-backlog input.backlog-btn:hover {
+  background: #ebecf0;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(38, 132, 255, 0.35);
+}
+
+.sanan-backlog .backlog-btn--sm {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+.sanan-backlog .backlog-btn--primary,
+.sanan-backlog a.backlog-btn--primary,
+.sanan-backlog button.backlog-btn--primary,
+.sanan-backlog input.backlog-btn--primary {
+  background: #0c66e4;
+  border-color: #0c66e4;
+  color: #fff;
+}
+
+.sanan-backlog .backlog-btn--primary:hover,
+.sanan-backlog a.backlog-btn--primary:hover,
+.sanan-backlog button.backlog-btn--primary:hover,
+.sanan-backlog input.backlog-btn--primary:hover {
+  background: #0055cc;
+  border-color: #0055cc;
+  color: #fff;
+}
+
+.sanan-backlog .backlog-btn--secondary,
+.sanan-backlog a.backlog-btn--secondary,
+.sanan-backlog button.backlog-btn--secondary,
+.sanan-backlog input.backlog-btn--secondary {
+  background: #fff;
+  border-color: #dfe1e6;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-btn--secondary:hover,
+.sanan-backlog a.backlog-btn--secondary:hover,
+.sanan-backlog button.backlog-btn--secondary:hover,
+.sanan-backlog input.backlog-btn--secondary:hover {
+  background: #fafbfc;
+  border-color: #c1c7d0;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-btn--ghost,
+.sanan-backlog a.backlog-btn--ghost,
+.sanan-backlog button.backlog-btn--ghost,
+.sanan-backlog input.backlog-btn--ghost {
+  background: transparent;
+  border-color: transparent;
+  color: #44546f;
+}
+
+.sanan-backlog .backlog-btn--ghost:hover,
+.sanan-backlog a.backlog-btn--ghost:hover,
+.sanan-backlog button.backlog-btn--ghost:hover,
+.sanan-backlog input.backlog-btn--ghost:hover {
+  background: #f1f2f4;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-top-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sanan-backlog .backlog-inline-form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.sanan-backlog .backlog-inline-form > div {
+  display: inline-flex;
+  margin: 0;
+}
+
+.sanan-backlog .backlog-section-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.sanan-backlog .backlog-create-sprint__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.sanan-backlog .backlog-epic-panel {
+  flex: 0 0 252px;
+  max-width: 272px;
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 !important;
+}
+
+.sanan-backlog.epic-panel-hidden .backlog-epic-panel {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-epic-panel a,
+.sanan-backlog .backlog-epic-panel button {
+  text-decoration: none !important;
+  box-shadow: none !important;
+  outline: none;
+}
+
+.sanan-backlog .backlog-epic-panel a:focus-visible,
+.sanan-backlog .backlog-epic-panel button:focus-visible {
+  outline: 2px solid rgba(12, 102, 228, 0.35);
+  outline-offset: 1px;
+}
+
+.sanan-backlog .backlog-epic-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebecf0;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-epic-panel__header h3 {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bl-text-subtle);
+  line-height: 1.2;
+}
+
+.sanan-backlog .backlog-epic-panel__close {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent;
+  color: #8590a2;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sanan-backlog .backlog-epic-panel__close:hover {
+  background: #f1f2f4;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-epic-panel-toggle.is-active {
+  background: #e9f2ff;
+  color: #0c66e4;
+}
+
+.sanan-backlog .backlog-epic-panel__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8px;
+}
+
+.sanan-backlog .backlog-epic-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sanan-backlog .backlog-epic-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  list-style: none !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sanan-backlog .backlog-epic-list li::before,
+.sanan-backlog .backlog-epic-list li::after {
+  content: none !important;
+  display: none !important;
+}
+
+.sanan-backlog .backlog-epic-list li.selected {
+  background: transparent;
+}
+
+.sanan-backlog .backlog-epic-list li:not(.selected):hover {
+  background: transparent;
+}
+
+.sanan-backlog .backlog-epic-link,
+.sanan-backlog .backlog-epic-list li > a {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  float: none !important;
+}
+
+.sanan-backlog .backlog-epic-list li:hover > .backlog-epic-link {
+  background: #f7f8f9;
+}
+
+.sanan-backlog .backlog-epic-list li.selected > .backlog-epic-link {
+  background: #e9f2ff;
+}
+
+.sanan-backlog .backlog-epic-link--all {
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
+  gap: 0;
+}
+
+.sanan-backlog .backlog-epic-link--all .epic-name {
+  font-weight: 600;
+}
+
+.sanan-backlog .epic-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sanan-backlog .backlog-epic-link .epic-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #172b4d;
+}
+
+.sanan-backlog .epic-pct {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #626f86;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-backlog .backlog-epic-list li.selected .epic-pct {
+  color: #0c66e4;
+}
+
+.sanan-backlog .epic-progress {
+  display: block;
+  width: 100%;
+  height: 3px;
+  border-radius: 999px;
+  background: #ebecf0;
+  overflow: hidden;
+}
+
+.sanan-backlog .epic-progress__bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #0c66e4;
+  max-width: 100%;
+}
+
+.sanan-backlog .backlog-epic-list li.selected .epic-progress {
+  background: #cce0ff;
+}
+
+.sanan-backlog .epic-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #8590a2;
+}
+
+.sanan-backlog .backlog-epic-link .epic-key {
+  color: #8590a2;
+  font-weight: 600;
+}
+
+.sanan-backlog .backlog-epic-link .epic-count {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #626f86;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-backlog .backlog-epic-list li.selected .epic-count {
+  background: transparent;
+  color: #44546f;
+}
+
+.sanan-backlog .backlog-epic-empty {
+  margin: 8px 4px;
+  font-size: 12px;
+  color: #8590a2;
+}
+
+.sanan-backlog .backlog-epic-create {
+  margin: 8px 0 0;
+  padding: 8px 0 0;
+  border-top: 1px solid #ebecf0;
+}
+
+.sanan-backlog .backlog-epic-create__toggle {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent;
+  color: #0c66e4;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.sanan-backlog .backlog-epic-create__toggle:hover {
+  background: #f1f2f4;
+  color: #0055cc;
+}
+
+.sanan-backlog .backlog-epic-create__form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 0 2px;
+}
+
+.sanan-backlog .backlog-epic-create__form[hidden] {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-epic-create__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  height: 32px;
+  margin: 0;
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: #172b4d;
+  font-size: 13px;
+  line-height: 30px;
+}
+
+.sanan-backlog .backlog-epic-create__actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sanan-backlog .backlog-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.sanan-backlog .backlog-filters__form,
+.sanan-backlog .backlog-filters form {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 14px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.sanan-backlog .backlog-filters__field,
+.sanan-backlog .backlog-filters__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+}
+
+.sanan-backlog .backlog-filters__field--search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 320px;
+}
+
+.sanan-backlog .backlog-filters__label {
+  display: block;
+  min-height: 16px;
+  line-height: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bl-text-subtle);
+  white-space: nowrap;
+}
+
+.sanan-backlog .backlog-filters__label--spacer {
+  visibility: hidden;
+  user-select: none;
+}
+
+.sanan-backlog .backlog-filters__control,
+.sanan-backlog .backlog-filters select,
+.sanan-backlog .backlog-filters input[type="text"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 150px;
+  min-height: 32px;
+  height: 32px;
+  margin: 0;
+  border: 1px solid var(--bl-border-strong);
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--bl-text);
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 30px;
+  vertical-align: middle;
+}
+
+.sanan-backlog .backlog-filters__actions-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.sanan-backlog .backlog-filters label.backlog-filter-check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-height: 32px;
+  padding: 0 2px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #44546f;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sanan-backlog .backlog-filters label.backlog-filter-check input[type="checkbox"] {
+  margin: 0;
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+}
+
+.sanan-backlog .backlog-bulk-sep {
+  color: #ccc;
+  margin: 0 0.25rem;
+}
+
+.sanan-backlog .backlog-bulk-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 1200;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  max-width: calc(100vw - 24px);
+}
+
+.sanan-backlog .backlog-bulk-bar[hidden] {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-bulk-bar__inner {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 12px;
+  padding: 10px 40px 10px 14px;
+  background: rgba(22, 26, 29, 0.96);
+  color: #f4f5f7;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 10px 28px rgba(9, 30, 66, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.sanan-backlog .backlog-bulk-bar__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  padding-right: 4px;
+  min-height: 32px;
+  align-self: center;
+}
+
+.sanan-backlog .backlog-bulk-bar__count {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #c7cdd4;
+}
+
+.sanan-backlog .backlog-bulk-bar__count strong {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sanan-backlog .backlog-bulk-bar__text-btn {
+  border: 0;
+  background: transparent;
+  color: #85b8ff;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sanan-backlog .backlog-bulk-bar__text-btn:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.sanan-backlog .backlog-bulk-bar__actions {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.sanan-backlog .backlog-bulk-bar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sanan-backlog .backlog-bulk-bar__label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #9fadbc;
+  padding-left: 2px;
+  line-height: 1;
+}
+
+.sanan-backlog .backlog-bulk-bar__controls {
+  display: inline-flex;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sanan-backlog .backlog-bulk-bar__group--danger .backlog-bulk-bar__controls {
+  border-color: rgba(255, 140, 140, 0.35);
+}
+
+.sanan-backlog .backlog-bulk-bar__btn--solo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  min-width: 72px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 140, 140, 0.45);
+  border-radius: 8px;
+  border-left: 1px solid rgba(255, 140, 140, 0.45);
+}
+
+.sanan-backlog .backlog-bulk-bar__select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  margin: 0;
+  min-width: 120px;
+  max-width: 170px;
+  height: 32px;
+  padding: 0 28px 0 10px;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239BA3AF' d='M1.4.6L6 5.2 10.6.6 12 2 6 8 0 2z'/%3E%3C/svg%3E")
+    no-repeat right 10px center / 10px,
+    transparent;
+  color: #f4f5f7;
+  font-size: 12px;
+  line-height: 32px;
+  outline: none;
+  cursor: pointer;
+}
+
+.sanan-backlog .backlog-bulk-bar__select option {
+  color: #172b4d;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-bulk-bar__btn {
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 0;
+  height: 32px;
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sanan-backlog .backlog-bulk-bar__btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.sanan-backlog .backlog-bulk-bar__btn--primary {
+  background: #579dff;
+  color: #0c1b2a;
+  border-left-color: transparent;
+}
+
+.sanan-backlog .backlog-bulk-bar__btn--primary:hover {
+  background: #85b8ff;
+}
+
+.sanan-backlog .backlog-bulk-bar__btn--danger {
+  background: rgba(255, 86, 86, 0.18);
+  color: #ffd2d2;
+  border-left: 0;
+}
+
+.sanan-backlog .backlog-bulk-bar__btn--danger:hover {
+  background: rgba(255, 86, 86, 0.32);
+  color: #fff;
+}
+
+.sanan-backlog .backlog-bulk-bar__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #9fadbc;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sanan-backlog .backlog-bulk-bar__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.sanan-backlog tr.backlog-row.is-selected {
+  background: #e9f2ff !important;
+}
+
+.sanan-backlog tr.backlog-row.is-selected td {
+  box-shadow: inset 0 1px 0 #cce0ff, inset 0 -1px 0 #cce0ff;
+}
+
+.sanan-backlog.has-bulk-selection {
+  padding-bottom: 88px;
+}
+
+@media (max-width: 900px) {
+  .sanan-backlog .backlog-bulk-bar__inner {
+    flex-wrap: wrap;
+    border-radius: 16px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .sanan-backlog .backlog-bulk-bar__actions {
+    width: 100%;
+    padding-left: 0;
+    border-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .sanan-backlog .backlog-bulk-bar__group {
+    flex: 1 1 180px;
+  }
+
+  .sanan-backlog .backlog-bulk-bar__select {
+    max-width: none;
+    flex: 1;
+  }
+}
+
+.sanan-backlog .backlog-without-release-hint {
+  font-size: 12px;
+  color: #974f0c;
+  background: #fff7d6;
+  border-radius: 999px;
+  padding: 3px 9px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sanan-backlog .backlog-without-release-hint.active {
+  font-weight: 700;
+  background: #ffe2bd;
+}
+
+.sanan-backlog .backlog-section {
+  margin-bottom: 16px !important;
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.sanan-backlog .backlog-section:hover {
+  border-color: #d0d4db !important;
+  box-shadow:
+    0 2px 4px rgba(9, 30, 66, 0.06),
+    0 12px 28px rgba(9, 30, 66, 0.06);
+}
+
+.sanan-backlog .backlog-section-active {
+  border-color: #b3d4ff !important;
+  box-shadow:
+    0 1px 2px rgba(12, 102, 228, 0.08),
+    0 10px 28px rgba(12, 102, 228, 0.08),
+    inset 3px 0 0 var(--bl-accent);
+}
+
+.sanan-backlog .backlog-section-active:hover {
+  border-color: #8fb8ff !important;
+}
+
+.sanan-backlog .backlog-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  align-items: flex-start;
+  margin: 0 !important;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f2f4;
+  background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+  cursor: pointer;
+  user-select: none;
+}
+
+.sanan-backlog .backlog-section.is-collapsed .backlog-section-header {
+  border-bottom: 0;
+}
+
+.sanan-backlog .backlog-section-active > .backlog-section-header {
+  background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
+}
+
+.sanan-backlog .backlog-section-chevron {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin: 4px 2px 0 0;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent;
+  color: #8590a2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  box-shadow: none !important;
+}
+
+.sanan-backlog .backlog-section-chevron:hover {
+  background: #ebecf0;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-section-chevron:focus {
+  outline: none;
+}
+
+.sanan-backlog .backlog-section-chevron:focus-visible {
+  outline: 2px solid rgba(12, 102, 228, 0.35);
+  outline-offset: 1px;
+}
+
+.sanan-backlog .backlog-section-chevron__icon {
+  display: block;
+  width: 16px;
+  height: 16px;
+  transition: transform 0.15s ease;
+  transform-origin: 50% 50%;
+}
+
+.sanan-backlog .backlog-section.is-collapsed .backlog-section-chevron__icon {
+  transform: rotate(-90deg);
+}
+
+.sanan-backlog .backlog-section-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.sanan-backlog .backlog-section-header h3 {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--bl-text);
+  letter-spacing: -0.01em;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.sanan-backlog .backlog-version-status {
+  color: #8590a2;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.sanan-backlog .badge-active {
+  display: inline-flex;
+  align-items: center;
+  background: #e9f2ff;
+  color: #0c66e4;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.sanan-backlog .backlog-section-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  justify-content: flex-end;
+  color: #626f86;
+  font-size: 12px;
+  flex: 1 1 260px;
+  cursor: default;
+}
+
+.sanan-backlog .backlog-section-meta > a.icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 10px 0 24px;
+  border-radius: 5px;
+  color: #44546f;
+  text-decoration: none !important;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background-position: 6px 50%;
+}
+
+.sanan-backlog .backlog-section-meta > a.icon:hover {
+  background-color: #f1f2f4;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-sp-total,
+.sanan-backlog .backlog-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f7f8f9;
+  border-radius: 999px;
+  padding: 3px 9px;
+  color: #44546f;
+  font-weight: 600;
+}
+
+.sanan-backlog .backlog-section-body {
+  display: block;
+}
+
+.sanan-backlog .backlog-section.is-collapsed .backlog-section-body {
+  display: none;
+}
+
+.sanan-backlog .backlog-section-scroll {
+  max-height: min(360px, 42vh);
+  overflow: auto;
+  margin: 0 16px 12px;
+  border: 1px solid #ebecf0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0;
+  overflow: visible;
+  background: #fff;
+  box-shadow: none;
+}
+
+.sanan-backlog .backlog-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #f7f8f9 !important;
+  border-bottom: 1px solid #ebecf0 !important;
+  border-top: 0 !important;
+  color: var(--bl-text-subtle);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 10px 10px;
+}
+
+.sanan-backlog .backlog-table td {
+  border-bottom: 1px solid #f1f2f4 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  padding: 11px 10px;
+  vertical-align: middle;
+  background: transparent;
+}
+
+.sanan-backlog .backlog-table tbody tr.odd td,
+.sanan-backlog .backlog-table tbody tr.even td {
+  background: transparent !important;
+}
+
+.sanan-backlog .backlog-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sanan-backlog .backlog-table tbody tr.backlog-row:hover {
+  background: #f8fafc;
+}
+
+.sanan-backlog .backlog-table tbody tr.backlog-row.backlog-row--flash td {
+  animation: backlog-row-flash 1.2s ease;
+}
+
+@keyframes backlog-row-flash {
+  0% { background-color: #deebff; }
+  100% { background-color: transparent; }
+}
+
+.sanan-backlog .backlog-issue-subject {
+  font-weight: 600;
+  color: var(--bl-text);
+  text-decoration: none;
+}
+
+.sanan-backlog .backlog-issue-subject:hover {
+  color: var(--bl-accent);
+  text-decoration: underline;
+}
+
+.sanan-backlog .backlog-table td.nodata {
+  padding: 20px 12px;
+  color: #8590a2;
+  text-align: center;
+}
+
+.sanan-backlog .backlog-table td.sp,
+.sanan-backlog .backlog-table th.sp {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-backlog .backlog-release-badge {
+  display: inline-flex;
+  align-items: center;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sanan-backlog .backlog-release-badge.state-released {
+  background: #defbe6;
+  color: #216e4e;
+}
+
+.sanan-backlog .backlog-release-badge.state-archived {
+  background: #f1f2f4;
+  color: #626f86;
+}
+
+.sanan-backlog th.backlog-drag-col,
+.sanan-backlog td.backlog-drag-handle {
+  width: 18px;
+  padding-left: 4px;
+  padding-right: 4px;
+  text-align: center;
+  color: #999;
+  cursor: grab;
+  user-select: none;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sanan-backlog td.backlog-drag-handle:active {
+  cursor: grabbing;
+}
+
+.sanan-backlog.is-dragging,
+.sanan-backlog.is-dragging a {
+  cursor: grabbing;
+}
+
+.sanan-backlog tr.backlog-placeholder {
+  height: 36px;
+  background: #f5f9fc;
+  border: 1px dashed #9ab;
+}
+
+.sanan-backlog .backlog-drag-helper,
+.sanan-backlog .ui-sortable-helper {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+}
+
+.sanan-backlog .backlog-quick-create {
+  margin: 0 16px 16px !important;
+  padding: 10px 12px;
+  border: 1px dashed #dfe1e6;
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+.sanan-backlog .backlog-quick-create:focus-within {
+  border-color: #8fb8ff;
+  background: #f8fbff;
+  box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.12);
+}
+
+.sanan-backlog .backlog-quick-create form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sanan-backlog .backlog-quick-create__tracker,
+.sanan-backlog .backlog-quick-create__subject {
+  min-height: 32px;
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-quick-create__subject {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+@media (max-width: 900px) {
+  .sanan-backlog .backlog-layout {
+    flex-direction: column;
+  }
+
+  .sanan-backlog .backlog-epic-panel {
+    flex: none;
+    max-width: none;
+    width: 100%;
+    position: static;
+  }
+}
+
+/* ===== Create sprint modal ===== */
+body.backlog-modal-open {
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-modal[hidden] {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.sanan-backlog .backlog-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 30, 66, 0.48);
+}
+
+.sanan-backlog .backlog-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(9, 30, 66, 0.28);
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-modal__dialog--wide {
+  width: min(560px, 100%);
+}
+
+.sanan-backlog .backlog-modal__body {
+  padding: 20px 24px 18px;
+  max-height: min(86vh, 760px);
+  overflow: auto;
+}
+
+.sanan-backlog .backlog-modal__title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-modal__summary {
+  margin: 0 0 16px;
+  color: #44546f;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sanan-backlog .backlog-modal__field {
+  margin: 0 0 12px;
+}
+
+.sanan-backlog .backlog-modal__dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sanan-backlog .backlog-modal__dates .backlog-modal__field {
+  margin-bottom: 12px;
+}
+
+.sanan-backlog .backlog-modal__field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #626f86;
+}
+
+.sanan-backlog .backlog-modal__field input[type="text"],
+.sanan-backlog .backlog-modal__field input[type="date"],
+.sanan-backlog .backlog-modal__field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 34px;
+  margin: 0;
+  border: 1px solid #dfe1e6;
+  border-radius: 6px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #172b4d;
+  font-size: 13px;
+}
+
+.sanan-backlog .backlog-modal__field textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+.sanan-backlog .backlog-modal__issues {
+  margin: 4px 0 0;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  background: #fafbfc;
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-modal__issues-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #ebecf0;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-modal__issues-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #626f86;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.sanan-backlog .backlog-modal__issue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.sanan-backlog .backlog-modal__issue-list[hidden],
+.sanan-backlog .backlog-modal__issues-empty[hidden] {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-modal__issues-empty {
+  margin: 0;
+  padding: 14px 12px;
+  color: #626f86;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sanan-backlog .backlog-modal__issue-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 8px 12px;
+  border-top: 1px solid #ebecf0;
+  background: #fff;
+}
+
+.sanan-backlog .backlog-modal__issue-item:first-child {
+  border-top: 0;
+}
+
+.sanan-backlog .backlog-modal__issue-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sanan-backlog .backlog-modal__issue-id {
+  font-size: 12px;
+  font-weight: 600;
+  color: #0052cc;
+}
+
+.sanan-backlog .backlog-modal__issue-meta {
+  font-size: 13px;
+  color: #172b4d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sanan-backlog .backlog-modal__issue-remove {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+  color: #8590a2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sanan-backlog .backlog-modal__issue-remove svg {
+  display: block;
+  pointer-events: none;
+}
+
+.sanan-backlog .backlog-modal__issue-remove:hover,
+.sanan-backlog .backlog-modal__issue-remove:focus {
+  background: #ffebe6;
+  color: #de350b;
+  outline: none;
+}
+
+.sanan-backlog .backlog-modal__issue-remove:focus-visible {
+  box-shadow: 0 0 0 2px rgba(222, 53, 11, 0.25);
+}
+
+.sanan-backlog .backlog-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+@media (max-width: 560px) {
+  .sanan-backlog .backlog-modal__dates {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+/* ===== Complete sprint modal ===== */
+body.backlog-complete-modal-open {
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-complete-modal[hidden] {
+  display: none !important;
+}
+
+.sanan-backlog .backlog-complete-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.sanan-backlog .backlog-complete-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 30, 66, 0.48);
+}
+
+.sanan-backlog .backlog-complete-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 18px 48px rgba(9, 30, 66, 0.28);
+  overflow: hidden;
+}
+
+.sanan-backlog .backlog-complete-modal__hero {
+  height: 120px;
+  background:
+    radial-gradient(circle at 50% 70%, rgba(255, 215, 0, 0.35), transparent 45%),
+    linear-gradient(135deg, #1d7afc 0%, #00b8d9 55%, #36b37e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sanan-backlog .backlog-complete-modal__trophy {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  box-shadow: 0 8px 20px rgba(9, 30, 66, 0.2);
+}
+
+.sanan-backlog .backlog-complete-modal__body {
+  padding: 20px 24px 18px;
+}
+
+.sanan-backlog .backlog-complete-modal__title {
+  margin: 0 0 10px;
+  font-size: 20px;
+  line-height: 1.3;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-complete-modal__summary {
+  margin: 0 0 10px;
+  color: #42526e;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.sanan-backlog .backlog-complete-modal__hints {
+  margin: 0 0 16px;
+  padding-left: 18px;
+  color: #5e6c84;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sanan-backlog .backlog-complete-modal__move {
+  margin-bottom: 18px;
+}
+
+.sanan-backlog .backlog-complete-modal__move label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  color: #172b4d;
+  font-size: 13px;
+}
+
+.sanan-backlog .backlog-complete-modal__select {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid #dfe1e6;
+  border-radius: 4px;
+  padding: 6px 10px;
+  background: #fff;
+  color: #172b4d;
+}
+
+.sanan-backlog .backlog-complete-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
+.sanan-backlog .backlog-complete-modal__footer .backlog-btn--ghost {
+  color: #44546f;
+}
+
+/* ===== Inline cell edit ===== */
+.sanan-backlog td.backlog-cell-edit {
+  cursor: pointer;
+  position: relative;
+}
+
+.sanan-backlog td.backlog-cell-edit:hover {
+  background: #f0f4ff;
+}
+
+.sanan-backlog td.backlog-cell-edit.is-editing {
+  background: #ebf2ff;
+  outline: 2px solid #4c9aff;
+  outline-offset: -2px;
+  z-index: 5;
+}
+
+.sanan-backlog td.backlog-cell-edit.is-saving {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.sanan-backlog td.backlog-cell-edit.backlog-cell-edit--flash {
+  animation: backlog-cell-flash 0.8s ease;
+}
+
+@keyframes backlog-cell-flash {
+  0% { background-color: #deebff; }
+  100% { background-color: transparent; }
+}
+
+.sanan-backlog .backlog-cell-edit__input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 72px;
+  max-width: 100%;
+  min-height: 28px;
+  height: auto;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid #4c9aff;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #172b4d;
+  background: #fff;
+  box-shadow: none;
+}
+
+.sanan-backlog td.subject .backlog-cell-edit__input {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Standalone menu — avoid Redmine global button/input styles */
+.backlog-cell-menu {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid #dfe1e6;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(9, 30, 66, 0.18);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.backlog-cell-menu__item {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 8px 10px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #172b4d !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.35 !important;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.backlog-cell-menu__item:hover,
+.backlog-cell-menu__item:focus {
+  background: #f4f5f7 !important;
+  background-color: #f4f5f7 !important;
+  color: #172b4d !important;
+  outline: none;
+}
+
+.backlog-cell-menu__item.is-selected {
+  background: #deebff !important;
+  background-color: #deebff !important;
+  color: #0052cc !important;
+  font-weight: 600 !important;
+}
+
+.backlog-cell-menu__item.is-selected:hover,
+.backlog-cell-menu__item.is-selected:focus {
+  background: #cce0ff !important;
+  background-color: #cce0ff !important;
+}
+
+.sanan-backlog .backlog-priority-badge,
+.sanan-backlog .sanan-agile-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.sanan-backlog .sanan-agile-priority .priority {
+  flex: 0 0 auto;
+}

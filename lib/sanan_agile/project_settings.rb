@@ -61,7 +61,12 @@ module SananAgile
       'subtask_tracker' => [],
       'release_add_child_issue_standard_tracker' => '0',
       'release_released_status_id'=> '',
-      'release_close_status_id'=> ''
+      'release_close_status_id'=> '',
+
+      # Backlog
+      'backlog_enabled' => '1',
+      'backlog_trackers' => [],   # empty = use standard_tracker
+      'backlog_hide_subtasks' => '1'
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile
