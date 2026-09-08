@@ -11,6 +11,10 @@ Rails.application.routes.draw do
       to: 'release_badges#unreleased_map',
       as: :release_unreleased_map
 
+    get 'intake_badges/source_map',
+      to: 'intake_badges#source_map',
+      as: :intake_source_map
+
 
     resources :releases, controller: 'releases' do
       collection do

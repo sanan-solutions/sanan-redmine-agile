@@ -1,0 +1,43 @@
+/* Intake source badges on Agile board cards */
+.sa-intake-badge {
+  display: inline-flex;
+  align-items: center;
+  margin: 2px 4px 2px 0;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.sa-intake-badge--cs {
+  background: #e6f0ff;
+  color: #1d4ed8;
+}
+
+.sa-intake-badge--sale {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+#sa-intake-filterbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: #f4f5f7;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+#sa-intake-filterbar select {
+  min-width: 140px;
+}
+
+.sa-hidden-by-intake {
+  display: none !important;
+}

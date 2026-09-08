@@ -275,7 +275,7 @@ Phase 1 stub có thể tạm list theo Version queue; trước khi ship pull cho
 
 - Không đổi `release_items`
 - Issue CS/Sale vào sprint vẫn có thể gắn Release như issue Product
-- Agile board: filter/badge source (Phase 2)
+- Agile board: filter/badge source ✅ (`intake_badges/source_map` + card badge + client filter)
 
 ---
 
@@ -342,6 +342,7 @@ Phase 1 stub có thể tạm list theo Version queue; trước khi ship pull cho
 - [x] SLA nhẹ trên CS (age in Ready queue)
 - [x] Notify Product khi CS Ready queue vượt ngưỡng SP (banner + optional mail/ngày)
 - [x] Filter source trên Issues (Intake source query filter)
+- [x] Agile board: badge + filter Intake source (CS/Sale)
 
 ---
 
