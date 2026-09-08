@@ -337,11 +337,11 @@ Phase 1 stub có thể tạm list theo Version queue; trước khi ship pull cho
 
 ### Phase 3 — Báo cáo & tinh chỉnh
 
-- [ ] Sprint Close Report: breakdown SP/tickets theo Product / CS / Sale
-- [ ] Metrics: % capacity sprint dành cho CS/Sale theo thời gian
+- [x] Sprint Close Report: breakdown SP/tickets theo Product / CS / Sale
+- [x] Metrics: % capacity sprint dành cho CS/Sale (theo commit SP + quota)
 - [ ] SLA nhẹ trên CS (age in Ready queue) — optional
 - [ ] Notify Product khi CS Ready queue vượt ngưỡng SP
-- [ ] Filter source trên Agile board / Issues
+- [x] Filter source trên Issues (Intake source query filter)
 
 ---
 

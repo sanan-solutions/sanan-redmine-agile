@@ -7,10 +7,13 @@ module SananAgile
         :commit_sp, :commit_be, :commit_fe, :commit_qa,
         :actual_sp, :actual_be, :actual_fe, :actual_qa,
         :completed_issues, :members, :participants, :from_snapshot,
+        :intake,
         keyword_init: true
       )
 
       MemberRow = Struct.new(:user, :user_id, :issue_count, :sp, keyword_init: true)
+      IntakeBucket = Struct.new(:source, :count, :sp, keyword_init: true)
+      IntakeQuota = Struct.new(:source, :quota, :used, :remaining, :pct_of_commit, keyword_init: true)
 
       def self.call(version, cfg: nil, prefer_snapshot: nil, metrics_only: false)
         new(version, cfg: cfg, prefer_snapshot: prefer_snapshot, metrics_only: metrics_only).call
@@ -30,6 +33,7 @@ module SananAgile
         issues = @metrics_only ? [] : completed_issues
         members = @metrics_only ? [] : member_rows
         participants = @metrics_only ? [] : sprint_participants
+        intake = build_intake(issues)
 
         if @prefer_snapshot && (snap = snapshot_totals)
           Result.new(
@@ -44,7 +48,8 @@ module SananAgile
             completed_issues: issues,
             members: members,
             participants: participants,
-            from_snapshot: true
+            from_snapshot: true,
+            intake: intake
           )
         else
           Result.new(
@@ -59,7 +64,8 @@ module SananAgile
             completed_issues: issues,
             members: members,
             participants: participants,
-            from_snapshot: false
+            from_snapshot: false,
+            intake: intake
           )
         end
       end
@@ -86,6 +92,76 @@ module SananAgile
       end
 
       private
+
+      def build_intake(completed)
+        commit_ids = committed_issue_ids
+        completed_ids = Array(completed).map(&:id)
+        commit_sp = commit_totals[:sp].to_f
+        {
+          enabled: intake_enabled?,
+          commit: bucketize(commit_ids),
+          completed: bucketize(completed_ids),
+          quotas: intake_quotas(commit_sp)
+        }
+      end
+
+      def intake_enabled?
+        SananAgile::IntakeSource.cfid(@cfg).positive? &&
+          (@cfg['cs_backlog_enabled'].to_s == '1' || @cfg['sale_backlog_enabled'].to_s == '1')
+      end
+
+      def bucketize(issue_ids)
+        empty = {
+          'product' => IntakeBucket.new(source: 'product', count: 0, sp: 0.0),
+          'cs' => IntakeBucket.new(source: 'cs', count: 0, sp: 0.0),
+          'sale' => IntakeBucket.new(source: 'sale', count: 0, sp: 0.0)
+        }
+        return empty if issue_ids.blank?
+
+        sources = sources_by_issue(issue_ids)
+        sp_by = sum_cf_by_issue(issue_ids, cfid('story_point_cfid'))
+        issue_ids.each do |iid|
+          key = sources[iid] || 'product'
+          key = 'product' unless %w[cs sale product].include?(key)
+          empty[key].count += 1
+          empty[key].sp += sp_by[iid].to_f
+        end
+        empty
+      end
+
+      def sources_by_issue(issue_ids)
+        field_id = SananAgile::IntakeSource.cfid(@cfg)
+        return {} if field_id <= 0 || issue_ids.blank?
+
+        CustomValue.where(
+          customized_type: 'Issue',
+          custom_field_id: field_id,
+          customized_id: issue_ids
+        ).pluck(:customized_id, :value).each_with_object({}) do |(iid, val), h|
+          h[iid] = SananAgile::IntakeSource.normalize(val) || 'product'
+        end
+      end
+
+      def intake_quotas(commit_sp_total)
+        meta = @version.sanan_agile_version_meta
+        used = bucketize(committed_issue_ids)
+        %w[cs sale].map do |lane|
+          next unless @cfg["#{lane}_backlog_enabled"].to_s == '1'
+
+          raw = lane == 'sale' ? meta&.sale_quota_sp : meta&.cs_quota_sp
+          quota = raw.nil? ? nil : raw.to_f
+          u = used[lane].sp
+          remaining = quota.nil? ? nil : [quota - u, 0].max
+          pct = commit_sp_total.positive? ? ((u / commit_sp_total) * 100.0).round(1) : 0.0
+          IntakeQuota.new(
+            source: lane,
+            quota: quota,
+            used: u,
+            remaining: remaining,
+            pct_of_commit: pct
+          )
+        end.compact
+      end
 
       def standard_ids
         @standard_ids ||= Array(@cfg['standard_tracker']).map(&:to_i).reject(&:zero?)

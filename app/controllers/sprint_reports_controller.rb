@@ -11,6 +11,7 @@ class SprintReportsController < ApplicationController
 
   def show
     @cfg = SananAgile::ProjectSettings.load(@project.id)
+    @settings = @cfg
     @report = SananAgile::SprintReport::Calculator.call(@version, cfg: @cfg)
     @history = SananAgile::SprintReport::History.call(@version, cfg: @cfg)
   end

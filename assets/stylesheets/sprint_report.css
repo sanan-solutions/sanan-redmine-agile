@@ -90,3 +90,45 @@
   position: relative;
   height: 260px;
 }
+
+.sanan-sprint-report .sprint-report-intake {
+  margin-bottom: 1rem;
+}
+
+.sanan-sprint-report .sprint-intake-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sanan-sprint-report .sprint-intake-grid h4,
+.sanan-sprint-report .sprint-report-intake > h4 {
+  margin: 0 0 0.5rem;
+  font-size: 13px;
+  color: #44546f;
+}
+
+.sanan-sprint-report .sprint-intake-quota-table {
+  max-width: 720px;
+}
+
+.sanan-sprint-report .sprint-intake-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.sanan-sprint-report .sprint-intake-badge--cs {
+  background: #e6f0ff;
+  color: #1d4ed8;
+}
+
+.sanan-sprint-report .sprint-intake-badge--sale {
+  background: #ecfdf5;
+  color: #047857;
+}

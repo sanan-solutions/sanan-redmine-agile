@@ -75,4 +75,21 @@ module SprintReportsHelper
       }
     }
   end
+
+  def sprint_report_intake_label(source)
+    case source.to_s
+    when 'cs' then l(:label_intake_source_cs)
+    when 'sale' then l(:label_intake_source_sale)
+    else l(:label_intake_source_product)
+    end
+  end
+
+  def sprint_report_intake_badge(issue, cfg = nil)
+    cfg ||= @settings || SananAgile::ProjectSettings.load(@project.id)
+    src = SananAgile::IntakeSource.value_for(issue, cfg) || 'product'
+    return nil unless %w[cs sale].include?(src)
+
+    content_tag(:span, sprint_report_intake_label(src),
+                class: "sprint-intake-badge sprint-intake-badge--#{src}")
+  end
 end

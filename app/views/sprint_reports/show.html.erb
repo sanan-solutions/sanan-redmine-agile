@@ -71,6 +71,85 @@
     </div>
   </div>
 
+  <% intake = @report.intake %>
+  <% if intake && intake[:enabled] %>
+    <div class="box sprint-report-intake">
+      <h3><%= l(:label_sprint_report_intake) %></h3>
+      <div class="sprint-intake-grid">
+        <div>
+          <h4><%= l(:label_sprint_report_intake_commit) %></h4>
+          <table class="list sprint-metric-table">
+            <thead>
+              <tr>
+                <th><%= l(:label_sprint_report_intake_source) %></th>
+                <th class="num"><%= l(:label_issue_plural) %></th>
+                <th class="num"><%= l(:label_sprint_report_sp) %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% %w[product cs sale].each do |src| %>
+                <% bucket = intake[:commit][src] %>
+                <tr>
+                  <td><%= sprint_report_intake_label(src) %></td>
+                  <td class="num"><%= bucket.count %></td>
+                  <td class="num"><%= sprint_report_number(bucket.sp) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h4><%= l(:label_sprint_report_intake_completed) %></h4>
+          <table class="list sprint-metric-table">
+            <thead>
+              <tr>
+                <th><%= l(:label_sprint_report_intake_source) %></th>
+                <th class="num"><%= l(:label_issue_plural) %></th>
+                <th class="num"><%= l(:label_sprint_report_sp) %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% %w[product cs sale].each do |src| %>
+                <% bucket = intake[:completed][src] %>
+                <tr>
+                  <td><%= sprint_report_intake_label(src) %></td>
+                  <td class="num"><%= bucket.count %></td>
+                  <td class="num"><%= sprint_report_number(bucket.sp) %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <% if Array(intake[:quotas]).any? %>
+        <h4><%= l(:label_sprint_report_intake_capacity) %></h4>
+        <table class="list sprint-metric-table sprint-intake-quota-table">
+          <thead>
+            <tr>
+              <th><%= l(:label_sprint_report_intake_source) %></th>
+              <th class="num"><%= l(:label_sprint_report_intake_used) %></th>
+              <th class="num"><%= l(:label_sprint_report_intake_quota) %></th>
+              <th class="num"><%= l(:label_sprint_report_intake_remaining) %></th>
+              <th class="num"><%= l(:label_sprint_report_intake_pct_commit) %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% intake[:quotas].each do |q| %>
+              <tr>
+                <td><%= sprint_report_intake_label(q.source) %></td>
+                <td class="num"><%= sprint_report_number(q.used) %></td>
+                <td class="num"><%= q.quota.nil? ? '—' : sprint_report_number(q.quota) %></td>
+                <td class="num"><%= q.remaining.nil? ? '—' : sprint_report_number(q.remaining) %></td>
+                <td class="num"><%= sprint_report_pct(q.pct_of_commit) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+    </div>
+  <% end %>
+
   <% if @history.present? %>
     <div class="box sprint-report-history">
       <h3><%= l(:label_sprint_report_history, count: @history.size) %></h3>
@@ -147,6 +226,7 @@
             <th>#</th>
             <th><%= l(:field_tracker) %></th>
             <th><%= l(:field_subject) %></th>
+            <th><%= l(:label_sprint_report_intake_source) %></th>
             <th><%= l(:field_status) %></th>
             <th><%= l(:field_assigned_to) %></th>
           </tr>
@@ -157,6 +237,7 @@
               <td class="id"><%= link_to issue.id, issue_path(issue) %></td>
               <td class="tracker"><%= h issue.tracker %></td>
               <td class="subject"><%= link_to_issue(issue, subject: false) %> <%= h issue.subject %></td>
+              <td class="intake-source"><%= sprint_report_intake_badge(issue, @settings) || sprint_report_intake_label('product') %></td>
               <td class="status"><%= h issue.status %></td>
               <td class="assigned_to"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '-' %></td>
             </tr>

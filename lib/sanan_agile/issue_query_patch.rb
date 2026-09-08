@@ -60,6 +60,12 @@ module SananAgile
           name: l(:label_release_version),
           values: lambda { sanan_release_version_filter_values }
         )
+        add_available_filter(
+          'sanan_intake_source',
+          type: :list_optional,
+          name: l(:field_sanan_intake_source),
+          values: lambda { sanan_intake_source_filter_values }
+        )
       end
 
       # Called by Query#statement via sql_for_<field>_field
@@ -82,7 +88,66 @@ module SananAgile
         end
       end
 
+      def sql_for_sanan_intake_source_field(_field, operator, value)
+        cfid = sanan_intake_source_cfid
+        return '1=1' if cfid <= 0
+
+        issue_table = Issue.table_name
+        cv = CustomValue.table_name
+        match = "#{issue_table}.id IN (" \
+                "SELECT #{cv}.customized_id FROM #{cv} " \
+                "WHERE #{cv}.customized_type = 'Issue' " \
+                "AND #{cv}.custom_field_id = #{cfid} " \
+                "AND LOWER(#{cv}.value) IN (%s))"
+
+        case operator
+        when '*', '!*'
+          any = match % %w[product cs sale customer_service customer-service sales prod].map { |v| ActiveRecord::Base.connection.quote(v) }.join(',')
+          operator == '*' ? any : "NOT (#{any})"
+        when '=', '!'
+          keys = Array(value).map { |v| SananAgile::IntakeSource.normalize(v) }.compact.uniq
+          return (operator == '=' ? '1=0' : '1=1') if keys.empty?
+
+          aliases = keys.flat_map do |k|
+            case k
+            when 'cs' then %w[cs customer_service customer-service]
+            when 'sale' then %w[sale sales]
+            when 'product' then %w[product prod]
+            else [k]
+            end
+          end.uniq
+          quoted = aliases.map { |v| ActiveRecord::Base.connection.quote(v) }.join(',')
+          cond = match % quoted
+          # Treat blank CF as product when filtering for product
+          if keys.include?('product')
+            blank = "#{issue_table}.id NOT IN (" \
+                    "SELECT #{cv}.customized_id FROM #{cv} " \
+                    "WHERE #{cv}.customized_type = 'Issue' " \
+                    "AND #{cv}.custom_field_id = #{cfid} " \
+                    "AND TRIM(COALESCE(#{cv}.value, '')) <> '')"
+            cond = "(#{cond} OR #{blank})"
+          end
+          operator == '=' ? cond : "NOT (#{cond})"
+        else
+          '1=1'
+        end
+      end
+
       private
+
+      def sanan_intake_source_cfid
+        return 0 unless project
+
+        SananAgile::IntakeSource.cfid(SananAgile::ProjectSettings.load(project.id))
+      end
+
+      def sanan_intake_source_filter_values
+        [
+          [l(:label_intake_source_product), 'product'],
+          [l(:label_intake_source_cs), 'cs'],
+          [l(:label_intake_source_sale), 'sale']
+        ]
+      end
 
       def sanan_release_version_filter_values
         scope = ReleaseVersion.order(:name)
