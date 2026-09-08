@@ -110,6 +110,31 @@ module BacklogsHelper
     nil
   end
 
+  def backlog_intake_source_badge(issue, cfg = nil)
+    cfg ||= @settings || SananAgile::ProjectSettings.load(@project.id)
+    src = SananAgile::IntakeSource.value_for(issue, cfg)
+    return nil unless %w[cs sale].include?(src)
+
+    label = src == 'sale' ? l(:label_intake_source_sale) : l(:label_intake_source_cs)
+    content_tag(:span, label, class: "backlog-intake-badge backlog-intake-badge--#{src}", title: label)
+  end
+
+  def backlog_quota_chip(lane, stats)
+    return '' if stats.blank?
+
+    label = lane == 'sale' ? l(:label_intake_source_sale) : l(:label_intake_source_cs)
+    if stats[:quota].nil?
+      content_tag(:span, "#{label}: #{backlog_sp_number(stats[:used])} SP",
+                  class: "backlog-quota-chip backlog-quota-chip--#{lane} is-unlimited",
+                  title: l(:label_intake_quota_unlimited))
+    else
+      content_tag(:span,
+                  "#{label}: #{backlog_sp_number(stats[:used])}/#{backlog_sp_number(stats[:quota])} " \
+                  "(#{backlog_sp_number(stats[:remaining])} #{l(:label_intake_quota_left)})",
+                  class: "backlog-quota-chip backlog-quota-chip--#{lane}")
+    end
+  end
+
   def backlog_goal_text(version)
     return '' unless version
 

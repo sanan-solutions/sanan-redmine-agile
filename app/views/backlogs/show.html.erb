@@ -42,6 +42,13 @@
     <% if @can_add_issues %>
       <%= link_to l(:label_issue_new), new_project_issue_path(@project), class: 'backlog-btn backlog-btn--secondary' %>
     <% end %>
+    <% if @can_manage && @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
+      <button type="button"
+              class="backlog-btn backlog-btn--primary backlog-pull-intake-open"
+              id="backlog-pull-intake-open">
+        <%= l(:label_intake_pull) %>
+      </button>
+    <% end %>
   </div>
 
   <h2><%= l(:label_backlog) %></h2>
@@ -360,6 +367,25 @@
                 </button>
               <% end %>
               <span class="backlog-sp-total"><%= l(:label_backlog_sp_total) %>: <strong><%= backlog_sp_number(section.sp_total) %></strong></span>
+              <% if section.version && @intake_quota_by_version && @intake_quota_by_version[section.version.id] %>
+                <% qstats = @intake_quota_by_version[section.version.id] %>
+                <% if @intake && @intake[:cs_enabled] %>
+                  <%= backlog_quota_chip('cs', qstats[:cs]) %>
+                <% end %>
+                <% if @intake && @intake[:sale_enabled] %>
+                  <%= backlog_quota_chip('sale', qstats[:sale]) %>
+                <% end %>
+                <% if @can_manage %>
+                  <button type="button"
+                          class="backlog-btn backlog-btn--ghost backlog-btn--sm backlog-quota-edit-open"
+                          data-version-id="<%= section.version.id %>"
+                          data-version-name="<%= h section.version.name %>"
+                          data-cs-quota="<%= section.version.sanan_cs_quota_sp %>"
+                          data-sale-quota="<%= section.version.sanan_sale_quota_sp %>">
+                    <%= l(:label_intake_edit_quota) %>
+                  </button>
+                <% end %>
+              <% end %>
               <span class="backlog-count"><%= section.issues.size %> <%= l(:label_issue_plural) %></span>
               <% if @filters[:without_release].to_s != '1' && section.respond_to?(:without_release_count) && section.without_release_count > 0 %>
                 <%= link_to l(:label_backlog_without_release_count, count: section.without_release_count),
@@ -415,6 +441,8 @@
                         </td>
                         <td class="subject<%= ' backlog-cell-edit' if edit %>"
                             <% if edit %>data-field="subject" data-value="<%= h issue.subject %>" data-edit-type="text"<% end %>>
+                          <% intake_badge = backlog_intake_source_badge(issue) %>
+                          <% if intake_badge %><%= intake_badge %> <% end %>
                           <%= link_to h(issue.subject), issue_path(issue),
                                 class: 'backlog-issue-subject backlog-issue-link backlog-cell-edit__display' %>
                         </td>
@@ -502,6 +530,24 @@
                 <%= date_field_tag :effective_date, nil, id: 'backlog-create-sprint-date' %>
               </div>
             </div>
+            <% if @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
+              <div class="backlog-modal__dates">
+                <% if @intake[:cs_enabled] %>
+                  <div class="backlog-modal__field">
+                    <label for="backlog-create-sprint-cs-quota"><%= l(:label_intake_cs_quota_sp) %></label>
+                    <%= number_field_tag :cs_quota_sp, @settings['default_cs_quota_sp'],
+                          id: 'backlog-create-sprint-cs-quota', min: 0, step: 0.5 %>
+                  </div>
+                <% end %>
+                <% if @intake[:sale_enabled] %>
+                  <div class="backlog-modal__field">
+                    <label for="backlog-create-sprint-sale-quota"><%= l(:label_intake_sale_quota_sp) %></label>
+                    <%= number_field_tag :sale_quota_sp, @settings['default_sale_quota_sp'],
+                          id: 'backlog-create-sprint-sale-quota', min: 0, step: 0.5 %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
 
             <div class="backlog-modal__issues" id="backlog-create-sprint-issues-wrap">
               <div class="backlog-modal__issues-head">
@@ -551,6 +597,112 @@
                 <%= l(:button_cancel) %>
               </button>
               <%= submit_tag l(:button_backlog_complete_sprint), class: 'backlog-btn backlog-btn--primary' %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @can_manage && @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
+    <script type="application/json" id="backlog-intake-pull-data">
+      <%= raw({
+        cs_enabled: @intake[:cs_enabled],
+        sale_enabled: @intake[:sale_enabled],
+        cs: @intake[:cs],
+        sale: @intake[:sale],
+        quotas: @intake_quota_by_version || {},
+        versions: @open_versions.map { |v| { id: v.id, name: v.name } },
+        default_cs_quota: @settings['default_cs_quota_sp'],
+        default_sale_quota: @settings['default_sale_quota_sp']
+      }.to_json) %>
+    </script>
+
+    <div id="backlog-pull-intake-modal" class="backlog-modal" hidden
+         data-pull-url="<%= project_backlog_pull_intake_path(@project) %>"
+         data-backlog-label="<%= h l(:label_backlog_unscheduled) %>"
+         data-quota-left-label="<%= h l(:label_intake_quota_left) %>"
+         data-quota-unlimited-label="<%= h l(:label_intake_quota_unlimited) %>"
+         data-no-candidates="<%= h l(:text_intake_no_ready_candidates) %>"
+         data-selected-sp="<%= h l(:text_intake_selected_sp) %>">
+      <div class="backlog-modal__backdrop" data-pull-intake-dismiss></div>
+      <div class="backlog-modal__dialog backlog-modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="backlog-pull-intake-title">
+        <div class="backlog-modal__body">
+          <h3 id="backlog-pull-intake-title" class="backlog-modal__title"><%= l(:label_intake_pull) %></h3>
+
+          <%= form_tag project_backlog_pull_intake_path(@project), method: :post, id: 'backlog-pull-intake-form' do %>
+            <% @filters.each do |k, v| %><% next if v.blank? %><%= hidden_field_tag k, v %><% end %>
+            <%= hidden_field_tag :source, (@intake[:cs_enabled] ? 'cs' : 'sale'), id: 'backlog-pull-source' %>
+
+            <div class="backlog-pull-tabs" role="tablist">
+              <% if @intake[:cs_enabled] %>
+                <button type="button" class="backlog-pull-tab is-active" data-pull-lane="cs" role="tab"><%= l(:label_intake_source_cs) %></button>
+              <% end %>
+              <% if @intake[:sale_enabled] %>
+                <button type="button" class="backlog-pull-tab<%= ' is-active' unless @intake[:cs_enabled] %>" data-pull-lane="sale" role="tab"><%= l(:label_intake_source_sale) %></button>
+              <% end %>
+            </div>
+
+            <div class="backlog-modal__field">
+              <label for="backlog-pull-to-version"><%= l(:label_intake_pull_destination) %></label>
+              <select name="to_version_id" id="backlog-pull-to-version">
+                <option value=""><%= l(:label_backlog_unscheduled) %></option>
+                <% @open_versions.each do |v| %>
+                  <option value="<%= v.id %>"><%= h v.name %></option>
+                <% end %>
+              </select>
+            </div>
+            <p class="backlog-pull-quota-hint" id="backlog-pull-quota-hint"></p>
+
+            <div class="backlog-pull-toolbar">
+              <button type="button" class="backlog-btn backlog-btn--ghost backlog-btn--sm" id="backlog-pull-autofill">
+                <%= l(:button_intake_autofill) %>
+              </button>
+              <span class="backlog-pull-selected-sp" id="backlog-pull-selected-sp"></span>
+            </div>
+
+            <div class="backlog-modal__issues">
+              <ul class="backlog-modal__issue-list backlog-pull-issue-list" id="backlog-pull-issue-list"></ul>
+              <p class="backlog-modal__issues-empty" id="backlog-pull-issues-empty"><%= l(:text_intake_no_ready_candidates) %></p>
+            </div>
+
+            <div class="backlog-modal__footer">
+              <button type="button" class="backlog-btn backlog-btn--ghost" data-pull-intake-dismiss>
+                <%= l(:button_cancel) %>
+              </button>
+              <%= submit_tag l(:button_intake_pull), class: 'backlog-btn backlog-btn--primary', id: 'backlog-pull-submit' %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div id="backlog-quota-edit-modal" class="backlog-modal" hidden>
+      <div class="backlog-modal__backdrop" data-quota-edit-dismiss></div>
+      <div class="backlog-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="backlog-quota-edit-title">
+        <div class="backlog-modal__body">
+          <h3 id="backlog-quota-edit-title" class="backlog-modal__title"><%= l(:label_intake_edit_quota) %></h3>
+          <%= form_tag project_backlog_sprint_quota_path(@project), method: :patch, id: 'backlog-quota-edit-form' do %>
+            <% @filters.each do |k, v| %><% next if v.blank? %><%= hidden_field_tag k, v %><% end %>
+            <%= hidden_field_tag :version_id, '', id: 'backlog-quota-edit-version-id' %>
+            <p class="backlog-modal__summary" id="backlog-quota-edit-sprint-name"></p>
+            <% if @intake[:cs_enabled] %>
+              <div class="backlog-modal__field">
+                <label for="backlog-quota-edit-cs"><%= l(:label_intake_cs_quota_sp) %></label>
+                <%= number_field_tag :cs_quota_sp, nil, id: 'backlog-quota-edit-cs', min: 0, step: 0.5 %>
+              </div>
+            <% end %>
+            <% if @intake[:sale_enabled] %>
+              <div class="backlog-modal__field">
+                <label for="backlog-quota-edit-sale"><%= l(:label_intake_sale_quota_sp) %></label>
+                <%= number_field_tag :sale_quota_sp, nil, id: 'backlog-quota-edit-sale', min: 0, step: 0.5 %>
+              </div>
+            <% end %>
+            <div class="backlog-modal__footer">
+              <button type="button" class="backlog-btn backlog-btn--ghost" data-quota-edit-dismiss>
+                <%= l(:button_cancel) %>
+              </button>
+              <%= submit_tag l(:button_save), class: 'backlog-btn backlog-btn--primary' %>
             </div>
           <% end %>
         </div>

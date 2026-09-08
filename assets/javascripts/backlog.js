@@ -205,7 +205,238 @@
     initStickyFilters();
     initCreateSprintModal();
     initInlineEdit();
+    initPullIntakeModal();
+    initQuotaEditModal();
   });
+
+  function initPullIntakeModal() {
+    var $modal = $('#backlog-pull-intake-modal');
+    if (!$modal.length) return;
+
+    var data = {};
+    try {
+      data = JSON.parse($('#backlog-intake-pull-data').text() || '{}');
+    } catch (err) {
+      data = {};
+    }
+
+    var $list = $('#backlog-pull-issue-list');
+    var $empty = $('#backlog-pull-issues-empty');
+    var $source = $('#backlog-pull-source');
+    var $dest = $('#backlog-pull-to-version');
+    var $hint = $('#backlog-pull-quota-hint');
+    var $selectedSp = $('#backlog-pull-selected-sp');
+    var $submit = $('#backlog-pull-submit');
+    var lane = $source.val() || 'cs';
+
+    function escapeHtml(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function fmtSp(n) {
+      var f = Number(n) || 0;
+      return f === Math.floor(f) ? String(f) : f.toFixed(2);
+    }
+
+    function laneIssues() {
+      var pack = data[lane] || {};
+      return Array.isArray(pack.issues) ? pack.issues : [];
+    }
+
+    function remainingForLane() {
+      var vid = $dest.val();
+      if (!vid) return null; // backlog: no quota
+      var qmap = data.quotas || {};
+      var stats = (qmap[vid] || qmap[String(vid)] || {})[lane] || {};
+      if (stats.quota == null) return null;
+      return Number(stats.remaining);
+    }
+
+    function updateQuotaHint() {
+      var vid = $dest.val();
+      if (!vid) {
+        $hint.text($modal.attr('data-quota-unlimited-label') || 'No quota on Product backlog');
+        return;
+      }
+      var qmap = data.quotas || {};
+      var stats = (qmap[vid] || qmap[String(vid)] || {})[lane] || {};
+      if (stats.quota == null) {
+        $hint.text($modal.attr('data-quota-unlimited-label') || 'Unlimited');
+        return;
+      }
+      var leftLabel = $modal.attr('data-quota-left-label') || 'left';
+      $hint.text(
+        fmtSp(stats.used) + '/' + fmtSp(stats.quota) + ' SP (' + fmtSp(stats.remaining) + ' ' + leftLabel + ')'
+      );
+    }
+
+    function selectedSpSum() {
+      var sum = 0;
+      $list.find('input.backlog-pull-check:checked').each(function () {
+        sum += Number($(this).attr('data-sp')) || 0;
+      });
+      return sum;
+    }
+
+    function syncSelectedSp() {
+      var tpl = $modal.attr('data-selected-sp') || 'Selected: __SP__ SP';
+      $selectedSp.text(tpl.replace('__SP__', fmtSp(selectedSpSum())));
+      var rem = remainingForLane();
+      var over = rem != null && selectedSpSum() > rem + 1e-6;
+      $submit.prop('disabled', over || $list.find('input.backlog-pull-check:checked').length === 0);
+      $list.find('input.backlog-pull-check').each(function () {
+        var $cb = $(this);
+        if ($cb.is(':checked')) {
+          $cb.prop('disabled', false);
+          return;
+        }
+        if (rem == null) {
+          $cb.prop('disabled', false);
+          return;
+        }
+        var sp = Number($cb.attr('data-sp')) || 0;
+        $cb.prop('disabled', selectedSpSum() + sp > rem + 1e-6);
+      });
+    }
+
+    function renderList() {
+      var issues = laneIssues();
+      $list.empty();
+      if (!issues.length) {
+        $empty.prop('hidden', false);
+        $list.prop('hidden', true);
+        syncSelectedSp();
+        return;
+      }
+      $empty.prop('hidden', true);
+      $list.prop('hidden', false);
+      issues.forEach(function (issue) {
+        var sp = Number(issue.sp) || 0;
+        var $li = $(
+          '<li class="backlog-modal__issue-item backlog-pull-issue-item">' +
+            '<label class="backlog-pull-issue-label">' +
+              '<input type="checkbox" class="backlog-pull-check" name="issue_ids[]" value="' + escapeHtml(issue.id) + '" data-sp="' + escapeHtml(sp) + '">' +
+              '<span class="backlog-modal__issue-id">#' + escapeHtml(issue.id) + '</span>' +
+              '<span class="backlog-modal__issue-meta">' +
+                escapeHtml(issue.priority || '') + ' · ' + escapeHtml(issue.subject || '') +
+              '</span>' +
+              '<span class="backlog-pull-issue-sp">' + fmtSp(sp) + ' SP</span>' +
+            '</label>' +
+          '</li>'
+        );
+        $list.append($li);
+      });
+      syncSelectedSp();
+    }
+
+    function setLane(next) {
+      lane = next;
+      $source.val(lane);
+      $('.backlog-pull-tab').removeClass('is-active');
+      $('.backlog-pull-tab[data-pull-lane="' + lane + '"]').addClass('is-active');
+      updateQuotaHint();
+      renderList();
+    }
+
+    function openModal(prefVersionId) {
+      if (prefVersionId) {
+        $dest.val(String(prefVersionId));
+      }
+      setLane($source.val() || (data.cs_enabled ? 'cs' : 'sale'));
+      $modal.prop('hidden', false);
+      $('body').addClass('backlog-modal-open');
+    }
+
+    function closeModal() {
+      $modal.prop('hidden', true);
+      $('body').removeClass('backlog-modal-open');
+    }
+
+    function autoFill() {
+      var rem = remainingForLane();
+      var used = 0;
+      $list.find('input.backlog-pull-check').prop('checked', false);
+      $list.find('input.backlog-pull-check').each(function () {
+        var sp = Number($(this).attr('data-sp')) || 0;
+        if (rem == null || used + sp <= rem + 1e-6) {
+          $(this).prop('checked', true);
+          used += sp;
+        }
+      });
+      syncSelectedSp();
+    }
+
+    $(document).on('click', '.backlog-pull-intake-open', function (e) {
+      e.preventDefault();
+      openModal($(this).attr('data-version-id'));
+    });
+
+    $modal.on('click', '[data-pull-intake-dismiss]', function (e) {
+      e.preventDefault();
+      closeModal();
+    });
+
+    $modal.on('click', '.backlog-pull-tab', function (e) {
+      e.preventDefault();
+      setLane($(this).attr('data-pull-lane'));
+    });
+
+    $dest.on('change', function () {
+      updateQuotaHint();
+      $list.find('input.backlog-pull-check').prop('checked', false);
+      syncSelectedSp();
+    });
+
+    $list.on('change', 'input.backlog-pull-check', function () {
+      syncSelectedSp();
+    });
+
+    $('#backlog-pull-autofill').on('click', function (e) {
+      e.preventDefault();
+      autoFill();
+    });
+
+    $(document).on('keydown', function (e) {
+      if (e.key === 'Escape' && !$modal.prop('hidden')) {
+        closeModal();
+      }
+    });
+  }
+
+  function initQuotaEditModal() {
+    var $modal = $('#backlog-quota-edit-modal');
+    if (!$modal.length) return;
+
+    function openModal($btn) {
+      $('#backlog-quota-edit-version-id').val($btn.attr('data-version-id') || '');
+      $('#backlog-quota-edit-sprint-name').text($btn.attr('data-version-name') || '');
+      $('#backlog-quota-edit-cs').val($btn.attr('data-cs-quota') || '');
+      $('#backlog-quota-edit-sale').val($btn.attr('data-sale-quota') || '');
+      $modal.prop('hidden', false);
+      $('body').addClass('backlog-modal-open');
+    }
+
+    function closeModal() {
+      $modal.prop('hidden', true);
+      $('body').removeClass('backlog-modal-open');
+    }
+
+    $(document).on('click', '.backlog-quota-edit-open', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal($(this));
+    });
+
+    $modal.on('click', '[data-quota-edit-dismiss]', function (e) {
+      e.preventDefault();
+      closeModal();
+    });
+  }
 
   function initInlineEdit() {
     var $root = $('#sanan-backlog');

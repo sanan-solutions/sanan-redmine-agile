@@ -11,7 +11,7 @@ class BacklogsController < ApplicationController
     :reorder, :create_sprint, :start_sprint, :complete_sprint,
     :create_issue, :create_epic, :bulk_move, :attach_to_release,
     :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
-    :bulk_destroy, :quick_update
+    :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota
   ]
 
   helper :backlogs
@@ -29,11 +29,22 @@ class BacklogsController < ApplicationController
     @can_add_issues = User.current.allowed_to?(:add_issues, @project)
     @can_manage_releases = User.current.allowed_to?(:manage_releases, @project)
     @can_delete_issues = User.current.allowed_to?(:delete_issues, @project)
-    @open_versions = @project.shared_versions.open.sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
+    queue_ids = SananAgile::IntakeSource.intake_queue_version_ids(@settings)
+    @open_versions = @project.shared_versions.open
+                             .reject { |v| queue_ids.include?(v.id) }
+                             .sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
     @attachable_releases = attachable_releases
     @issue_statuses = IssueStatus.sorted.to_a
     @priorities = IssuePriority.active
     @assignables = @project.assignable_users.sort_by { |u| u.name.to_s.downcase }
+    @intake = SananAgile::IntakeCandidates.for_project(@project, cfg: @settings)
+    @intake_quota_by_version = {}
+    ([@data[:active]] + Array(@data[:future])).compact.each do |section|
+      next unless section.version
+
+      @intake_quota_by_version[section.version.id] =
+        SananAgile::IntakeCandidates.new(@project, cfg: @settings).quota_stats_for(section.version)
+    end
     preload_releases!
     annotate_without_release_counts!
   end
@@ -66,6 +77,8 @@ class BacklogsController < ApplicationController
     version = @project.versions.build(attrs)
     start_date = parse_date(params[:start_date])
     version.sanan_sprint_start_date = start_date if start_date
+    version.sanan_cs_quota_sp = params[:cs_quota_sp].presence || @settings['default_cs_quota_sp']
+    version.sanan_sale_quota_sp = params[:sale_quota_sp].presence || @settings['default_sale_quota_sp']
 
     if version.name.blank?
       flash[:error] = l(:error_backlog_sprint_name_blank)
@@ -373,6 +386,57 @@ class BacklogsController < ApplicationController
     }
   end
 
+  def pull_intake
+    lane = params[:source].to_s
+    unless %w[cs sale].include?(lane)
+      return redirect_with_error(l(:error_intake_invalid_source))
+    end
+
+    to_version = nil
+    if params[:to_version_id].present?
+      to_version = @project.shared_versions.open.find_by(id: params[:to_version_id].to_i)
+      queue_ids = SananAgile::IntakeSource.intake_queue_version_ids(@settings)
+      if to_version.nil? || queue_ids.include?(to_version.id)
+        return redirect_with_error(l(:error_backlog_invalid_version))
+      end
+    end
+
+    result = SananAgile::IntakePull.call(
+      project: @project,
+      cfg: @settings,
+      lane: lane,
+      issue_ids: params[:issue_ids],
+      to_version: to_version,
+      user: User.current
+    )
+
+    unless result.ok
+      flash[:error] = intake_pull_error_message(result)
+      return redirect_to project_backlog_path(@project, filter_redirect_params)
+    end
+
+    flash[:notice] = l(:notice_intake_pulled, count: result.pulled, source: lane.upcase)
+    if result.skipped.to_i.positive?
+      flash[:warning] = l(:warning_backlog_bulk_skipped, count: result.skipped)
+    end
+    redirect_to project_backlog_path(@project, filter_redirect_params)
+  end
+
+  def update_sprint_quota
+    version = @project.shared_versions.find_by(id: params[:version_id].to_i)
+    return redirect_with_error(l(:error_backlog_invalid_version)) unless version
+
+    version.sanan_cs_quota_sp = params[:cs_quota_sp]
+    version.sanan_sale_quota_sp = params[:sale_quota_sp]
+    if version.save_sanan_sprint_start_date!
+      flash[:notice] = l(:notice_intake_quota_updated, name: version.name)
+    else
+      flash[:error] = version.sanan_agile_version_meta&.errors&.full_messages&.join(', ') ||
+                      l(:notice_failed_to_save_issues)
+    end
+    redirect_to project_backlog_path(@project, filter_redirect_params)
+  end
+
   def bulk_destroy
     unless User.current.allowed_to?(:delete_issues, @project)
       return render_403
@@ -646,6 +710,35 @@ class BacklogsController < ApplicationController
   def redirect_with_error(msg)
     flash[:error] = msg
     redirect_to project_backlog_path(@project)
+  end
+
+  def intake_pull_error_message(result)
+    case result.error
+    when 'invalid_lane', 'invalid_source'
+      l(:error_intake_invalid_source)
+    when 'no_issues'
+      l(:error_backlog_no_issues)
+    when 'queue_missing'
+      l(:error_intake_queue_version_missing)
+    when 'invalid_candidates'
+      ids = Array(result.details && result.details[:not_ready]).presence ||
+            Array(result.details && result.details[:not_in_queue])
+      l(:error_intake_invalid_candidates, ids: ids.join(', '))
+    when 'quota_exceeded'
+      d = result.details || {}
+      l(:error_intake_quota_exceeded,
+        quota: format_sp(d[:quota]),
+        used: format_sp(d[:used]),
+        adding: format_sp(d[:adding]),
+        remaining: format_sp(d[:remaining]))
+    else
+      l(:notice_failed_to_save_issues)
+    end
+  end
+
+  def format_sp(n)
+    f = n.to_f
+    f == f.to_i ? f.to_i : f.round(2)
   end
 
   def preload_releases!

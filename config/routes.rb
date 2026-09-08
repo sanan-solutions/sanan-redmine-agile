@@ -49,6 +49,17 @@ Rails.application.routes.draw do
     post 'backlog/bulk_update_tracker', to: 'backlogs#bulk_update_tracker', as: :backlog_bulk_update_tracker
     post 'backlog/bulk_destroy', to: 'backlogs#bulk_destroy', as: :backlog_bulk_destroy
     post 'backlog/quick_update', to: 'backlogs#quick_update', as: :backlog_quick_update
+    post 'backlog/pull_intake', to: 'backlogs#pull_intake', as: :backlog_pull_intake
+    patch 'backlog/sprint_quota', to: 'backlogs#update_sprint_quota', as: :backlog_sprint_quota
+
+    # CS / Sale intake backlogs
+    get 'cs_backlog', to: 'cs_backlogs#show', as: :cs_backlog
+    post 'cs_backlog/issues', to: 'cs_backlogs#create_issue', as: :cs_backlog_create_issue
+    post 'cs_backlog/quick_update', to: 'cs_backlogs#quick_update', as: :cs_backlog_quick_update
+
+    get 'sale_backlog', to: 'sale_backlogs#show', as: :sale_backlog
+    post 'sale_backlog/issues', to: 'sale_backlogs#create_issue', as: :sale_backlog_create_issue
+    post 'sale_backlog/quick_update', to: 'sale_backlogs#quick_update', as: :sale_backlog_quick_update
   end
 
   namespace :sanan_agile do

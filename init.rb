@@ -20,6 +20,10 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/intake_pull', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/intake_candidates', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
   unless VersionsController.ancestors.include?(SananAgile::VersionsControllerPatch)
     VersionsController.prepend(SananAgile::VersionsControllerPatch)
@@ -53,7 +57,23 @@ Redmine::Plugin.register :sanan_redmine_agile do
                { backlogs: [:reorder, :create_sprint, :start_sprint, :complete_sprint,
                             :create_issue, :create_epic, :bulk_move, :attach_to_release,
                             :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
-                            :bulk_destroy, :quick_update] },
+                            :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota] },
+               require: :member
+
+    permission :view_cs_backlog,
+               { cs_backlogs: [:show] },
+               require: :member
+
+    permission :manage_cs_backlog,
+               { cs_backlogs: [:create_issue, :quick_update] },
+               require: :member
+
+    permission :view_sale_backlog,
+               { sale_backlogs: [:show] },
+               require: :member
+
+    permission :manage_sale_backlog,
+               { sale_backlogs: [:create_issue, :quick_update] },
                require: :member
   end
 
@@ -85,10 +105,36 @@ Redmine::Plugin.register :sanan_redmine_agile do
        }
 
   menu :project_menu,
+       :cs_backlog,
+       { controller: 'cs_backlogs', action: 'show' },
+       caption: :label_cs_backlog,
+       after: :backlog,
+       param: :project_id,
+       if: Proc.new { |project|
+         cfg = SananAgile::ProjectSettings.load(project.id)
+         User.current.allowed_to?(:view_cs_backlog, project) &&
+           cfg['sanan_agile_enabled'].to_s == '1' &&
+           cfg['cs_backlog_enabled'].to_s == '1'
+       }
+
+  menu :project_menu,
+       :sale_backlog,
+       { controller: 'sale_backlogs', action: 'show' },
+       caption: :label_sale_backlog,
+       after: :cs_backlog,
+       param: :project_id,
+       if: Proc.new { |project|
+         cfg = SananAgile::ProjectSettings.load(project.id)
+         User.current.allowed_to?(:view_sale_backlog, project) &&
+           cfg['sanan_agile_enabled'].to_s == '1' &&
+           cfg['sale_backlog_enabled'].to_s == '1'
+       }
+
+  menu :project_menu,
        :releases,
        { controller: 'releases', action: 'index' },
        caption: 'Releases',
-       after: :backlog,
+       after: :sale_backlog,
        param: :project_id,
        if: Proc.new { |project| User.current.allowed_to?(:view_releases, project) && SananAgile::ProjectSettings.load(project.id)['sanan_agile_enabled'].to_s == '1' }
 

@@ -66,7 +66,19 @@ module SananAgile
       # Backlog
       'backlog_enabled' => '1',
       'backlog_trackers' => [],   # empty = use standard_tracker
-      'backlog_hide_subtasks' => '1'
+      'backlog_hide_subtasks' => '1',
+
+      # CS / Sale intake backlogs
+      'cs_backlog_enabled' => '0',
+      'sale_backlog_enabled' => '0',
+      'cs_queue_version_id' => '',
+      'sale_queue_version_id' => '',
+      'intake_source_cfid' => '',           # Issue CF list: product|cs|sale (or labels)
+      'cs_ready_status_ids' => [],
+      'sale_ready_status_ids' => [],
+      'default_cs_quota_sp' => '10',
+      'default_sale_quota_sp' => '8',
+      'allow_quota_override' => '0'
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

@@ -76,6 +76,62 @@
         <%= hidden_field_tag 'settings[backlog_hide_subtasks]', '0' %>
         <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
       </p>
+
+      <hr/>
+      <h4>CS / Sale Backlog</h4>
+      <p>
+        <label>Enable CS Backlog</label>
+        <%= hidden_field_tag 'settings[cs_backlog_enabled]', '0' %>
+        <%= check_box_tag 'settings[cs_backlog_enabled]', '1', cfg['cs_backlog_enabled'].to_s == '1' %>
+      </p>
+      <p>
+        <label>CS Queue Version</label>
+        <%= select_tag 'settings[cs_queue_version_id]',
+              options_for_select([['–', '']] + @project.shared_versions.open.map { |v| [v.name, v.id] },
+                                 cfg['cs_queue_version_id'].to_s),
+              include_blank: false %>
+        <em>Version dùng làm hàng đợi CS (không dùng làm Product sprint)</em>
+      </p>
+      <p>
+        <label>CS Ready statuses</label>
+        <%= select_tag 'settings[cs_ready_status_ids][]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['cs_ready_status_ids']).map(&:to_i)),
+              multiple: true %>
+        <em>PO chỉ thấy ticket CS ở các status này khi pull</em>
+      </p>
+      <p>
+        <label>Enable Sale Backlog</label>
+        <%= hidden_field_tag 'settings[sale_backlog_enabled]', '0' %>
+        <%= check_box_tag 'settings[sale_backlog_enabled]', '1', cfg['sale_backlog_enabled'].to_s == '1' %>
+      </p>
+      <p>
+        <label>Sale Queue Version</label>
+        <%= select_tag 'settings[sale_queue_version_id]',
+              options_for_select([['–', '']] + @project.shared_versions.open.map { |v| [v.name, v.id] },
+                                 cfg['sale_queue_version_id'].to_s),
+              include_blank: false %>
+      </p>
+      <p>
+        <label>Sale Ready statuses</label>
+        <%= select_tag 'settings[sale_ready_status_ids][]',
+              options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['sale_ready_status_ids']).map(&:to_i)),
+              multiple: true %>
+      </p>
+      <p>
+        <label>Intake source CF</label>
+        <%= select_tag 'settings[intake_source_cfid]',
+              options_for_select([['–', '']] + IssueCustomField.order(:name).map { |cf| ["##{cf.id} #{cf.name}", cf.id] },
+                                 cfg['intake_source_cfid'].to_s) %>
+        <em>List CF values: <code>cs</code>, <code>sale</code>, <code>product</code> (giữ sau khi PO pull)</em>
+      </p>
+      <p>
+        <label>Default CS quota SP / sprint</label>
+        <%= text_field_tag 'settings[default_cs_quota_sp]', cfg['default_cs_quota_sp'], size: 6 %>
+      </p>
+      <p>
+        <label>Default Sale quota SP / sprint</label>
+        <%= text_field_tag 'settings[default_sale_quota_sp]', cfg['default_sale_quota_sp'], size: 6 %>
+      </p>
       
       <p>
         <label>Cho phép thêm issue con có tracker là standard vào release version</label>

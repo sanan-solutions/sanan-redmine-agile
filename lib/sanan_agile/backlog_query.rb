@@ -39,6 +39,7 @@ module SananAgile
     def active_section
       v = @project.default_version
       return nil unless v
+      return nil if SananAgile::IntakeSource.intake_queue_version_ids(@cfg).include?(v.id)
 
       issues = issues_for_version(v.id)
       Section.new(key: "version-#{v.id}", version: v, active: true, issues: issues, sp_total: sum_sp(issues))
@@ -61,7 +62,9 @@ module SananAgile
 
     def open_versions
       @open_versions ||= begin
+        exclude_ids = SananAgile::IntakeSource.intake_queue_version_ids(@cfg)
         versions = @project.shared_versions.open.includes(:sanan_agile_version_meta).to_a
+        versions.reject! { |v| exclude_ids.include?(v.id) } if exclude_ids.any?
         versions.sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
       end
     end

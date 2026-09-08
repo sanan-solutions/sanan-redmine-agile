@@ -22,7 +22,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
       agile_board_assets(cfg)
     when 'issues'
       c.action_name == 'show' ? issue_show_assets : ''
-    when 'backlogs'
+    when 'backlogs', 'cs_backlogs', 'sale_backlogs'
       backlog_assets
     else
       ''
