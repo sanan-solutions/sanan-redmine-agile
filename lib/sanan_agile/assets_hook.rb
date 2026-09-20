@@ -49,6 +49,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
 
     all_js = ''
     all_js += javascript_include_tag 'agile_core', plugin: 'sanan_redmine_agile'
+    all_js += javascript_include_tag 'sanan_board_drag_errors', plugin: 'sanan_redmine_agile'
     all_js += javascript_include_tag 'sanan_board_table_scroll_sync', plugin: 'sanan_redmine_agile'
     all_js += javascript_include_tag 'sanan_inline_card_refresh', plugin: 'sanan_redmine_agile'
     all_js += javascript_include_tag 'agile_release_badges', plugin: 'sanan_redmine_agile'
@@ -59,7 +60,10 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
   end
 
   def issue_show_assets
-    stylesheet_link_tag('agile_release_badges', plugin: 'sanan_redmine_agile').html_safe
+    (
+      stylesheet_link_tag('agile_release_badges', plugin: 'sanan_redmine_agile') +
+      stylesheet_link_tag('issue_sprint_done_group', plugin: 'sanan_redmine_agile')
+    ).html_safe
   end
 
   # Chấp nhận: 1/true/yes/on (không phân biệt hoa thường)

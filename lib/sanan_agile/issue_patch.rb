@@ -3,7 +3,9 @@ module SananAgile
   module IssuePatch
     def self.included(base)
       base.class_eval do
-        # validate :sanan_require_done_parts_on_resolve, if: :will_check_resolve_rule?
+        # Block move to resolve_status unless required BE/FE Done flags are set.
+        # Must be a real validation (not after_save + throw) so Agile board gets 422 JSON.
+        validate :sanan_require_done_parts_on_resolve, if: :will_check_resolve_rule?
         attr_accessor :_sanan_agile_internal
         # chạy sau khi issue lưu (insert/update)
         after_save :sanan_agile_after_save
@@ -142,19 +144,19 @@ module SananAgile
       @sanan_agile_cfg = cfg
       res_id = cfg['resolve_status'].to_i
       return false if res_id <= 0
+      return false unless status_id.to_i == res_id
 
-      puts "testhahah: #{status_id.to_i} #{res_id}"
-
-      # status đổi sang resolve?
-      if respond_to?(:saved_change_to_status_id?)
-        saved_change_to_status_id? && status_id.to_i == res_id
+      # Pre-save change detection (validate runs before save)
+      if respond_to?(:will_save_change_to_status_id?)
+        will_save_change_to_status_id?
+      elsif respond_to?(:status_id_changed?)
+        status_id_changed?
       else
-        # Redmine < 4 fallback
-        changes.key?('status_id') && status_id.to_i == res_id
+        changes.key?('status_id')
       end
     end
 
-    def sanan_require_done_parts_on_resolve()
+    def sanan_require_done_parts_on_resolve
       cfg = @sanan_agile_cfg || SananAgile::ProjectSettings.load(project_id)
 
       need_be = cf_present?(cfg['sp_be_cfid'])
@@ -163,25 +165,24 @@ module SananAgile
       done_fe = cf_present?(cfg['done_fe_cfid'])
 
       missing = []
-      missing << l(:label_backend)  if need_be && !done_be
-      missing << l(:label_frontend) if need_fe && !done_fe
-
+      missing << 'BE done' if need_be && !done_be
+      missing << 'FE done' if need_fe && !done_fe
       return if missing.empty?
 
-      # Thông báo rõ ràng; Agile board sẽ hiển thị alert khi 422
-      msg = "Không thể chuyển sang trạng thái Resolve: cần đánh dấu Done cho #{missing.join(' và ')}."
+      msg =
+        if missing.length == 2
+          'Không thể chuyển status: ticket này còn chưa đánh dấu BE done và FE done trên card (tick checkbox trước khi kéo).'
+        elsif missing.first == 'BE done'
+          'Không thể chuyển status: ticket này còn chưa đánh dấu BE done trên card (tick checkbox BE done trước khi kéo).'
+        else
+          'Không thể chuyển status: ticket này còn chưa đánh dấu FE done trên card (tick checkbox FE done trước khi kéo).'
+        end
       errors.add(:base, msg)
-
       Rails.logger.warn "[sanan_agile] #{msg} (issue=#{id})"
-      throw("SananAgileError: "+ msg) # ⬅️ dừng việc save
     end
 
     # ===== Done code in version =====
     def handle_code_done(cfg, picked_version)
-      if will_check_resolve_rule?
-        sanan_require_done_parts_on_resolve()
-      end
-
       handle_change_status(cfg, picked_version, 'code_done_status_name', 'code_done_cfid')
     end
 

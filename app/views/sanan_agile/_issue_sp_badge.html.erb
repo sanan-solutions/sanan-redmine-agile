@@ -1,0 +1,231 @@
+<%# == Sanan Agile: Story Point badge + BE/FE/TEST popover on Agile cards == %>
+<% prj = project %>
+<% cfg = SananAgile::ProjectSettings.load(prj&.id) %>
+<% sp_cf  = cfg['story_point_cfid'].to_i %>
+<% be_cf  = cfg['sp_be_cfid'].to_i %>
+<% fe_cf  = cfg['sp_fe_cfid'].to_i %>
+<% qa_cf  = cfg['sp_qa_cfid'].to_i %>
+<% enabled = cfg['sanan_agile_enabled'] == '1' && (sp_cf > 0 || be_cf > 0 || fe_cf > 0 || qa_cf > 0) %>
+
+<% if enabled %>
+  <%
+    format_sp = lambda do |raw|
+      return nil if raw.nil?
+      s = raw.is_a?(Array) ? raw.find { |x| x.to_s.strip != '' }.to_s : raw.to_s
+      s = s.strip.tr(',', '.')
+      return nil if s.blank?
+      f = Float(s) rescue nil
+      return nil if f.nil?
+      (f % 1).zero? ? f.to_i : f
+    end
+
+    read_cf = lambda do |issue, cfid|
+      return nil if cfid.to_i <= 0
+      format_sp.call(issue.custom_field_value(cfid.to_i))
+    end
+
+    sp_map = Array(issues).each_with_object({}) do |i, h|
+      total = read_cf.call(i, sp_cf)
+      if total.nil? && i.respond_to?(:story_points) && i.story_points.present?
+        total = format_sp.call(i.story_points)
+      end
+      be = read_cf.call(i, be_cf)
+      fe = read_cf.call(i, fe_cf)
+      qa = read_cf.call(i, qa_cf)
+      next if total.nil? && be.nil? && fe.nil? && qa.nil?
+      h[i.id] = { sp: total, be: be, fe: fe, qa: qa }
+    end
+  %>
+
+  <style>
+    .issue-card.sanan-has-sp-badge .issue-name,
+    .issue-card.sanan-has-sp-badge p.name {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .issue-card.sanan-has-sp-badge .issue-name > a,
+    .issue-card.sanan-has-sp-badge p.name > a {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .sanan-sp-badge {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      margin: 0;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.5;
+      cursor: default;
+      white-space: nowrap;
+      z-index: 2;
+    }
+    .sanan-sp-badge.is-empty {
+      background: #f1f5f9;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .sanan-sp-pop {
+      display: none;
+      position: fixed;
+      min-width: 148px;
+      padding: 8px 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+      color: #0f172a;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.45;
+      z-index: 10000;
+      pointer-events: none;
+    }
+    .sanan-sp-badge.is-open .sanan-sp-pop {
+      display: block;
+    }
+    .sanan-sp-pop__row {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 2px 0;
+    }
+    .sanan-sp-pop__row.is-total {
+      margin-bottom: 4px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+      font-weight: 700;
+    }
+    .sanan-sp-pop__label { color: #64748b; }
+    .sanan-sp-pop__val { color: #0f172a; font-variant-numeric: tabular-nums; }
+    .sanan-sp-pop__val.is-miss { color: #94a3b8; }
+    /* Hide Redmine Agile native story-points on cards (Sanan badge replaces it) */
+    .agile-board .issue-card span.hours,
+    .issues-board .issue-card span.hours {
+      display: none !important;
+    }
+  </style>
+
+  <script>
+  (function (U) {
+    var SP_MAP = <%= raw(sp_map.to_json) %>;
+    var SHOW_BE = <%= be_cf > 0 %>;
+    var SHOW_FE = <%= fe_cf > 0 %>;
+    var SHOW_QA = <%= qa_cf > 0 %>;
+
+    function fmt(v) {
+      if (v === null || v === undefined || v === '') return '—';
+      return String(v);
+    }
+
+    function labelText(row) {
+      if (row.sp !== null && row.sp !== undefined && row.sp !== '') return String(row.sp) + 'sp';
+      return 'SP';
+    }
+
+    function buildPop(row) {
+      var html = '';
+      html += '<div class="sanan-sp-pop__row is-total">' +
+              '<span class="sanan-sp-pop__label">Total</span>' +
+              '<span class="sanan-sp-pop__val">' + fmt(row.sp) + '</span></div>';
+      if (SHOW_BE) {
+        html += '<div class="sanan-sp-pop__row"><span class="sanan-sp-pop__label">BE</span>' +
+                '<span class="sanan-sp-pop__val' + (row.be == null ? ' is-miss' : '') + '">' + fmt(row.be) + '</span></div>';
+      }
+      if (SHOW_FE) {
+        html += '<div class="sanan-sp-pop__row"><span class="sanan-sp-pop__label">FE</span>' +
+                '<span class="sanan-sp-pop__val' + (row.fe == null ? ' is-miss' : '') + '">' + fmt(row.fe) + '</span></div>';
+      }
+      if (SHOW_QA) {
+        html += '<div class="sanan-sp-pop__row"><span class="sanan-sp-pop__label">TEST</span>' +
+                '<span class="sanan-sp-pop__val' + (row.qa == null ? ' is-miss' : '') + '">' + fmt(row.qa) + '</span></div>';
+      }
+      return html;
+    }
+
+    function titleHost(card) {
+      return card.querySelector('.issue-name, p.name.issue-name, p.name');
+    }
+
+    function placeBadgeOnTitle(card, badge) {
+      var host = titleHost(card);
+      if (host) {
+        if (badge.parentNode !== host) host.appendChild(badge);
+        return;
+      }
+      if (badge.parentNode !== card) card.appendChild(badge);
+    }
+
+    function ensureBadge(card, iid) {
+      var key = String(iid);
+      var row = SP_MAP[key] || SP_MAP[iid];
+      if (!row) return;
+
+      card.classList.add('sanan-has-sp-badge');
+
+      var existing = card.querySelector('.sanan-sp-badge');
+      if (existing) {
+        var lab = existing.querySelector('.sanan-sp-badge__label');
+        if (lab) lab.textContent = labelText(row);
+        existing.querySelector('.sanan-sp-pop').innerHTML = buildPop(row);
+        existing.classList.toggle('is-empty', row.sp == null);
+        placeBadgeOnTitle(card, existing);
+        return;
+      }
+
+      var badge = document.createElement('span');
+      badge.className = 'sanan-sp-badge' + (row.sp == null ? ' is-empty' : '');
+      badge.tabIndex = 0;
+      badge.setAttribute('aria-label', 'Story points');
+
+      var labEl = document.createElement('span');
+      labEl.className = 'sanan-sp-badge__label';
+      labEl.textContent = labelText(row);
+      badge.appendChild(labEl);
+
+      var pop = document.createElement('span');
+      pop.className = 'sanan-sp-pop';
+      pop.setAttribute('role', 'tooltip');
+      pop.innerHTML = buildPop(row);
+      badge.appendChild(pop);
+
+      function placePop() {
+        var r = badge.getBoundingClientRect();
+        var popW = pop.offsetWidth || 160;
+        var popH = pop.offsetHeight || 90;
+        var top = r.bottom + 6;
+        if (top + popH > window.innerHeight - 8) top = Math.max(8, r.top - popH - 6);
+        var left = r.right - popW;
+        if (left < 8) left = 8;
+        if (left + popW > window.innerWidth - 8) left = Math.max(8, window.innerWidth - popW - 8);
+        pop.style.top = top + 'px';
+        pop.style.left = left + 'px';
+      }
+      function openPop() { badge.classList.add('is-open'); placePop(); }
+      function closePop() { badge.classList.remove('is-open'); }
+      badge.addEventListener('mouseenter', openPop);
+      badge.addEventListener('mouseleave', closePop);
+      badge.addEventListener('focus', openPop);
+      badge.addEventListener('blur', closePop);
+
+      placeBadgeOnTitle(card, badge);
+    }
+
+    function reconcile(card) {
+      var iid = U.findIssueId(card);
+      if (!iid) return;
+      ensureBadge(card, iid);
+    }
+
+    U.register(reconcile);
+    U.boot(true);
+  })(window.SananAgileUtil);
+  </script>
+<% end %>

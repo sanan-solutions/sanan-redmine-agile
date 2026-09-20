@@ -58,11 +58,15 @@
 }
 
 /* Redmine #wrapper/#content overflow breaks CSS sticky — unpin on backlog pages */
-body.controller-backlogs #wrapper {
+body.controller-backlogs #wrapper,
+body.controller-cs_backlogs #wrapper,
+body.controller-sale_backlogs #wrapper {
   overflow: visible !important;
 }
 
-body.controller-backlogs #content {
+body.controller-backlogs #content,
+body.controller-cs_backlogs #content,
+body.controller-sale_backlogs #content {
   overflow-x: visible !important;
 }
 
@@ -1951,6 +1955,24 @@ body.backlog-complete-modal-open {
   background: #ffebe6;
   padding: 1px 6px;
   border-radius: 4px;
+}
+
+.sanan-backlog .intake-deadline {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.sanan-backlog .intake-deadline.is-overdue {
+  color: #bf2600;
+  font-weight: 700;
+  background: #ffebe6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.sanan-backlog .intake-release-on {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .sanan-backlog .intake-alert-banner {

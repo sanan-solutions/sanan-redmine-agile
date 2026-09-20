@@ -69,6 +69,7 @@ Cùng một project. **PO** là người duy nhất (theo quyền) chọn ticket
 | S13 | CS/Sale trên IN PRODUCT? | **Chỉ comment** (+ xem) | |
 | S14 | Watchers khi PO pull? | **Auto-add (mặc định bật)** author/assignee CS·Sale | Đã chốt |
 | S15 | Issue mới CS/Sale? | **Auto** gắn Version queue + CF `Intake source` | Đã chốt |
+| S16 | Deadline hẹn khách? | **CF Date** `customer_deadline_cfid` trên CS/Sale backlog | Cột + quick-edit; quá hạn tô đỏ; không thay SLA clock (xem `SLA_ENGINE_PLAN.md` §3.5) |
 | S4 | Thứ tự chọn? | Theo **Priority** (Immediate → Low), tie-break: position, rồi `id` | Khớp sort backlog hiện tại |
 | S5 | Đơn vị quota / effort? | **Story points (SP)** | Quota CS/Sale trên từng Product sprint = số SP tối đa |
 | S6 | Ai được edit priority CS/Sale? | CS trên lane CS; Sale trên lane Sale; **PO** có thể override nếu cần | Permission theo lane |
@@ -446,7 +447,7 @@ ORDER BY priority.position_name (Immediate→Low),
 ## 12. Out of scope (có chủ đích)
 
 - Portal khách hàng tự tạo ticket (ngoài Redmine)
-- Workflow CS full (SLA engine, chatbot)
+- Workflow CS full (**SLA engine**, chatbot) — xem plan riêng: `docs/SLA_ENGINE_PLAN.md`
 - Cross-company multi-backlog portfolio
 - Thay Product Backlog / Releases hiện có
 
@@ -484,3 +485,4 @@ Cùng với: cùng project · quota = SP · Version queue CS/Sale · PO intake �
 
 - Product backlog hiện tại: `docs/BACKLOG_PLAN.md`
 - Sprint close report: `docs/SPRINT_CLOSE_REPORT_PLAN.md`
+- SLA engine (full): `docs/SLA_ENGINE_PLAN.md`

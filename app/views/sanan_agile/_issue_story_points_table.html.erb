@@ -1,0 +1,28 @@
+<%#
+  Bảng Story Points — luôn hiển thị, ngay dưới attributes / trước Description.
+%>
+<% issue = local_assigns[:issue] || @issue %>
+<% values = issue && respond_to?(:sanan_story_point_values_for) ? sanan_story_point_values_for(issue) : [] %>
+<% if values.present? %>
+  <div class="sanan-sp-block">
+    <div class="sanan-sp-block__head">
+      <strong class="sanan-sp-block__title"><%= l(:label_sanan_story_points_group) %></strong>
+    </div>
+    <table class="list sanan-sp-table">
+      <thead>
+        <tr>
+          <th><%= l(:field_name) rescue 'Field' %></th>
+          <th><%= l(:field_value) rescue 'Value' %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% values.each do |value| %>
+          <tr class="<%= cycle('odd', 'even', name: 'sanan_sp_table') %> <%= value.custom_field.css_classes %>">
+            <td class="name"><%= custom_field_name_tag(value.custom_field) %></td>
+            <td class="value"><%= custom_field_value_tag(value).presence || '—' %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>

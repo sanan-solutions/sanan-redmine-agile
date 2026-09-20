@@ -584,6 +584,7 @@
         if (display.id != null) $cell.attr('data-value', display.id);
         else if (display.text != null && field === 'subject') $cell.attr('data-value', display.text);
         else if (field === 'story_points') $cell.attr('data-value', display.text || value);
+        else if (field === 'customer_deadline') $cell.attr('data-value', (display.text && display.text !== '—') ? display.text : '');
         else $cell.attr('data-value', value);
 
         if (field === 'subject' && $disp.is('a')) {
@@ -629,11 +630,12 @@
       var $disp = $cell.find('.backlog-cell-edit__display');
       var $input;
 
-      if (type === 'text' || type === 'sp') {
+      if (type === 'text' || type === 'sp' || type === 'date') {
         $input = $('<input class="backlog-cell-edit__input" />');
         if (type === 'sp') $input.attr({ type: 'number', step: '0.5', min: '0' });
+        else if (type === 'date') $input.attr({ type: 'date' });
         else $input.attr({ type: 'text' });
-        $input.val(current || $disp.text());
+        $input.val(current || (type === 'date' ? '' : $disp.text()));
         $cell.append($input);
       } else {
         $input = buildMenu(optionListFor(field, type), current);

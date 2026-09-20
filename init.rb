@@ -8,6 +8,7 @@ require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_card_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_show_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/issues_helper_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_show_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/global_modal_hook', __dir__)
@@ -16,6 +17,8 @@ Rails.application.config.to_prepare do
   require_dependency 'releases_controller'
   require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/issues_helper_patch', __dir__)
+  SananAgile::IssuesHelperPatch.apply!
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/calculator', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
@@ -102,7 +105,7 @@ Redmine::Plugin.register :sanan_redmine_agile do
          cfg = SananAgile::ProjectSettings.load(project.id)
          User.current.allowed_to?(:view_backlog, project) &&
            cfg['sanan_agile_enabled'].to_s == '1' &&
-           cfg['backlog_enabled'].to_s != '0'
+           cfg['backlog_enabled'].to_s == '1'
        }
 
   menu :project_menu,

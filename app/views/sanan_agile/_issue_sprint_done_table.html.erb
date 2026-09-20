@@ -1,0 +1,35 @@
+<%#
+  Bảng Done … In Sprint — đặt dưới tất cả field (description_bottom).
+  Locals từ hook: issue
+%>
+<% issue = local_assigns[:issue] || @issue %>
+<% values = issue && respond_to?(:sanan_sprint_done_values_for) ? sanan_sprint_done_values_for(issue) : [] %>
+<% if values.present? %>
+  <% filled = values.count { |v| sanan_cf_value_present_for?(v) } %>
+  <div class="sanan-sprint-done-block">
+    <details class="sanan-sprint-done-group">
+      <summary>
+        <strong class="sanan-sprint-done-group__title"><%= l(:label_sanan_sprint_done_group) %></strong>
+        <span class="sanan-sprint-done-group__meta"><%= l(:label_sanan_sprint_done_group_count, filled: filled, total: values.size) %></span>
+      </summary>
+      <div class="sanan-sprint-done-group__body">
+        <table class="list sanan-sprint-done-table">
+          <thead>
+            <tr>
+              <th><%= l(:field_name) rescue 'Field' %></th>
+              <th><%= l(:field_value) rescue 'Value' %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% values.each do |value| %>
+              <tr class="<%= cycle('odd', 'even') %> <%= value.custom_field.css_classes %>">
+                <td class="name"><%= custom_field_name_tag(value.custom_field) %></td>
+                <td class="value"><%= custom_field_value_tag(value).presence || '—' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </details>
+  </div>
+<% end %>

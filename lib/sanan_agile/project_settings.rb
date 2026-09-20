@@ -64,9 +64,12 @@ module SananAgile
       'release_close_status_id'=> '',
 
       # Backlog
-      'backlog_enabled' => '1',
+      'backlog_enabled' => '0',
       'backlog_trackers' => [],   # empty = use standard_tracker
       'backlog_hide_subtasks' => '1',
+
+      # Agile board: hide these trackers from cards/column counts (e.g. Epic)
+      'agile_board_hidden_tracker_ids' => [],
 
       # CS / Sale intake backlogs
       'cs_backlog_enabled' => '0',
@@ -82,7 +85,9 @@ module SananAgile
       'intake_ready_sla_days' => '3',
       'cs_ready_sp_alert_threshold' => '20',
       'sale_ready_sp_alert_threshold' => '15',
-      'intake_ready_sp_alert_mail' => '0'
+      'intake_ready_sp_alert_mail' => '0',
+      # Date/DateTime CF: promised deadline with customer (CS/Sale)
+      'customer_deadline_cfid' => ''
     }.freeze
 
     PLUGIN_KEY = :sanan_redmine_agile

@@ -1,13 +1,15 @@
 <% html_title intake_lane_title %>
 <% edit = @can_manage %>
 <% ready_ids = @ready_status_ids || [] %>
-<% show_age = true %>
-<% col_count = (edit ? 9 : 8) + (show_age ? 1 : 0) %>
+<% show_deadline = intake_customer_deadline_enabled? %>
+<% backlog_path = @lane == 'sale' ? project_sale_backlog_path(@project) : project_cs_backlog_path(@project) %>
+<% create_path = @lane == 'sale' ? project_sale_backlog_create_issue_path(@project) : project_cs_backlog_create_issue_path(@project) %>
+<% quick_url = @lane == 'sale' ? project_sale_backlog_quick_update_path(@project) : project_cs_backlog_quick_update_path(@project) %>
 
 <div class="sanan-backlog sanan-intake-backlog"
      id="sanan-backlog"
      data-project-id="<%= @project.id %>"
-     data-quick-update-url="<%= @lane == 'sale' ? project_sale_backlog_quick_update_path(@project) : project_cs_backlog_quick_update_path(@project) %>"
+     data-quick-update-url="<%= quick_url %>"
      data-can-manage="<%= edit ? '1' : '0' %>"
      data-empty-label="<%= l(:label_no_data) %>">
 
@@ -54,114 +56,189 @@
     <% end %>
   <% end %>
 
-  <div class="backlog-filters">
-    <%= form_tag(@lane == 'sale' ? project_sale_backlog_path(@project) : project_cs_backlog_path(@project), method: :get) do %>
-      <%= select_tag :tracker_id,
-            options_from_collection_for_select(@data[:trackers], :id, :name, @filters[:tracker_id]),
-            include_blank: l(:label_tracker),
-            onchange: 'this.form.submit()' %>
-      <%= text_field_tag :q, @filters[:q], placeholder: l(:label_backlog_search_placeholder) %>
-      <%= submit_tag l(:button_apply), class: 'button' %>
-    <% end %>
-  </div>
-
-  <% [@data[:queue], @data[:in_product]].each do |section| %>
-    <% next unless section %>
-    <div class="backlog-section" data-section="<%= section.key %>">
-      <div class="backlog-section-header">
-        <h3>
-          <%= l(section.label_key) %>
-          <span class="backlog-section-meta">
-            <%= section.issues.size %> ·
-            <%= l(:label_backlog_sp_total) %> <%= backlog_sp_number(section.sp_total) %>
-          </span>
-        </h3>
-      </div>
-      <div class="backlog-section-body">
-        <div class="backlog-section-scroll">
-          <table class="list backlog-table">
-            <thead>
-              <tr>
-                <th class="id">#</th>
-                <th class="tracker"><%= l(:field_tracker) %></th>
-                <th class="subject"><%= l(:field_subject) %></th>
-                <th class="priority"><%= l(:field_priority) %></th>
-                <th class="assigned_to"><%= l(:field_assigned_to) %></th>
-                <th class="sp"><%= l(:label_backlog_sp_total) %></th>
-                <th class="status"><%= l(:field_status) %></th>
-                <% if section.key == 'queue' %>
-                  <th class="age"><%= l(:label_intake_age) %></th>
-                <% end %>
-                <% if section.key == 'in_product' %>
-                  <th class="sprint"><%= l(:label_intake_product_sprint) %></th>
-                  <th class="progress"><%= l(:field_done_ratio) %></th>
-                <% end %>
-              </tr>
-            </thead>
-            <tbody class="backlog-section-list">
-              <% if section.issues.blank? %>
-                <tr class="backlog-empty-row">
-                  <td colspan="<%= section.key == 'in_product' ? col_count + 1 : col_count %>"><%= l(:label_no_data) %></td>
-                </tr>
-              <% else %>
-                <% section.issues.each do |issue| %>
-                  <% cell_edit = edit && section.editable %>
-                  <tr class="backlog-row <%= cycle('odd', 'even') %>"
-                      data-id="<%= issue.id %>"
-                      data-issue-id="<%= issue.id %>">
-                    <td class="id"><%= link_to issue.id, issue_path(issue), class: 'backlog-issue-link' %></td>
-                    <td class="tracker<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="tracker_id" data-value="<%= issue.tracker_id %>"<% end %>>
-                      <span class="backlog-cell-edit__display"><%= h issue.tracker %></span>
-                    </td>
-                    <td class="subject<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="subject" data-value="<%= h issue.subject %>" data-edit-type="text"<% end %>>
-                      <%= link_to h(issue.subject), issue_path(issue),
-                            class: 'backlog-issue-subject backlog-issue-link backlog-cell-edit__display' %>
-                    </td>
-                    <td class="priority sanan-agile-priority<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="priority_id" data-value="<%= issue.priority_id %>" data-edit-type="priority"<% end %>>
-                      <span class="backlog-cell-edit__display"><%= backlog_priority_badge(issue.priority) %></span>
-                    </td>
-                    <td class="assigned_to<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="assigned_to_id" data-value="<%= issue.assigned_to_id.to_i %>" data-edit-type="assignee"<% end %>>
-                      <span class="backlog-cell-edit__display"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></span>
-                    </td>
-                    <td class="sp<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="story_points" data-value="<%= intake_issue_sp(issue) %>" data-edit-type="sp"<% end %>>
-                      <span class="backlog-cell-edit__display"><%= intake_issue_sp(issue) %></span>
-                    </td>
-                    <td class="status<%= ' backlog-cell-edit' if cell_edit %>"
-                        <% if cell_edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>
-                      <span class="backlog-cell-edit__display"><%= h issue.status %></span>
-                    </td>
-                    <% if section.key == 'queue' %>
-                      <td class="age"><%= intake_ready_age_cell(issue, @queue_health, ready_ids) %></td>
-                    <% end %>
-                    <% if section.key == 'in_product' %>
-                      <td class="sprint">
-                        <%= issue.fixed_version ? h(issue.fixed_version.name) : l(:label_backlog_unscheduled) %>
-                      </td>
-                      <td class="progress"><%= issue.done_ratio.to_i %>%</td>
-                    <% end %>
-                  </tr>
-                <% end %>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-
-        <% if section.key == 'queue' && @can_add_issues && edit && @queue_version %>
-          <div class="backlog-quick-create">
-            <%= form_tag(@lane == 'sale' ? project_sale_backlog_create_issue_path(@project) : project_cs_backlog_create_issue_path(@project), method: :post) do %>
-              <%= select_tag :tracker_id,
-                    options_from_collection_for_select(@data[:trackers], :id, :name, @data[:trackers].first&.id) %>
-              <%= text_field_tag :subject, nil, placeholder: l(:label_backlog_quick_create_placeholder), required: true %>
-              <%= submit_tag l(:button_create), class: 'button' %>
-            <% end %>
+  <div class="backlog-main">
+    <div class="backlog-filters-host" id="backlog-filters-host">
+      <div class="box backlog-card backlog-filters" id="backlog-filters">
+        <%= form_tag backlog_path, method: :get, class: 'backlog-filters__form' do %>
+          <div class="backlog-filters__field">
+            <span class="backlog-filters__label"><%= l(:field_tracker) %></span>
+            <%= select_tag :tracker_id,
+                  options_for_select([["— #{l(:label_all)} —", '']] + @data[:trackers].map { |t| [t.name, t.id] }, @filters[:tracker_id]),
+                  class: 'backlog-filters__control' %>
+          </div>
+          <div class="backlog-filters__field">
+            <span class="backlog-filters__label"><%= l(:field_assigned_to) %></span>
+            <%= select_tag :assigned_to_id,
+                  options_for_select(
+                    [["— #{l(:label_all)} —", ''], [l(:label_backlog_unassigned), '!*']] +
+                    @data[:assignees].map { |u| [u.name, u.id] },
+                    @filters[:assigned_to_id]
+                  ),
+                  class: 'backlog-filters__control' %>
+          </div>
+          <div class="backlog-filters__field backlog-filters__field--search">
+            <span class="backlog-filters__label"><%= l(:label_search) %></span>
+            <%= text_field_tag :q, @filters[:q],
+                  placeholder: l(:label_backlog_search_placeholder),
+                  class: 'backlog-filters__control' %>
+          </div>
+          <div class="backlog-filters__actions">
+            <span class="backlog-filters__label backlog-filters__label--spacer" aria-hidden="true">&nbsp;</span>
+            <div class="backlog-filters__actions-row">
+              <%= submit_tag l(:button_apply), class: 'backlog-btn backlog-btn--secondary backlog-btn--sm' %>
+              <%= link_to l(:button_clear), backlog_path, class: 'backlog-btn backlog-btn--ghost backlog-btn--sm' %>
+            </div>
           </div>
         <% end %>
       </div>
     </div>
-  <% end %>
+
+    <% [@data[:in_product], @data[:queue]].each do |section| %>
+      <% next unless section %>
+      <% section_key = section.key.to_s %>
+      <% collapse_default = section_key == 'queue' && section.issues.blank? %>
+      <% col_count = 8 %>
+      <% col_count += 1 if show_deadline %>
+      <% if section_key == 'queue' %>
+        <% col_count += 1 %>
+      <% elsif section_key == 'in_product' %>
+        <% col_count += 2 %>
+      <% end %>
+      <div class="box backlog-card backlog-section <%= 'backlog-section-active' if section_key == 'in_product' %>"
+           data-section="<%= section_key %>"
+           data-section-key="<%= section_key %>"
+           data-collapse-default="<%= collapse_default ? '1' : '0' %>">
+        <div class="backlog-section-header" data-section-toggle>
+          <button type="button"
+                  class="backlog-section-chevron"
+                  aria-expanded="<%= collapse_default ? 'false' : 'true' %>"
+                  aria-controls="backlog-section-body-<%= section_key %>"
+                  title="<%= l(:label_backlog_toggle_section) %>">
+            <svg class="backlog-section-chevron__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+              <path d="M5 6.5L8 9.5L11 6.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="backlog-section-title">
+            <h3>
+              <% if section_key == 'queue' %>
+                <span class="badge badge-active"><%= l(:label_intake_open_queue) %></span>
+              <% end %>
+              <%= l(section.label_key) %>
+            </h3>
+            <% if section_key == 'queue' && @queue_version %>
+              <div class="backlog-version-status"><%= h @queue_version.name %></div>
+            <% end %>
+          </div>
+          <div class="backlog-section-meta" data-no-toggle>
+            <span class="backlog-sp-total"><%= l(:label_backlog_sp_total) %>: <strong><%= backlog_sp_number(section.sp_total) %></strong></span>
+            <span class="backlog-count"><%= section.issues.size %> <%= l(:label_issue_plural) %></span>
+          </div>
+        </div>
+
+        <div class="backlog-section-body" id="backlog-section-body-<%= section_key %>">
+          <div class="backlog-section-scroll">
+            <table class="list backlog-table">
+              <thead>
+                <tr>
+                  <th class="id">#</th>
+                  <th class="tracker"><%= l(:field_tracker) %></th>
+                  <th class="subject"><%= l(:field_subject) %></th>
+                  <th class="priority"><%= l(:field_priority) %></th>
+                  <th class="assigned_to"><%= l(:field_assigned_to) %></th>
+                  <th class="sp"><%= l(:label_backlog_sp_total) %></th>
+                  <th class="status"><%= l(:field_status) %></th>
+                  <% if show_deadline %>
+                    <th class="deadline"><%= l(:label_customer_deadline) %></th>
+                  <% end %>
+                  <th class="release_on"><%= l(:label_intake_release_on) %></th>
+                  <% if section_key == 'queue' %>
+                    <th class="age"><%= l(:label_intake_age) %></th>
+                  <% end %>
+                  <% if section_key == 'in_product' %>
+                    <th class="sprint"><%= l(:label_intake_product_sprint) %></th>
+                    <th class="progress"><%= l(:field_done_ratio) %></th>
+                  <% end %>
+                </tr>
+              </thead>
+              <tbody class="backlog-section-list">
+                <% if section.issues.blank? %>
+                  <tr class="backlog-empty-row">
+                    <td colspan="<%= col_count %>" class="nodata"><%= l(:label_no_data) %></td>
+                  </tr>
+                <% else %>
+                  <% section.issues.each do |issue| %>
+                    <% cell_edit = edit && section.editable %>
+                    <tr class="backlog-row <%= cycle('odd', 'even') %>"
+                        data-id="<%= issue.id %>"
+                        data-issue-id="<%= issue.id %>">
+                      <td class="id"><%= link_to issue.id, issue_path(issue), class: 'backlog-issue-link' %></td>
+                      <td class="tracker<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="tracker_id" data-value="<%= issue.tracker_id %>"<% end %>>
+                        <span class="backlog-cell-edit__display"><%= h issue.tracker %></span>
+                      </td>
+                      <td class="subject<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="subject" data-value="<%= h issue.subject %>" data-edit-type="text"<% end %>>
+                        <%= link_to h(issue.subject), issue_path(issue),
+                              class: 'backlog-issue-subject backlog-issue-link backlog-cell-edit__display' %>
+                      </td>
+                      <td class="priority sanan-agile-priority<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="priority_id" data-value="<%= issue.priority_id %>" data-edit-type="priority"<% end %>>
+                        <span class="backlog-cell-edit__display"><%= backlog_priority_badge(issue.priority) %></span>
+                      </td>
+                      <td class="assigned_to<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="assigned_to_id" data-value="<%= issue.assigned_to_id.to_i %>" data-edit-type="assignee"<% end %>>
+                        <span class="backlog-cell-edit__display"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></span>
+                      </td>
+                      <td class="sp<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="story_points" data-value="<%= intake_issue_sp(issue) %>" data-edit-type="sp"<% end %>>
+                        <span class="backlog-cell-edit__display"><%= intake_issue_sp(issue) %></span>
+                      </td>
+                      <td class="status<%= ' backlog-cell-edit' if cell_edit %>"
+                          <% if cell_edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>
+                        <span class="backlog-cell-edit__display"><%= h issue.status %></span>
+                      </td>
+                      <% if show_deadline %>
+                        <% deadline_val = intake_customer_deadline_date(issue) %>
+                        <td class="deadline<%= ' backlog-cell-edit' if cell_edit %>"
+                            <% if cell_edit %>data-field="customer_deadline" data-value="<%= deadline_val %>" data-edit-type="date"<% end %>>
+                          <span class="backlog-cell-edit__display"><%= intake_customer_deadline_cell(issue) %></span>
+                        </td>
+                      <% end %>
+                      <td class="release_on"><%= intake_release_on_cell(issue) %></td>
+                      <% if section_key == 'queue' %>
+                        <td class="age"><%= intake_ready_age_cell(issue, @queue_health, ready_ids) %></td>
+                      <% end %>
+                      <% if section_key == 'in_product' %>
+                        <td class="sprint">
+                          <%= issue.fixed_version ? h(issue.fixed_version.name) : l(:label_backlog_unscheduled) %>
+                        </td>
+                        <td class="progress"><%= issue.done_ratio.to_i %>%</td>
+                      <% end %>
+                    </tr>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <% if section_key == 'queue' && @can_add_issues && edit && @queue_version %>
+            <div class="backlog-quick-create">
+              <%= form_tag create_path, method: :post do %>
+                <% @filters.each do |k, v| %><% next if v.blank? %><%= hidden_field_tag k, v %><% end %>
+                <%= select_tag :tracker_id,
+                      options_from_collection_for_select(@data[:trackers], :id, :name, @filters[:tracker_id].presence || @data[:trackers].first&.id),
+                      class: 'backlog-quick-create__tracker' %>
+                <%= text_field_tag :subject, '',
+                      placeholder: l(:label_backlog_quick_create_placeholder),
+                      size: 40,
+                      required: true,
+                      class: 'backlog-quick-create__subject' %>
+                <%= submit_tag l(:button_backlog_quick_create), class: 'backlog-btn backlog-btn--primary backlog-btn--sm' %>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
 </div>

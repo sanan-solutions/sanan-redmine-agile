@@ -24,6 +24,7 @@ class IntakeBacklogsController < ApplicationController
     }
     @data = SananAgile::IntakeBacklogQuery.call(@project, lane: @lane, cfg: @settings, filters: @filters)
     @queue_version = @data[:queue_version]
+    preload_intake_releases!
     @queue_health = SananAgile::IntakeQueueHealth.for_project(@project, cfg: @settings)
     @lane_health = @queue_health.maybe_alert!(@lane)
     @ready_status_ids = Array(@settings["#{@lane}_ready_status_ids"]).map(&:to_i).reject(&:zero?)
@@ -119,6 +120,13 @@ class IntakeBacklogsController < ApplicationController
     @settings = SananAgile::ProjectSettings.load(@project.id) || {}
   end
 
+  def preload_intake_releases!
+    return unless defined?(ReleaseVersion)
+
+    issues = [@data[:queue], @data[:in_product]].compact.flat_map(&:issues)
+    ReleaseVersion.preload_for_issues!(issues)
+  end
+
   def ensure_sanan_agile_enabled
     return if @settings['sanan_agile_enabled'].to_s == '1'
 
@@ -210,9 +218,30 @@ class IntakeBacklogsController < ApplicationController
       end
     when 'story_points', 'sp'
       return apply_quick_sp!(issue, value)
+    when 'customer_deadline'
+      return apply_quick_customer_deadline!(issue, value)
     else
       return false
     end
+    issue.save
+  end
+
+  def apply_quick_customer_deadline!(issue, value)
+    cf = @settings['customer_deadline_cfid'].to_i
+    return false if cf <= 0
+
+    raw = value.to_s.strip
+    if raw.blank?
+      issue.safe_attributes = { 'custom_field_values' => { cf.to_s => '' } }
+      return issue.save
+    end
+
+    begin
+      d = Date.parse(raw)
+    rescue ArgumentError
+      return false
+    end
+    issue.safe_attributes = { 'custom_field_values' => { cf.to_s => d.to_s } }
     issue.save
   end
 
@@ -255,6 +284,11 @@ class IntakeBacklogsController < ApplicationController
     when 'story_points', 'sp'
       sp = SananAgile::IntakeBacklogQuery.new(@project, lane: lane, cfg: @settings).story_point_for(issue)
       { text: (sp == sp.to_i ? sp.to_i : sp.round(2)).to_s }
+    when 'customer_deadline'
+      {
+        text: view_context.intake_customer_deadline_date(issue)&.iso8601 || '—',
+        html: view_context.intake_customer_deadline_cell(issue)
+      }
     else
       {}
     end

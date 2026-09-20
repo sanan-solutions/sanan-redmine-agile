@@ -1,0 +1,306 @@
+/* Sanan Agile — project settings */
+.sanan-settings {
+  --sa-border: #e2e8f0;
+  --sa-bg: #f8fafc;
+  --sa-accent: #1d4ed8;
+  --sa-accent-soft: #eff6ff;
+  --sa-text: #0f172a;
+  --sa-muted: #64748b;
+  max-width: 1080px;
+}
+
+.sanan-settings .sanan-settings__intro {
+  margin: 0 0 1rem;
+  color: var(--sa-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sanan-settings__layout {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--sa-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  min-height: 420px;
+}
+
+.sanan-settings__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  background: var(--sa-bg);
+  border-right: 1px solid var(--sa-border);
+}
+
+.sanan-settings__tab {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  width: 100%;
+  margin: 0;
+  border: 0 !important;
+  border-radius: 6px;
+  background: transparent;
+  background-image: none !important;
+  color: var(--sa-muted);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 550;
+  line-height: 1.35;
+  text-align: left;
+  text-shadow: none !important;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none !important;
+}
+
+.sanan-settings__tab:hover:not(.is-active),
+.sanan-settings__tab:focus:not(.is-active),
+.sanan-settings__tab:active:not(.is-active) {
+  background: #e8eef5 !important;
+  background-image: none !important;
+  color: var(--sa-text);
+  border: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.sanan-settings__tab:focus,
+.sanan-settings__tab:focus-visible {
+  outline: none;
+  box-shadow: none !important;
+}
+
+.sanan-settings__tab.is-active,
+.sanan-settings__tab.is-active:hover,
+.sanan-settings__tab.is-active:focus,
+.sanan-settings__tab.is-active:active {
+  background: var(--sa-accent) !important;
+  background-image: none !important;
+  color: #fff !important;
+  font-weight: 650;
+  border: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+.sanan-settings__main {
+  min-width: 0;
+  padding: 0;
+}
+
+.sanan-settings-section {
+  display: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  overflow: visible;
+}
+
+.sanan-settings-section.is-active,
+.sanan-settings-section:not([hidden]) {
+  display: block;
+}
+
+.sanan-settings-section[hidden] {
+  display: none !important;
+}
+
+.sanan-settings-section__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin: 0;
+  padding: 14px 18px 10px;
+  background: transparent;
+  border-bottom: 1px solid var(--sa-border);
+}
+
+.sanan-settings-section__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--sa-text);
+}
+
+.sanan-settings-section__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--sa-muted);
+  font-weight: 400;
+}
+
+.sanan-settings-section__body {
+  padding: 14px 18px 8px;
+}
+
+.sanan-settings .tabular p {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) minmax(0, 1fr);
+  gap: 6px 16px;
+  align-items: start;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.sanan-settings .tabular p > label {
+  margin: 0;
+  padding-top: 6px;
+  float: none;
+  width: auto;
+  text-align: left;
+  font-weight: 600;
+  color: var(--sa-text);
+  line-height: 1.35;
+}
+
+.sanan-settings .tabular p > *:not(label) {
+  max-width: 100%;
+}
+
+.sanan-settings .tabular select,
+.sanan-settings .tabular input[type="text"],
+.sanan-settings .tabular input[type="number"] {
+  max-width: 420px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.sanan-settings .tabular select[multiple] {
+  min-height: 88px;
+}
+
+.sanan-settings .sanan-settings__field-help,
+.sanan-settings .tabular em,
+.sanan-settings .tabular small,
+.sanan-settings .tabular .info {
+  display: block;
+  margin-top: 4px;
+  color: var(--sa-muted);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+.sanan-settings .sanan-settings__subgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.sanan-settings .sanan-settings__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.sanan-settings .sanan-settings__check label {
+  padding-top: 0 !important;
+  font-weight: 500 !important;
+}
+
+.sanan-settings .sanan-settings__radios {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.sanan-settings .sanan-settings__radio {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  float: none !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+  font-weight: 500 !important;
+  color: var(--sa-text);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.sanan-settings .sanan-settings__radio input[type="radio"] {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.sanan-settings .sanan-settings__divider {
+  margin: 4px 0 14px;
+  border: 0;
+  border-top: 1px dashed var(--sa-border);
+}
+
+.sanan-settings .sanan-settings__subtitle {
+  margin: 4px 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sa-text);
+}
+
+.sanan-settings .list {
+  width: 100%;
+  margin: 0 0 10px;
+}
+
+.sanan-settings .sanan-settings__actions {
+  position: sticky;
+  bottom: 0;
+  margin: 0;
+  padding: 12px 18px;
+  border-top: 1px solid var(--sa-border);
+  background: #fff;
+  z-index: 2;
+}
+
+.sanan-settings .sanan-settings__actions input[type="submit"] {
+  min-width: 120px;
+}
+
+@media (max-width: 820px) {
+  .sanan-settings__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sanan-settings__nav {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 4px;
+    padding: 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--sa-border);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sanan-settings__tab {
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  .sanan-settings__tab.is-active {
+    background: var(--sa-accent) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .sanan-settings .tabular p {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .sanan-settings .sanan-settings__subgrid {
+    grid-template-columns: 1fr;
+  }
+}

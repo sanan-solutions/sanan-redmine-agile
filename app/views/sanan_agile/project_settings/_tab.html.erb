@@ -1,196 +1,170 @@
 <% cfg = SananAgile::ProjectSettings.load(@project.id) %>
 <% issue_custom_fields = IssueCustomField.sorted.all %>
 <% version_cfs = VersionCustomField.order(:name) %>
-<% tracker_map  = (cfg['card_color_tracker_map']  || {}).stringify_keys %>
-<% trackers     = Tracker.order(:position) %>
+<% tracker_map = (cfg['card_color_tracker_map'] || {}).stringify_keys %>
+<% trackers = Tracker.order(:position) %>
+<% statuses = IssueStatus.sorted %>
+<% open_versions = @project.shared_versions.open.to_a %>
 <% mode = (cfg['card_color_tracker_mode'].presence || 'body') %>
 <%
-  issue_cfs = IssueCustomField.order(:position)
-  # gợi ý ưu tiên list-type trước
-  sorted = issue_cfs.sort_by { |cf| cf.field_format == 'list' ? 0 : 1 }
+  issue_cf_opts = [['— Không dùng —', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }
+  version_cf_opts = [['— Chọn —', '']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] }
+  tracker_opts = Tracker.all.map { |t| [t.name, t.id] }
+  status_name_opts = [['— Không dùng —', '']] + IssueStatus.all.map { |st| [st.name, st.name] }
+  date_cf_opts = [['—', '']] + IssueCustomField.order(:name).select { |cf|
+    %w[date date_time].include?(cf.field_format.to_s)
+  }.map { |cf| ["##{cf.id} #{cf.name}", cf.id] }
+  sorted_cfs = IssueCustomField.order(:position).sort_by { |cf| cf.field_format == 'list' ? 0 : 1 }
 %>
 
-<div class="box tabular">
+<%= stylesheet_link_tag 'project_settings', plugin: 'sanan_redmine_agile' %>
+<%= javascript_include_tag 'project_settings', plugin: 'sanan_redmine_agile' %>
+
+<div class="box tabular sanan-settings" id="sanan-settings">
+  <p class="sanan-settings__intro"><%= l(:text_sanan_settings_intro) %></p>
+
+  <div class="sanan-settings__layout">
+    <nav class="sanan-settings__nav" role="tablist" aria-label="<%= l(:label_sanan_settings_toc) %>">
+      <button type="button" class="sanan-settings__tab is-active" role="tab" aria-selected="true" data-sa-tab="sa-general"><%= l(:label_sanan_settings_general) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-trackers"><%= l(:label_sanan_settings_trackers) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-backlog"><%= l(:label_sanan_settings_backlog) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-board"><%= l(:label_sanan_settings_board) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-intake"><%= l(:label_sanan_settings_intake) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-release"><%= l(:label_sanan_settings_release) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-sp"><%= l(:label_sanan_settings_story_points) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-befe"><%= l(:label_sanan_settings_befe) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-workflow"><%= l(:label_sanan_settings_workflow) %></button>
+    </nav>
+
+    <div class="sanan-settings__main">
   <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
-    <p>
-      <label><%= l(:label_enabled_for_project) %></label>
-      <%= hidden_field_tag 'settings[sanan_agile_enabled]', '0' %>
-      <%= check_box_tag 'settings[sanan_agile_enabled]', '1', (cfg['sanan_agile_enabled'] == '1') %>
-    </p>
 
-    <p>
-      <label><%= l(:label_version_strategy) %></label>
-      <%= select_tag 'settings[sanan_agile_version_strategy]',
-        options_for_select([
-          [l(:label_strategy_nearest_or_latest), 'nearest_due_date_or_latest_open'],
-          [l(:label_strategy_latest_open), 'latest_open_only']
-        ], cfg['sanan_agile_version_strategy']) %>
-    </p>
-
-    <p>
-      <label><%= l(:label_skip_if_already_set) %></label>
-      <%= hidden_field_tag 'settings[skip_if_already_set]', '0' %>
-      <%= check_box_tag 'settings[skip_if_already_set]', '1', (cfg['skip_if_already_set'] == '1') %>
-      <em><%= l(:label_skip_note) %></em>
-    </p>
-
-    <div class="setting-group">
-      <h3>Working type schemes</h3>
-      <p>
-        <label>Epic Tracker</label>
-        <%= select_tag 'settings[epic_tracker]',
-              options_for_select([['– Không dùng –', '']] + Tracker.all.map { |st| [st.name, st.id] }, cfg['epic_tracker'])
-              %>
-      </p>
-
-  
-      <p>
-        <label>Standard Trackers</label>
-        <%= select_tag 'settings[standard_tracker][]',
-              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['standard_tracker'])),
-              multiple: true %>
-      </p>
-
-      <p>
-        <label>Sub-task Trackers</label>
-        <%= select_tag 'settings[subtask_tracker][]',
-              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['subtask_tracker'])),
-              multiple: true %>
-      </p>
-
-      <hr/>
-      <h4>Backlog</h4>
-      <p>
-        <label>Enable Backlog</label>
-        <%= hidden_field_tag 'settings[backlog_enabled]', '0' %>
-        <%= check_box_tag 'settings[backlog_enabled]', '1', cfg['backlog_enabled'].to_s != '0' %>
-      </p>
-      <p>
-        <label>Backlog Trackers (empty = Standard)</label>
-        <%= select_tag 'settings[backlog_trackers][]',
-              options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['backlog_trackers'])),
-              multiple: true %>
-      </p>
-      <p>
-        <label>Hide subtasks on Backlog</label>
-        <%= hidden_field_tag 'settings[backlog_hide_subtasks]', '0' %>
-        <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
-      </p>
-
-      <hr/>
-      <h4>CS / Sale Backlog</h4>
-      <p>
-        <label>Enable CS Backlog</label>
-        <%= hidden_field_tag 'settings[cs_backlog_enabled]', '0' %>
-        <%= check_box_tag 'settings[cs_backlog_enabled]', '1', cfg['cs_backlog_enabled'].to_s == '1' %>
-      </p>
-      <p>
-        <label>CS Queue Version</label>
-        <%= select_tag 'settings[cs_queue_version_id]',
-              options_for_select([['–', '']] + @project.shared_versions.open.map { |v| [v.name, v.id] },
-                                 cfg['cs_queue_version_id'].to_s),
-              include_blank: false %>
-        <em>Version dùng làm hàng đợi CS (không dùng làm Product sprint)</em>
-      </p>
-      <p>
-        <label>CS Ready statuses</label>
-        <%= select_tag 'settings[cs_ready_status_ids][]',
-              options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['cs_ready_status_ids']).map(&:to_i)),
-              multiple: true %>
-        <em>PO chỉ thấy ticket CS ở các status này khi pull</em>
-      </p>
-      <p>
-        <label>Enable Sale Backlog</label>
-        <%= hidden_field_tag 'settings[sale_backlog_enabled]', '0' %>
-        <%= check_box_tag 'settings[sale_backlog_enabled]', '1', cfg['sale_backlog_enabled'].to_s == '1' %>
-      </p>
-      <p>
-        <label>Sale Queue Version</label>
-        <%= select_tag 'settings[sale_queue_version_id]',
-              options_for_select([['–', '']] + @project.shared_versions.open.map { |v| [v.name, v.id] },
-                                 cfg['sale_queue_version_id'].to_s),
-              include_blank: false %>
-      </p>
-      <p>
-        <label>Sale Ready statuses</label>
-        <%= select_tag 'settings[sale_ready_status_ids][]',
-              options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['sale_ready_status_ids']).map(&:to_i)),
-              multiple: true %>
-      </p>
-      <p>
-        <label>Intake source CF</label>
-        <%= select_tag 'settings[intake_source_cfid]',
-              options_for_select([['–', '']] + IssueCustomField.order(:name).map { |cf| ["##{cf.id} #{cf.name}", cf.id] },
-                                 cfg['intake_source_cfid'].to_s) %>
-        <em>List CF values: <code>cs</code>, <code>sale</code>, <code>product</code> (giữ sau khi PO pull)</em>
-      </p>
-      <p>
-        <label>Default CS quota SP / sprint</label>
-        <%= text_field_tag 'settings[default_cs_quota_sp]', cfg['default_cs_quota_sp'], size: 6 %>
-      </p>
-      <p>
-        <label>Default Sale quota SP / sprint</label>
-        <%= text_field_tag 'settings[default_sale_quota_sp]', cfg['default_sale_quota_sp'], size: 6 %>
-      </p>
-      <p>
-        <label><%= l(:label_intake_ready_sla_days) %></label>
-        <%= text_field_tag 'settings[intake_ready_sla_days]', cfg['intake_ready_sla_days'], size: 4 %>
-        <em><%= l(:text_intake_ready_sla_days_hint) %></em>
-      </p>
-      <p>
-        <label><%= l(:label_cs_ready_sp_alert_threshold) %></label>
-        <%= text_field_tag 'settings[cs_ready_sp_alert_threshold]', cfg['cs_ready_sp_alert_threshold'], size: 6 %>
-      </p>
-      <p>
-        <label><%= l(:label_sale_ready_sp_alert_threshold) %></label>
-        <%= text_field_tag 'settings[sale_ready_sp_alert_threshold]', cfg['sale_ready_sp_alert_threshold'], size: 6 %>
-      </p>
-      <p>
-        <label><%= l(:label_intake_ready_sp_alert_mail) %></label>
-        <%= hidden_field_tag 'settings[intake_ready_sp_alert_mail]', '0' %>
-        <%= check_box_tag 'settings[intake_ready_sp_alert_mail]', '1', cfg['intake_ready_sp_alert_mail'].to_s == '1' %>
-        <em><%= l(:text_intake_ready_sp_alert_mail_hint) %></em>
-      </p>
-      
-      <p>
-        <label>Cho phép thêm issue con có tracker là standard vào release version</label>
-        <%= hidden_field_tag 'settings[release_add_child_issue_standard_tracker]', '0' %>
-        <%= check_box_tag 'settings[release_add_child_issue_standard_tracker]', '1', cfg['release_add_child_issue_standard_tracker'] == '1' %>
-      </p>
-
-      <p>
-        <label>Issue status cho phép release</label>
-        <%= select_tag 'settings[release_released_status_id]',
-              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_released_status_id']),
-              include_blank: true %>
-      </p>
-      <p>
-        <label>Issue status sử dụng khi release version được mark released</label>
-        <%= select_tag 'settings[release_close_status_id]',
-              options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['release_close_status_id']),
-              include_blank: true %>
-      </p>
-
-    </div>
-
-    <div class="setting-group">
-      <div>
-      <h3>Kiểu hiển thị màu thẻ (Tracker)</h3>
+    <section class="sanan-settings-section is-active" id="sa-general" data-sa-panel="sa-general" role="tabpanel">
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_general) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_general_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
         <p>
-          <label>
-            <%= radio_button_tag 'settings[card_color_tracker_mode]', 'body', mode == 'body' %>
-            Tô <strong>nền thẻ</strong> (có đổi màu chữ)
-          </label>
+          <label><%= l(:label_enabled_for_project) %></label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[sanan_agile_enabled]', '0' %>
+            <%= check_box_tag 'settings[sanan_agile_enabled]', '1', cfg['sanan_agile_enabled'] == '1' %>
+          </span>
         </p>
         <p>
-          <label>
-            <%= radio_button_tag 'settings[card_color_tracker_mode]', 'border', mode == 'border' %>
-            Chỉ tô <strong>viền trái</strong> (giữ nền & màu chữ mặc định)
-          </label>
+          <label><%= l(:label_version_strategy) %></label>
+          <span>
+            <%= select_tag 'settings[sanan_agile_version_strategy]',
+                  options_for_select([
+                    [l(:label_strategy_nearest_or_latest), 'nearest_due_date_or_latest_open'],
+                    [l(:label_strategy_latest_open), 'latest_open_only']
+                  ], cfg['sanan_agile_version_strategy']) %>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_skip_if_already_set) %></label>
+          <span>
+            <span class="sanan-settings__check">
+              <%= hidden_field_tag 'settings[skip_if_already_set]', '0' %>
+              <%= check_box_tag 'settings[skip_if_already_set]', '1', cfg['skip_if_already_set'] == '1' %>
+            </span>
+            <em><%= l(:label_skip_note) %></em>
+          </span>
         </p>
       </div>
+    </section>
 
-        <h3>Agile card colors — theo Tracker (đè màu theo Status)</h3>
+    <section class="sanan-settings-section" id="sa-trackers" data-sa-panel="sa-trackers" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_trackers) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_trackers_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <p>
+          <label>Epic Tracker</label>
+          <%= select_tag 'settings[epic_tracker]',
+                options_for_select([['— Không dùng —', '']] + tracker_opts, cfg['epic_tracker']) %>
+        </p>
+        <p>
+          <label>Standard Trackers</label>
+          <%= select_tag 'settings[standard_tracker][]',
+                options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['standard_tracker'])),
+                multiple: true %>
+        </p>
+        <p>
+          <label>Sub-task Trackers</label>
+          <%= select_tag 'settings[subtask_tracker][]',
+                options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['subtask_tracker'])),
+                multiple: true %>
+        </p>
+      </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-backlog" data-sa-panel="sa-backlog" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_backlog) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_backlog_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <p>
+          <label>Enable Backlog</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[backlog_enabled]', '0' %>
+            <%= check_box_tag 'settings[backlog_enabled]', '1', cfg['backlog_enabled'].to_s == '1' %>
+          </span>
+        </p>
+        <p>
+          <label>Backlog Trackers</label>
+          <span>
+            <%= select_tag 'settings[backlog_trackers][]',
+                  options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['backlog_trackers'])),
+                  multiple: true %>
+            <em>Để trống = dùng Standard Trackers</em>
+          </span>
+        </p>
+        <p>
+          <label>Hide subtasks on Backlog</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[backlog_hide_subtasks]', '0' %>
+            <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-board" data-sa-panel="sa-board" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_board) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_board_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <p>
+          <label><%= l(:label_agile_board_hidden_trackers) %></label>
+          <span>
+            <%= hidden_field_tag 'settings[agile_board_hidden_tracker_ids][]', '' %>
+            <%= select_tag 'settings[agile_board_hidden_tracker_ids][]',
+                  options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['agile_board_hidden_tracker_ids']).map(&:to_i)),
+                  multiple: true %>
+            <em><%= l(:text_agile_board_hidden_trackers_hint) %></em>
+          </span>
+        </p>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Màu thẻ theo Tracker</h4>
+        <p>
+          <label>Kiểu tô màu</label>
+          <span class="sanan-settings__radios">
+            <label class="sanan-settings__radio">
+              <%= radio_button_tag 'settings[card_color_tracker_mode]', 'body', mode == 'body' %>
+              <span>Tô nền thẻ</span>
+            </label>
+            <label class="sanan-settings__radio">
+              <%= radio_button_tag 'settings[card_color_tracker_mode]', 'border', mode == 'border' %>
+              <span>Chỉ viền trái</span>
+            </label>
+          </span>
+        </p>
         <table class="list">
           <thead>
             <tr><th>Tracker</th><th>Màu (#RRGGBB)</th></tr>
@@ -200,332 +174,391 @@
               <% key = tr.id.to_s %>
               <% val = tracker_map[key].presence %>
               <tr>
-                <td><%= h tr.name %> (<%= tr.id %>)</td>
+                <td><%= h tr.name %></td>
                 <td>
                   <input type="color" value="<%= val || '#ffffff' %>" oninput="this.nextElementSibling.value=this.value">
                   <%= text_field_tag "settings[card_color_tracker_map][#{key}]", val, placeholder: '#RRGGBB', style: 'width:110px' %>
-                  <span class="info">Để trống = không tô màu riêng</span>
                 </td>
               </tr>
             <% end %>
           </tbody>
         </table>
-        <p class="info">Ưu tiên màu: <strong>Priority</strong> &gt; <strong>Tracker</strong> &gt; <strong>Status</strong>.</p>
-    </div>
+        <p class="info" style="display:block;margin-bottom:12px">Ưu tiên màu: Priority &gt; Tracker &gt; Status. Để trống = không tô riêng.</p>
 
-    <div class="setting-group">
-      <p>
-        <label>Chọn Custom Field dùng làm “Test level”</label><br/>
-        <%= select_tag 'settings[test_level_cfid]',
-            options_for_select(
-              [['-- None --', nil]] +
-              sorted.map { |cf|
-                label = "##{cf.id} | #{cf.name} (#{cf.field_format}#{cf.multiple ? ', multiple' : ''})"
-                [label, cf.id]
-              },
-              cfg['test_level_cfid']
-            ),
-            include_blank: false %>
-      </p>
+        <hr class="sanan-settings__divider">
+        <p>
+          <label>Test level CF</label>
+          <span>
+            <%= select_tag 'settings[test_level_cfid]',
+                  options_for_select(
+                    [['— None —', nil]] + sorted_cfs.map { |cf|
+                      ["##{cf.id} | #{cf.name} (#{cf.field_format}#{cf.multiple ? ', multiple' : ''})", cf.id]
+                    },
+                    cfg['test_level_cfid']
+                  ) %>
+            <em>Nên dùng CF kiểu List — chỉ hiển thị tag trên card.</em>
+          </span>
+        </p>
+      </div>
+    </section>
 
-      <p class="info">
-        Gợi ý: nên chọn Custom Field dạng <strong>List</strong> (single hoặc multiple).
-        Plugin chỉ đọc & hiển thị tag trên issue card, không chỉnh sửa dữ liệu.
-      </p>
-    </div>
-
-    <div class="setting-group">
-      <h3>Story point Custom Field</h3>
-      <p>
-        <label>Story Point – chọn Issue Custom Field</label><br/>
-        <%= select_tag 'settings[story_point_cfid]',
-          options_for_select([['— Không dùng —', '']] +
-            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] },
-            cfg['story_point_cfid']) %>
-        <br/>
-        <small>CF này sẽ được đồng bộ vào cột <code>issues.story_points</code> của Redmine Agile sau khi bạn lưu Issue.</small>
-      </p>
-
-      <p>
-        <label>Story point Backend</label>
-        <%= select_tag 'settings[sp_be_cfid]',
-            options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                            cfg['sp_be_cfid']),
-              include_blank: true %>
-      </p>
-
-      <p>
-        <label>Story point Frontend</label>
-        <%= select_tag 'settings[sp_fe_cfid]',
-              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                            cfg['sp_fe_cfid']),
-              include_blank: true %>
-      </p>
-
-      <p>
-        <label>Story point QA</label>
-        <%= select_tag 'settings[sp_qa_cfid]',
-              options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                            cfg['sp_qa_cfid']),
-              include_blank: true %>
-      </p>
-
-      <hr/>
-      <h4>Version CF — SP Commit (snapshot khi đóng sprint)</h4>
-      <p>
-        <label>SP Commit (Version CF)</label><br>
-        <%= select_tag 'settings[sp_commit_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_commit_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-      <p>
-        <label>SP BE Commit (Version CF)</label><br>
-        <%= select_tag 'settings[sp_be_commit_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_be_commit_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-      <p>
-        <label>SP FE Commit (Version CF)</label><br>
-        <%= select_tag 'settings[sp_fe_commit_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_fe_commit_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-      <p>
-        <label>SP QA Commit (Version CF)</label><br>
-        <%= select_tag 'settings[sp_qa_commit_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_qa_commit_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-
-      <h4>Version CF — SP Actual (snapshot khi đóng sprint)</h4>
-      <p>
-        <label for="settings_sp_total_version_cfid">SP Actual (Version CF)</label><br>
-        <%= select_tag 'settings[sp_actual_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_actual_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-
-      <p>
-        <label for="settings_sp_be_total_version_cfid">SP BE Actual (Version CF)</label><br>
-        <%= select_tag 'settings[sp_be_actual_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_be_actual_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-
-      <p>
-        <label for="settings_sp_fe_total_version_cfid">SP FE Actual (Version CF)</label><br>
-        <%= select_tag 'settings[sp_fe_actual_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_fe_actual_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-
-      <p>
-        <label for="settings_sp_test_total_version_cfid">SP QA Actual (Version CF)</label><br>
-        <%= select_tag 'settings[sp_qa_actual_version_cfid]',
-            options_for_select([['-- Chọn --','']] + version_cfs.map { |cf| ["#{cf.name} (##{cf.id})", cf.id] },
-                              cfg['sp_qa_actual_version_cfid']),
-            include_blank: false, class: 'select' %>
-      </p>
-
-      <p class="info">
-        Các trường ở đây là <strong>Custom fields của Version</strong>. Hãy tạo trước ở Admin → Custom fields → Versions.
-      </p>
-
-    </div>
-
-    <div class="setting-group">
-      <h3>BE/FE Done Field</h3>
-
-
-      <p>
-          <label>Done Backend In Sprint (CF)</label>
-          <%= select_tag 'settings[done_be_cfid]',
-                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['done_be_cfid']),
-                include_blank: true %>
+    <section class="sanan-settings-section" id="sa-intake" data-sa-panel="sa-intake" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_intake) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_intake_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <h4 class="sanan-settings__subtitle">CS Backlog</h4>
+        <p>
+          <label>Enable CS Backlog</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[cs_backlog_enabled]', '0' %>
+            <%= check_box_tag 'settings[cs_backlog_enabled]', '1', cfg['cs_backlog_enabled'].to_s == '1' %>
+          </span>
+        </p>
+        <p>
+          <label>CS Queue Version</label>
+          <span>
+            <%= select_tag 'settings[cs_queue_version_id]',
+                  options_for_select([['—', '']] + open_versions.map { |v| [v.name, v.id] }, cfg['cs_queue_version_id'].to_s) %>
+            <em>Version hàng đợi CS (không dùng làm Product sprint)</em>
+          </span>
+        </p>
+        <p>
+          <label>CS Ready statuses</label>
+          <span>
+            <%= select_tag 'settings[cs_ready_status_ids][]',
+                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['cs_ready_status_ids']).map(&:to_i)),
+                  multiple: true %>
+            <em>PO chỉ pull ticket CS ở các status này</em>
+          </span>
         </p>
 
-
-
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Sale Backlog</h4>
         <p>
-          <label>Done Frontend In Sprint (CF)</label>
-          <%= select_tag 'settings[done_fe_cfid]',
-                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['done_fe_cfid']),
-                include_blank: true %>
+          <label>Enable Sale Backlog</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[sale_backlog_enabled]', '0' %>
+            <%= check_box_tag 'settings[sale_backlog_enabled]', '1', cfg['sale_backlog_enabled'].to_s == '1' %>
+          </span>
         </p>
-
         <p>
-          <label>Done QA In Sprint (CF)</label>
-          <%= select_tag 'settings[done_qa_cfid]',
-                options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['done_qa_cfid']),
-                include_blank: true %>
+          <label>Sale Queue Version</label>
+          <%= select_tag 'settings[sale_queue_version_id]',
+                options_for_select([['—', '']] + open_versions.map { |v| [v.name, v.id] }, cfg['sale_queue_version_id'].to_s) %>
         </p>
-
         <p>
-          <label>Limit trackers (optional)</label>
-          <%= select_tag 'settings[befe_trackers][]',
-                options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['befe_trackers'])),
+          <label>Sale Ready statuses</label>
+          <%= select_tag 'settings[sale_ready_status_ids][]',
+                options_from_collection_for_select(statuses, :id, :name, Array(cfg['sale_ready_status_ids']).map(&:to_i)),
                 multiple: true %>
-          <br><small>Để trống = áp dụng tất cả tracker.</small>
         </p>
 
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Chung / Quota / SLA</h4>
         <p>
-          <label>Statuses hiển thị BE/FE footer (optional)</label><br>
-          <% statuses = IssueStatus.order(:position) %>
-          <%= select_tag 'settings[befe_statuses][]',
-                options_from_collection_for_select(statuses, :id, :name, Array(cfg['befe_statuses']).map(&:to_i)),
+          <label>Intake source CF</label>
+          <span>
+            <%= select_tag 'settings[intake_source_cfid]',
+                  options_for_select([['—', '']] + IssueCustomField.order(:name).map { |cf| ["##{cf.id} #{cf.name}", cf.id] },
+                                     cfg['intake_source_cfid'].to_s) %>
+            <em>List: <code>cs</code> / <code>sale</code> / <code>product</code> (giữ sau PO pull)</em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_customer_deadline_cf) %></label>
+          <span>
+            <%= select_tag 'settings[customer_deadline_cfid]',
+                  options_for_select(date_cf_opts, cfg['customer_deadline_cfid'].to_s) %>
+            <em><%= l(:text_customer_deadline_cf_hint) %></em>
+          </span>
+        </p>
+        <div class="sanan-settings__subgrid">
+          <p>
+            <label>Default CS quota SP</label>
+            <%= text_field_tag 'settings[default_cs_quota_sp]', cfg['default_cs_quota_sp'], size: 6 %>
+          </p>
+          <p>
+            <label>Default Sale quota SP</label>
+            <%= text_field_tag 'settings[default_sale_quota_sp]', cfg['default_sale_quota_sp'], size: 6 %>
+          </p>
+          <p>
+            <label><%= l(:label_cs_ready_sp_alert_threshold) %></label>
+            <%= text_field_tag 'settings[cs_ready_sp_alert_threshold]', cfg['cs_ready_sp_alert_threshold'], size: 6 %>
+          </p>
+          <p>
+            <label><%= l(:label_sale_ready_sp_alert_threshold) %></label>
+            <%= text_field_tag 'settings[sale_ready_sp_alert_threshold]', cfg['sale_ready_sp_alert_threshold'], size: 6 %>
+          </p>
+        </div>
+        <p>
+          <label><%= l(:label_intake_ready_sla_days) %></label>
+          <span>
+            <%= text_field_tag 'settings[intake_ready_sla_days]', cfg['intake_ready_sla_days'], size: 4 %>
+            <em><%= l(:text_intake_ready_sla_days_hint) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_intake_ready_sp_alert_mail) %></label>
+          <span>
+            <span class="sanan-settings__check">
+              <%= hidden_field_tag 'settings[intake_ready_sp_alert_mail]', '0' %>
+              <%= check_box_tag 'settings[intake_ready_sp_alert_mail]', '1', cfg['intake_ready_sp_alert_mail'].to_s == '1' %>
+            </span>
+            <em><%= l(:text_intake_ready_sp_alert_mail_hint) %></em>
+          </span>
+        </p>
+      </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-release" data-sa-panel="sa-release" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_release) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_release_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <p>
+          <label>Status filter khi pick issue</label>
+          <%= select_tag 'settings[release_status_filter_ids][]',
+                options_from_collection_for_select(statuses, :id, :name, Array(cfg['release_status_filter_ids'])),
                 multiple: true %>
-          <span class="info">Chỉ những issue đang ở các status này mới thấy 2 checkbox BE/FE.</span>
         </p>
-
-        <hr>
         <p>
-          <label>Tự động chuyển status khi đủ điều kiện</label>
-          <%= hidden_field_tag 'settings[auto_move_enabled]', '0' %>
-          <%= check_box_tag 'settings[auto_move_enabled]', '1', cfg['auto_move_enabled'] == '1' %>
+          <label>Cho phép thêm issue con Standard vào release</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[release_add_child_issue_standard_tracker]', '0' %>
+            <%= check_box_tag 'settings[release_add_child_issue_standard_tracker]', '1', cfg['release_add_child_issue_standard_tracker'] == '1' %>
+          </span>
         </p>
+        <p>
+          <label>Status cho phép release</label>
+          <%= select_tag 'settings[release_released_status_id]',
+                options_from_collection_for_select(statuses, :id, :name, cfg['release_released_status_id']),
+                include_blank: true %>
+        </p>
+        <p>
+          <label>Status khi mark Released</label>
+          <span>
+            <%= select_tag 'settings[release_close_status_id]',
+                  options_from_collection_for_select(statuses, :id, :name, cfg['release_close_status_id']),
+                  include_blank: true %>
+            <em>Force status issue khi release version → released</em>
+          </span>
+        </p>
+      </div>
+    </section>
 
+    <section class="sanan-settings-section" id="sa-sp" data-sa-panel="sa-sp" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_story_points) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_story_points_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <h4 class="sanan-settings__subtitle">Issue Custom Fields</h4>
+        <p>
+          <label>Story Point (tổng)</label>
+          <span>
+            <%= select_tag 'settings[story_point_cfid]', options_for_select(issue_cf_opts, cfg['story_point_cfid']) %>
+            <em>Đồng bộ vào <code>agile_data.story_points</code> khi lưu Issue</em>
+          </span>
+        </p>
+        <div class="sanan-settings__subgrid">
+          <p>
+            <label>SP Backend</label>
+            <%= select_tag 'settings[sp_be_cfid]', options_for_select(issue_cf_opts, cfg['sp_be_cfid']), include_blank: true %>
+          </p>
+          <p>
+            <label>SP Frontend</label>
+            <%= select_tag 'settings[sp_fe_cfid]', options_for_select(issue_cf_opts, cfg['sp_fe_cfid']), include_blank: true %>
+          </p>
+          <p>
+            <label>SP QA</label>
+            <%= select_tag 'settings[sp_qa_cfid]', options_for_select(issue_cf_opts, cfg['sp_qa_cfid']), include_blank: true %>
+          </p>
+        </div>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Version CF — Commit (snapshot khi đóng sprint)</h4>
+        <div class="sanan-settings__subgrid">
+          <p>
+            <label>SP Commit</label>
+            <%= select_tag 'settings[sp_commit_version_cfid]', options_for_select(version_cf_opts, cfg['sp_commit_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP BE Commit</label>
+            <%= select_tag 'settings[sp_be_commit_version_cfid]', options_for_select(version_cf_opts, cfg['sp_be_commit_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP FE Commit</label>
+            <%= select_tag 'settings[sp_fe_commit_version_cfid]', options_for_select(version_cf_opts, cfg['sp_fe_commit_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP QA Commit</label>
+            <%= select_tag 'settings[sp_qa_commit_version_cfid]', options_for_select(version_cf_opts, cfg['sp_qa_commit_version_cfid']) %>
+          </p>
+        </div>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Version CF — Actual (snapshot khi đóng sprint)</h4>
+        <div class="sanan-settings__subgrid">
+          <p>
+            <label>SP Actual</label>
+            <%= select_tag 'settings[sp_actual_version_cfid]', options_for_select(version_cf_opts, cfg['sp_actual_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP BE Actual</label>
+            <%= select_tag 'settings[sp_be_actual_version_cfid]', options_for_select(version_cf_opts, cfg['sp_be_actual_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP FE Actual</label>
+            <%= select_tag 'settings[sp_fe_actual_version_cfid]', options_for_select(version_cf_opts, cfg['sp_fe_actual_version_cfid']) %>
+          </p>
+          <p>
+            <label>SP QA Actual</label>
+            <%= select_tag 'settings[sp_qa_actual_version_cfid]', options_for_select(version_cf_opts, cfg['sp_qa_actual_version_cfid']) %>
+          </p>
+        </div>
+        <p class="info" style="display:block;margin-bottom:12px">Tạo CF Version trước tại Admin → Custom fields → Versions.</p>
+      </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-befe" data-sa-panel="sa-befe" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_befe) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_befe_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <div class="sanan-settings__subgrid">
+          <p>
+            <label>Done Backend In Sprint</label>
+            <%= select_tag 'settings[done_be_cfid]', options_for_select(issue_cf_opts, cfg['done_be_cfid']), include_blank: true %>
+          </p>
+          <p>
+            <label>Done Frontend In Sprint</label>
+            <%= select_tag 'settings[done_fe_cfid]', options_for_select(issue_cf_opts, cfg['done_fe_cfid']), include_blank: true %>
+          </p>
+          <p>
+            <label>Done QA In Sprint</label>
+            <%= select_tag 'settings[done_qa_cfid]', options_for_select(issue_cf_opts, cfg['done_qa_cfid']), include_blank: true %>
+          </p>
+        </div>
+        <p>
+          <label>Limit trackers</label>
+          <span>
+            <%= select_tag 'settings[befe_trackers][]',
+                  options_from_collection_for_select(Tracker.all, :id, :name, Array(cfg['befe_trackers'])),
+                  multiple: true %>
+            <em>Để trống = tất cả tracker</em>
+          </span>
+        </p>
+        <p>
+          <label>Statuses hiện checkbox BE/FE</label>
+          <span>
+            <%= select_tag 'settings[befe_statuses][]',
+                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['befe_statuses']).map(&:to_i)),
+                  multiple: true %>
+          </span>
+        </p>
+        <hr class="sanan-settings__divider">
+        <p>
+          <label>Tự chuyển status khi đủ Done</label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[auto_move_enabled]', '0' %>
+            <%= check_box_tag 'settings[auto_move_enabled]', '1', cfg['auto_move_enabled'] == '1' %>
+          </span>
+        </p>
         <p>
           <label>Status đích</label>
           <%= select_tag 'settings[auto_move_status_id]',
-                options_from_collection_for_select(IssueStatus.sorted, :id, :name, cfg['auto_move_status_id']),
+                options_from_collection_for_select(statuses, :id, :name, cfg['auto_move_status_id']),
                 include_blank: true %>
         </p>
-
         <p>
-          <label>Resolve status (bắt buộc Done BE/FE)</label><br>
-          <% statuses = IssueStatus.order(:position) %>
-          <%= select_tag 'settings[resolve_status]',
-              options_from_collection_for_select(statuses, :id, :name, cfg['resolve_status'].to_s),
-              include_blank: true, class: 'select' %>
-          <span class="info">Khi issue chuyển sang status này, hệ thống sẽ kiểm tra Done BE/FE tương ứng với SP được set.</span>
-        </p>
-    </div>
-
-    <div class="setting-group">
-     <h3>Code Done field</h3>
-      <p>
-        <label><%= l(:label_trigger_status_name) %></label>
-                 <%= select_tag 'settings[code_done_status_name]',
-            options_for_select(
-              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
-              cfg['code_done_status_name']
-            )
-          %>
-          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
-      </p>
-
-      <p>
-        <label><%= l(:label_custom_field_to_fill) %></label>
-        <%= select_tag 'settings[code_done_cfid]',
-          options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] +
-            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }, cfg['code_done_cfid']) %>
-        <br/>
-        <small><%= l(:label_custom_field_help) %></small>
-      </p>
-    </div>
-
-
-    <div class="setting-group">
-     <h3>QA Done field</h3>
-      <p>
-        <label><%= l(:label_trigger_status_name) %></label>
-                 <%= select_tag 'settings[development_done_status_name]',
-            options_for_select(
-              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
-              cfg['development_done_status_name']
-            )
-          %>
-          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
-      </p>
-
-      <p>
-        <label><%= l(:label_custom_field_to_fill) %></label>
-        <%= select_tag 'settings[development_done_cfid]',
-          options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] +
-            issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }, cfg['development_done_cfid']) %>
-        <br/>
-        <small><%= l(:label_custom_field_help) %></small>
-      </p>
-    </div>
-
-    <div class="setting-group">
-      <h3>Done field</h3>
-      <p>
-        <label>Trackers hiển thị checkbox "Mark is done (DoD)"</label><br/>
-        <%= select_tag 'settings[dod_checkbox_trackers][]',
-              options_from_collection_for_select(Tracker.all, :id, :name, cfg['dod_checkbox_trackers']),
-              multiple: true %>
-      </p>
-
-      <p>
-        <label>Status hiển thị checkbox "Mark is done (DoD)"</label><br/>
-        <%= select_tag 'settings[dod_checkbox_statuses][]',
-        options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['dod_checkbox_statuses'])),
-        multiple: true %>
-        <br><small>Chỉ khi Issue đang ở một trong các trạng thái này, checkbox mới xuất hiện.</small>
-      </p>
-
-      <p>
-        <label>Custom Field "Mark is done (DoD)"</label><br/>
-        <%= select_tag 'settings[dod_cfid]',
-              options_for_select([['— Chưa chọn —','']] + IssueCustomField.all.map{|cf| ["##{cf.id} - #{cf.name}", cf.id]},
-                                cfg['dod_cfid']) %>
-      </p>
-    </div>
-
-    <div class="setting-group">
-      <h3>UAT Done field</h3>
-      <p>
-        <label>UAT Done – chọn trạng thái (status)</label><br/>
-          <%= select_tag 'settings[uat_done_status_name]',
-            options_for_select(
-              [['– Không dùng –', '']] + IssueStatus.all.map { |st| [st.name, st.name] },
-              cfg['uat_done_status_name']
-            )
-          %>
-          <br><small>Khi issue đổi sang status này (kéo sang cột tương ứng), plugin sẽ ghi Default Version.</small>
-      </p>
-
-      <p>
-        <label>UAT Done – chọn Custom Field để ghi</label><br/>
-        <%= select_tag 'settings[uat_done_cfid]',
-            options_for_select([['— Không dùng —','']] + issue_custom_fields.map{|cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id]},
-                              cfg['uat_done_cfid']) %>
-        <br><small>Nếu CF là kiểu <code>Version</code> sẽ ghi ID version; nếu là Text sẽ ghi tên version.</small>
-      </p>
-    </div>
-
-    <hr/>
-    <div>
-      <h2>Release Version Management</h2>
-      <div class="setting-group">
-          <p>
-          <label>Hiển thị issue có status:</label>
-           <%= select_tag 'settings[release_status_filter_ids][]',
-        options_from_collection_for_select(IssueStatus.sorted, :id, :name, Array(cfg['release_status_filter_ids'])),
-        multiple: true %>
+          <label>Resolve status</label>
+          <span>
+            <%= select_tag 'settings[resolve_status]',
+                  options_from_collection_for_select(statuses, :id, :name, cfg['resolve_status'].to_s),
+                  include_blank: true %>
+            <em>Khi chuyển sang status này, bắt buộc Done BE/FE theo SP đã set</em>
+          </span>
         </p>
       </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-workflow" data-sa-panel="sa-workflow" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_workflow) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_workflow_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <h4 class="sanan-settings__subtitle">Code Done</h4>
+        <p>
+          <label><%= l(:label_trigger_status_name) %></label>
+          <span>
+            <%= select_tag 'settings[code_done_status_name]', options_for_select(status_name_opts, cfg['code_done_status_name']) %>
+            <em>Khi issue sang status này → ghi Default Version</em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_custom_field_to_fill) %></label>
+          <span>
+            <%= select_tag 'settings[code_done_cfid]',
+                  options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name}", cf.id] }, cfg['code_done_cfid']) %>
+            <em><%= l(:label_custom_field_help) %></em>
+          </span>
+        </p>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Development / QA Done</h4>
+        <p>
+          <label><%= l(:label_trigger_status_name) %></label>
+          <%= select_tag 'settings[development_done_status_name]', options_for_select(status_name_opts, cfg['development_done_status_name']) %>
+        </p>
+        <p>
+          <label><%= l(:label_custom_field_to_fill) %></label>
+          <%= select_tag 'settings[development_done_cfid]',
+                options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name}", cf.id] }, cfg['development_done_cfid']) %>
+        </p>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">UAT Done</h4>
+        <p>
+          <label>Trigger status</label>
+          <%= select_tag 'settings[uat_done_status_name]', options_for_select(status_name_opts, cfg['uat_done_status_name']) %>
+        </p>
+        <p>
+          <label>Custom Field ghi version</label>
+          <%= select_tag 'settings[uat_done_cfid]', options_for_select(issue_cf_opts, cfg['uat_done_cfid']) %>
+        </p>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle">Definition of Done (DoD)</h4>
+        <p>
+          <label>Trackers hiện checkbox DoD</label>
+          <%= select_tag 'settings[dod_checkbox_trackers][]',
+                options_from_collection_for_select(Tracker.all, :id, :name, cfg['dod_checkbox_trackers']),
+                multiple: true %>
+        </p>
+        <p>
+          <label>Statuses hiện checkbox DoD</label>
+          <%= select_tag 'settings[dod_checkbox_statuses][]',
+                options_from_collection_for_select(statuses, :id, :name, Array(cfg['dod_checkbox_statuses'])),
+                multiple: true %>
+        </p>
+        <p>
+          <label>DoD Custom Field</label>
+          <%= select_tag 'settings[dod_cfid]',
+                options_for_select([['— Chưa chọn —', '']] + IssueCustomField.all.map { |cf| ["##{cf.id} - #{cf.name}", cf.id] },
+                                  cfg['dod_cfid']) %>
+        </p>
+      </div>
+    </section>
+
+    <div class="sanan-settings__actions">
+      <%= submit_tag l(:button_save) %>
     </div>
-
-
-
-    <p><%= submit_tag l(:button_save) %></p>
   <% end %>
+    </div>
+  </div>
 </div>
-
-  <style>
-    .setting-group {
-      margin-top: 1rem
-    }
-  </style>

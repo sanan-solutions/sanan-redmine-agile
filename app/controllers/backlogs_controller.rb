@@ -641,7 +641,7 @@ class BacklogsController < ApplicationController
   end
 
   def ensure_backlog_enabled
-    return if @settings['backlog_enabled'].to_s != '0'
+    return if @settings['backlog_enabled'].to_s == '1'
 
     render_404
   end

@@ -50,6 +50,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :backlog_enabled,
                   {backlog_trackers: []},
                   :backlog_hide_subtasks,
+                  {agile_board_hidden_tracker_ids: []},
                   :cs_backlog_enabled,
                   :sale_backlog_enabled,
                   :cs_queue_version_id,
@@ -64,6 +65,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :cs_ready_sp_alert_threshold,
                   :sale_ready_sp_alert_threshold,
                   :intake_ready_sp_alert_mail,
+                  :customer_deadline_cfid,
                 )
     SananAgile::ProjectSettings.save(@project.id, cfg)
     flash[:notice] = l(:notice_successful_update)
