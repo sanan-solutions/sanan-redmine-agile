@@ -2,7 +2,14 @@
 
 module SananAgile
   class BacklogQuery
-    Section = Struct.new(:key, :version, :active, :issues, :sp_total, keyword_init: true)
+    BACKLOG_PAGE_SIZE = 50
+
+    Section = Struct.new(
+      :key, :version, :active, :issues, :sp_total,
+      :issue_count, :has_more, :next_offset,
+      :sp_be, :sp_fe, :sp_qa,
+      keyword_init: true
+    )
 
     def self.call(project, cfg: nil, filters: {})
       new(project, cfg: cfg, filters: filters).call
@@ -34,15 +41,36 @@ module SananAgile
       parse_number(cv&.value)
     end
 
+    def backlog_page(offset: 0, limit: BACKLOG_PAGE_SIZE, compute_sp: true)
+      offset = [offset.to_i, 0].max
+      limit = [[limit.to_i, 1].max, 100].min
+      scope = backlog_issues_scope
+      total = count_scope(scope)
+      issues = scope.offset(offset).limit(limit).to_a
+      loaded = offset + issues.size
+      ids = compute_sp ? scope.except(:includes, :eager_load, :preload, :order).distinct.pluck(:id) : []
+      {
+        issues: issues,
+        total: total,
+        loaded: loaded,
+        has_more: loaded < total,
+        next_offset: loaded,
+        sp_total: compute_sp ? sum_sp_ids(ids) : nil,
+        sp_be: compute_sp ? sum_cf_ids(ids, 'sp_be_cfid') : nil,
+        sp_fe: compute_sp ? sum_cf_ids(ids, 'sp_fe_cfid') : nil,
+        sp_qa: compute_sp ? sum_cf_ids(ids, 'sp_qa_cfid') : nil
+      }
+    end
+
     private
 
     def active_section
       v = @project.default_version
       return nil unless v
-      return nil if SananAgile::IntakeSource.intake_queue_version_ids(@cfg).include?(v.id)
+      return nil if excluded_version_ids.include?(v.id)
 
       issues = issues_for_version(v.id)
-      Section.new(key: "version-#{v.id}", version: v, active: true, issues: issues, sp_total: sum_sp(issues))
+      sprint_section("version-#{v.id}", v, true, issues)
     end
 
     def future_sections
@@ -51,22 +79,90 @@ module SananAgile
         .reject { |v| default_id && v.id == default_id }
         .map do |v|
           issues = issues_for_version(v.id)
-          Section.new(key: "version-#{v.id}", version: v, active: false, issues: issues, sp_total: sum_sp(issues))
+          sprint_section("version-#{v.id}", v, false, issues)
         end
     end
 
+    def sprint_section(key, version, active, issues)
+      ids = issues.map(&:id)
+      Section.new(
+        key: key,
+        version: version,
+        active: active,
+        issues: issues,
+        sp_total: sum_sp(issues),
+        issue_count: issues.size,
+        has_more: false,
+        next_offset: issues.size,
+        sp_be: sum_cf_ids(ids, 'sp_be_cfid'),
+        sp_fe: sum_cf_ids(ids, 'sp_fe_cfid'),
+        sp_qa: sum_cf_ids(ids, 'sp_qa_cfid')
+      )
+    end
+
     def backlog_section
-      issues = filtered_scope.where(fixed_version_id: nil).to_a
-      Section.new(key: 'backlog', version: nil, active: false, issues: issues, sp_total: sum_sp(issues))
+      page = backlog_page(offset: 0)
+      Section.new(
+        key: 'backlog',
+        version: nil,
+        active: false,
+        issues: page[:issues],
+        sp_total: page[:sp_total],
+        issue_count: page[:total],
+        has_more: page[:has_more],
+        next_offset: page[:next_offset],
+        sp_be: page[:sp_be],
+        sp_fe: page[:sp_fe],
+        sp_qa: page[:sp_qa]
+      )
+    end
+
+    def backlog_issues_scope
+      SananAgile::ProductBacklog.scope(filtered_scope, @cfg)
+    end
+
+    def count_scope(scope)
+      scope.except(:includes, :eager_load, :preload, :order).distinct.count('issues.id')
+    end
+
+    def sum_sp_ids(ids)
+      return 0.0 if ids.blank?
+
+      cf = story_point_cfid
+      if cf <= 0
+        defined?(AgileData) ? AgileData.where(issue_id: ids).sum(:story_points).to_f : 0.0
+      else
+        sum_custom_values(ids, cf)
+      end
+    end
+
+    def sum_cf_ids(ids, setting_key)
+      cf = @cfg[setting_key].to_i
+      return nil unless cf.positive?
+      return 0.0 if ids.blank?
+
+      sum_custom_values(ids, cf)
+    end
+
+    def sum_custom_values(ids, cf)
+      CustomValue.where(customized_type: 'Issue', custom_field_id: cf, customized_id: ids)
+                 .pluck(:value)
+                 .sum { |v| parse_number(v) }
     end
 
     def open_versions
       @open_versions ||= begin
-        exclude_ids = SananAgile::IntakeSource.intake_queue_version_ids(@cfg)
         versions = @project.shared_versions.open.includes(:sanan_agile_version_meta).to_a
-        versions.reject! { |v| exclude_ids.include?(v.id) } if exclude_ids.any?
+        versions.reject! { |v| excluded_version_ids.include?(v.id) } if excluded_version_ids.any?
         versions.sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
       end
+    end
+
+    def excluded_version_ids
+      @excluded_version_ids ||= (
+        SananAgile::IntakeSource.intake_queue_version_ids(@cfg) +
+        SananAgile::ProductBacklog.version_ids(@cfg)
+      ).uniq
     end
 
     def issues_for_version(version_id)
@@ -79,7 +175,6 @@ module SananAgile
                      .where(project_id: @project.id)
                      .where(tracker_id: allowed_tracker_ids)
                      .joins(:priority)
-                     .eager_load(:agile_data)
                      .includes(:tracker, :status, :priority, :assigned_to, :parent)
                      .order(Arel.sql(priority_order_sql))
 

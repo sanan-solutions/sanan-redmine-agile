@@ -114,7 +114,7 @@ module SananAgile
       scope = Issue.visible.where(project_id: @project.id, fixed_version_id: qid)
       ids = ready_status_ids(lane)
       scope = scope.where(status_id: ids) if ids.any?
-      scope.includes(:agile_data).to_a
+      scope.to_a
     end
 
     def status_since(issue)

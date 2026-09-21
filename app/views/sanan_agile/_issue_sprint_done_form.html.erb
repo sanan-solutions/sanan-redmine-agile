@@ -1,0 +1,22 @@
+<% issue = local_assigns[:issue] || @issue %>
+<% values = issue && respond_to?(:sanan_sprint_done_form_values_for) ? sanan_sprint_done_form_values_for(issue) : [] %>
+<% if values.present? %>
+  <% filled = values.count { |v| sanan_cf_value_present_for?(v) } %>
+  <% required_open = values.any? { |v| issue.required_attribute?(v.custom_field_id) && !sanan_cf_value_present_for?(v) } %>
+  <div class="sanan-sprint-done-form">
+    <details class="sanan-sprint-done-group" <%= 'open' if required_open %>>
+      <summary>
+        <strong class="sanan-sprint-done-group__title"><%= l(:label_sanan_sprint_done_group) %></strong>
+        <span class="sanan-sprint-done-group__meta"><%= l(:label_sanan_sprint_done_group_count, filled: filled, total: values.size) %></span>
+      </summary>
+      <div class="sanan-sprint-done-group__body">
+        <% values.each do |value| %>
+          <p>
+            <%= custom_field_tag_with_label :issue, value,
+                  required: issue.required_attribute?(value.custom_field_id) %>
+          </p>
+        <% end %>
+      </div>
+    </details>
+  </div>
+<% end %>

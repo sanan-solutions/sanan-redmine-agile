@@ -84,12 +84,56 @@ module SprintReportsHelper
     end
   end
 
+  def sprint_report_source_badge(source)
+    src = source.to_s
+    src = 'product' unless %w[cs sale product].include?(src)
+    content_tag(:span, sprint_report_intake_label(src),
+                class: "sprint-intake-badge sprint-intake-badge--#{src}")
+  end
+
   def sprint_report_intake_badge(issue, cfg = nil)
     cfg ||= @settings || SananAgile::ProjectSettings.load(@project.id)
     src = SananAgile::IntakeSource.value_for(issue, cfg) || 'product'
-    return nil unless %w[cs sale].include?(src)
+    sprint_report_source_badge(src)
+  end
 
-    content_tag(:span, sprint_report_intake_label(src),
-                class: "sprint-intake-badge sprint-intake-badge--#{src}")
+  def sprint_report_code_cell(done, sp)
+    if done
+      content_tag(:span, class: 'sr-code-flag sr-code-flag--done') do
+        "#{l(:label_sprint_report_code_done)} · #{sprint_report_number(sp)} SP"
+      end
+    else
+      content_tag(:span, '—', class: 'sr-code-flag sr-code-flag--skip')
+    end
+  end
+
+  def sprint_report_yes_no_cell(yes)
+    if yes
+      content_tag(:span, l(:general_text_Yes), class: 'sr-code-flag sr-code-flag--done')
+    else
+      content_tag(:span, l(:general_text_No), class: 'sr-code-flag sr-code-flag--skip')
+    end
+  end
+
+  def sprint_report_dod_cell(dod)
+    if dod
+      content_tag(:span, l(:label_sprint_report_dod_yes), class: 'sr-code-flag sr-code-flag--done')
+    else
+      content_tag(:span, l(:label_sprint_report_dod_no), class: 'sr-code-flag sr-code-flag--skip')
+    end
+  end
+
+  def sprint_report_outcome_cell(outcome)
+    key = outcome.to_s
+    key = 'other' unless %w[done closed_without_dod carried_over unplanned in_sprint other].include?(key)
+    content_tag(:span, l("label_sprint_report_outcome_#{key}"),
+                class: "sr-outcome sr-outcome--#{key}")
+  end
+
+  def sprint_report_goal_met_badge(goal_met)
+    key = goal_met.to_s
+    key = 'unreviewed' unless %w[met partial missed unreviewed].include?(key)
+    content_tag(:span, l("label_sprint_report_goal_met_#{key}"),
+                class: "sr-badge sr-badge--goal-#{key}")
   end
 end

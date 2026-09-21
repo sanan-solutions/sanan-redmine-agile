@@ -22,6 +22,8 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   { dod_checkbox_statuses: [] },
                   :dod_cfid,
                   :story_point_cfid,
+                  :sp_total_formula,
+                  :sp_total_require_qa,
 
                   :sp_be_cfid, :sp_fe_cfid, :done_be_cfid, :done_fe_cfid, :done_qa_cfid,
                   :auto_move_enabled, :auto_move_status_id,:resolve_status,
@@ -50,6 +52,9 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :backlog_enabled,
                   {backlog_trackers: []},
                   :backlog_hide_subtasks,
+                  :backlog_version_id,
+                  :velocity_window,
+                  :commit_lock_days_before_end,
                   {agile_board_hidden_tracker_ids: []},
                   :cs_backlog_enabled,
                   :sale_backlog_enabled,

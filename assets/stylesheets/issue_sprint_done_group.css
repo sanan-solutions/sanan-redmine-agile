@@ -1,4 +1,17 @@
 /* Story Points table — always visible */
+.sanan-sp-show {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 14px 0 10px;
+}
+
+@media (min-width: 720px) {
+  .sanan-sp-show--pair {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .sanan-sp-block {
   margin: 18px 0 12px;
   border: 1px solid #d8dee6;
@@ -7,10 +20,19 @@
   background: #fff;
 }
 
+.sanan-sp-show .sanan-sp-block,
+.sanan-sp-block--compact {
+  margin: 0;
+}
+
 .sanan-sp-block__head {
   padding: 12px 14px;
   background: #eef2f7;
   border-bottom: 1px solid #d8dee6;
+}
+
+.sanan-sp-block--compact .sanan-sp-block__head {
+  padding: 8px 12px;
 }
 
 .sanan-sp-block__title {
@@ -20,6 +42,43 @@
   letter-spacing: 0.01em;
   color: #0f172a;
   line-height: 1.3;
+}
+
+.sanan-sp-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .sanan-sp-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.sanan-sp-kpi {
+  padding: 8px 12px 10px;
+  border-right: 1px solid #f1f5f9;
+}
+
+.sanan-sp-kpi:last-child {
+  border-right: 0;
+}
+
+.sanan-sp-kpi__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.sanan-sp-kpi__value {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
 }
 
 .sanan-sp-table {
@@ -57,6 +116,91 @@
 
 .sanan-sp-table td.value {
   color: #0f172a;
+}
+
+.sanan-sp-forms {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  clear: both;
+  float: none;
+  padding-bottom: 8px;
+}
+
+#issue-form fieldset.sanan-sp-form,
+fieldset.sanan-sp-form {
+  margin: 12px 0 16px;
+  padding: 12px 14px 16px;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  background: #fff;
+}
+
+#issue-form fieldset.sanan-sp-form:last-child,
+#issue-form fieldset.sanan-sp-form:last-of-type {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+#issue-form fieldset.sanan-sp-form:last-child p,
+#issue-form fieldset.sanan-sp-form .sanan-sp-form__grid p {
+  margin-bottom: 8px;
+}
+
+.sanan-sp-form legend {
+  font-weight: 700;
+  color: #0f172a;
+  padding: 0 6px;
+}
+
+.sanan-sp-form__hint {
+  margin: 0 0 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.sanan-sp-form__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px 16px;
+}
+
+.sanan-sp-form__grid p {
+  margin: 0 0 8px;
+}
+
+.sanan-sp-form__grid label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.sanan-sp-input {
+  width: 100%;
+  max-width: 140px;
+  box-sizing: border-box;
+}
+
+select.sanan-sp-input {
+  max-width: 160px;
+  height: auto;
+}
+
+.sanan-sp-form__sum {
+  display: inline-block;
+  min-height: 1.6em;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sanan-sp-form select.sanan-sp-input:disabled {
+  opacity: 0.7;
+  cursor: default;
+  background: #f1f5f9;
 }
 
 /* Done … In Sprint / State — collapsible table */
@@ -164,4 +308,61 @@
 
 .sanan-sprint-done-table td.value {
   color: #0f172a;
+}
+
+/* Edit form — State collapsible */
+.sanan-sprint-done-form {
+  clear: both;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 100%;
+  flex-basis: 100%;
+  float: none;
+  margin: 4px 0 16px;
+}
+
+.sanan-sprint-done-form .sanan-sprint-done-group__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2px 24px;
+  padding: 12px 16px 14px;
+}
+
+#issue-form .sanan-sprint-done-form .sanan-sprint-done-group__body p,
+.tabular .sanan-sprint-done-form .sanan-sprint-done-group__body p {
+  position: static;
+  padding: 6px 0;
+  margin: 0;
+  min-height: 0;
+}
+
+#issue-form .sanan-sprint-done-form .sanan-sprint-done-group__body label,
+.tabular .sanan-sprint-done-form .sanan-sprint-done-group__body label {
+  position: static;
+  display: block;
+  float: none;
+  width: auto;
+  margin: 0 0 4px;
+  padding: 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.3;
+}
+
+#issue-form .sanan-sprint-done-form .sanan-sprint-done-group__body select,
+#issue-form .sanan-sprint-done-form .sanan-sprint-done-group__body input,
+.tabular .sanan-sprint-done-form .sanan-sprint-done-group__body select,
+.tabular .sanan-sprint-done-form .sanan-sprint-done-group__body input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 720px) {
+  .sanan-sprint-done-form .sanan-sprint-done-group__body {
+    grid-template-columns: 1fr;
+  }
 }

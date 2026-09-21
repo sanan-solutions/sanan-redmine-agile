@@ -1,0 +1,11 @@
+<tr class="backlog-load-more"
+    data-offset="<%= next_offset %>"
+    data-loaded="<%= loaded %>"
+    data-total="<%= total %>">
+  <td colspan="<%= backlog_col_count %>" class="backlog-load-more__cell">
+    <span class="backlog-load-more__status"><%= l(:label_backlog_showing, loaded: loaded, total: total) %></span>
+    <button type="button" class="backlog-btn backlog-btn--ghost backlog-btn--sm backlog-load-more__btn">
+      <%= l(:label_backlog_load_more) %>
+    </button>
+  </td>
+</tr>

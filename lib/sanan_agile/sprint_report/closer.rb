@@ -18,6 +18,7 @@ module SananAgile
 
         result = Calculator.call(@version, cfg: @cfg, prefer_snapshot: false)
         assign_totals!(result)
+        snapshot_commit_ids!
         result
       rescue => e
         Rails.logger.error "[sanan_agile] SprintReport::Closer failed for version=#{@version.id}: #{e.class}: #{e.message}"
@@ -48,6 +49,14 @@ module SananAgile
         return if values.empty?
 
         @version.custom_field_values = values
+      end
+
+      def snapshot_commit_ids!
+        calc = Calculator.new(@version, cfg: @cfg, prefer_snapshot: false)
+        meta = @version.sanan_agile_version_meta || @version.build_sanan_agile_version_meta
+        meta.commit_issue_ids_list = calc.committed_issue_ids
+        meta.version_id = @version.id
+        meta.save
       end
 
       def format_number(n)

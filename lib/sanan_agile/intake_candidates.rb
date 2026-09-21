@@ -37,7 +37,6 @@ module SananAgile
       scope = Issue.visible
                    .where(project_id: @project.id, fixed_version_id: queue_id)
                    .joins(:priority)
-                   .eager_load(:agile_data)
                    .includes(:tracker, :status, :priority)
                    .order(Arel.sql(priority_order_sql))
 
@@ -81,7 +80,7 @@ module SananAgile
                  .where('LOWER(custom_values.value) IN (?)', aliases)
                  .distinct
                  .pluck(:id)
-      Issue.where(id: ids).includes(:agile_data).sum { |i| story_point_for(i) }
+      Issue.where(id: ids).sum { |i| story_point_for(i) }
     end
 
     def ready_status_ids(lane)
@@ -116,7 +115,7 @@ module SananAgile
           WHEN 'low3' THEN 7 WHEN 'low2' THEN 8 WHEN 'lowest' THEN 9
           ELSE 10
         END ASC,
-        COALESCE(agile_data.position, 0) DESC,
+        COALESCE((SELECT agile_data.position FROM agile_data WHERE agile_data.issue_id = issues.id LIMIT 1), 0) DESC,
         issues.id ASC
       SQL
     end

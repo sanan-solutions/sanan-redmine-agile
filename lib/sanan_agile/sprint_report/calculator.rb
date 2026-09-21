@@ -6,12 +6,17 @@ module SananAgile
       Result = Struct.new(
         :commit_sp, :commit_be, :commit_fe, :commit_qa,
         :actual_sp, :actual_be, :actual_fe, :actual_qa,
-        :completed_issues, :members, :participants, :from_snapshot,
-        :intake,
+        :completed_issues, :coded_issues, :members, :participants, :from_snapshot,
+        :intake, :commit_locked, :commit_cutoff_on, :goal_met, :goal_note,
         keyword_init: true
       )
 
       MemberRow = Struct.new(:user, :user_id, :issue_count, :sp, keyword_init: true)
+      CodedIssueRow = Struct.new(
+        :issue, :committed, :dod, :be_done, :fe_done, :qa_done,
+        :be_sp, :fe_sp, :qa_sp, :outcome,
+        keyword_init: true
+      )
       IntakeBucket = Struct.new(:source, :count, :sp, keyword_init: true)
       IntakeQuota = Struct.new(:source, :quota, :used, :remaining, :pct_of_commit, keyword_init: true)
 
@@ -31,12 +36,13 @@ module SananAgile
 
       def call
         issues = @metrics_only ? [] : completed_issues
+        coded = @metrics_only ? [] : coded_issues
         members = @metrics_only ? [] : member_rows
         participants = @metrics_only ? [] : sprint_participants
         intake = build_intake(issues)
 
         if @prefer_snapshot && (snap = snapshot_totals)
-          Result.new(
+          Result.new(base_result_attrs.merge(
             commit_sp: snap[:commit_sp],
             commit_be: snap[:commit_be],
             commit_fe: snap[:commit_fe],
@@ -46,13 +52,14 @@ module SananAgile
             actual_fe: snap[:actual_fe],
             actual_qa: snap[:actual_qa],
             completed_issues: issues,
+            coded_issues: coded,
             members: members,
             participants: participants,
             from_snapshot: true,
             intake: intake
-          )
+          ))
         else
-          Result.new(
+          Result.new(base_result_attrs.merge(
             commit_sp: commit_totals[:sp],
             commit_be: commit_totals[:be],
             commit_fe: commit_totals[:fe],
@@ -62,32 +69,60 @@ module SananAgile
             actual_fe: actual_totals[:fe],
             actual_qa: actual_totals[:qa],
             completed_issues: issues,
+            coded_issues: coded,
             members: members,
             participants: participants,
             from_snapshot: false,
             intake: intake
-          )
+          ))
         end
       end
 
+      def base_result_attrs
+        meta = @version.sanan_agile_version_meta
+        {
+          commit_locked: SananAgile::CommitLock.locked?(@version, @cfg),
+          commit_cutoff_on: SananAgile::CommitLock.cutoff_on(@version, @cfg),
+          goal_met: meta&.goal_met_key || 'unreviewed',
+          goal_note: meta&.goal_note.to_s
+        }
+      end
+
       def commit_totals
-        @commit_totals ||= begin
-          ids = committed_issue_ids
-          {
-            sp: sum_cf(ids, cfid('story_point_cfid')),
-            be: sum_cf(ids, cfid('sp_be_cfid')),
-            fe: sum_cf(ids, cfid('sp_fe_cfid')),
-            qa: sum_cf(ids, cfid('sp_qa_cfid'))
-          }
-        end
+        @commit_totals ||= if @version.status.to_s == 'closed'
+                             closed_sprint_commit_totals
+                           else
+                             live_sprint_commit_totals
+                           end
+      end
+
+      def live_sprint_commit_totals(issue_ids = nil)
+        ids = issue_ids || committed_issue_ids
+        be = sum_cf(ids, cfid('sp_be_cfid'))
+        fe = sum_cf(ids, cfid('sp_fe_cfid'))
+        qa = sum_cf(ids, cfid('sp_qa_cfid'))
+        { sp: be + fe + qa, be: be, fe: fe, qa: qa }
+      end
+
+      def closed_sprint_commit_totals
+        return live_sprint_commit_totals unless defined?(SananIssueSprintSp)
+
+        hist = SananIssueSprintSp.where(version_id: @sid)
+        hist_ids = hist.distinct.pluck(:issue_id)
+        remaining = committed_issue_ids - hist_ids
+        live = remaining.any? ? live_sprint_commit_totals(remaining) : { sp: 0.0, be: 0.0, fe: 0.0, qa: 0.0 }
+        be = hist.sum(:sp_be).to_f + live[:be].to_f
+        fe = hist.sum(:sp_fe).to_f + live[:fe].to_f
+        qa = hist.sum(:sp_qa).to_f + live[:qa].to_f
+        { sp: be + fe + qa, be: be, fe: fe, qa: qa }
       end
 
       def actual_totals
         @actual_totals ||= {
           sp: sum_cf(issue_ids_by_done_cf('dod_cfid'), cfid('story_point_cfid')),
-          be: sum_cf(issue_ids_by_done_cf('done_be_cfid'), cfid('sp_be_cfid')),
-          fe: sum_cf(issue_ids_by_done_cf('done_fe_cfid'), cfid('sp_fe_cfid')),
-          qa: sum_cf(issue_ids_by_done_cf('done_qa_cfid'), cfid('sp_qa_cfid'))
+          be: actual_team_sp('done_be_cfid', 'sp_be_cfid', :sp_be),
+          fe: actual_team_sp('done_fe_cfid', 'sp_fe_cfid', :sp_fe),
+          qa: actual_team_sp('done_qa_cfid', 'sp_qa_cfid', :sp_qa)
         }
       end
 
@@ -208,9 +243,36 @@ module SananAgile
       end
 
       def committed_issue_ids
+        @committed_issue_ids ||= live_committed_issue_ids
+      end
+
+      def resolved_committed_ids
+        @resolved_committed_ids ||= begin
+          if @version.status.to_s == 'closed'
+            snap = @version.sanan_agile_version_meta&.commit_issue_ids_list
+            snap.present? ? snap : fallback_committed_ids
+          else
+            live_committed_issue_ids
+          end
+        end
+      end
+
+      def live_committed_issue_ids
         return [] if standard_ids.blank?
 
         Issue.where(project_id: @project.id, tracker_id: standard_ids, fixed_version_id: @sid).pluck(:id)
+      end
+
+      def fallback_committed_ids
+        hist_ids = defined?(SananIssueSprintSp) ? SananIssueSprintSp.where(version_id: @sid).distinct.pluck(:issue_id) : []
+        (
+          live_committed_issue_ids +
+            hist_ids +
+            issue_ids_by_done_cf('dod_cfid') +
+            issue_ids_by_done_cf('done_be_cfid') +
+            issue_ids_by_done_cf('done_fe_cfid') +
+            issue_ids_by_done_cf('done_qa_cfid')
+        ).uniq
       end
 
       def issue_ids_by_done_cf(setting_key)
@@ -219,14 +281,132 @@ module SananAgile
         done_cf = cfid(setting_key)
         return [] if done_cf <= 0
 
+        values = [@sid_str]
+        values << @version.name.to_s if @version.name.present?
         Issue.joins(:custom_values)
              .where(project_id: @project.id, tracker_id: standard_ids)
-             .where(custom_values: { custom_field_id: done_cf, value: @sid_str })
+             .where(custom_values: { custom_field_id: done_cf, value: values.uniq })
              .distinct
              .pluck(:id)
       end
 
+      def actual_team_sp(done_key, sp_key, hist_col)
+        ids = issue_ids_by_done_cf(done_key)
+        issue_team_sp_map(ids, sp_key, hist_col).values.sum
+      end
+
+      def issue_team_sp_map(ids, sp_key, hist_col)
+        return {} if ids.blank?
+
+        live = sum_cf_by_issue(ids, cfid(sp_key))
+        present = cf_present_ids(ids, cfid(sp_key))
+        hist = sprint_history_by_issue(ids)
+        sizes = issue_size_by_issue(ids)
+        ids.each_with_object({}) do |iid, h|
+          h[iid] = if present.include?(iid)
+                     live[iid].to_f
+                   elsif hist[iid]
+                     hist[iid].public_send(hist_col).to_f
+                   elsif sizes[iid]
+                     sizes[iid].public_send(hist_col).to_f
+                   else
+                     0.0
+                   end
+        end
+      end
+
+      def coded_issues
+        be_ids = issue_ids_by_done_cf('done_be_cfid')
+        fe_ids = issue_ids_by_done_cf('done_fe_cfid')
+        qa_ids = issue_ids_by_done_cf('done_qa_cfid')
+        dod_ids = issue_ids_by_done_cf('dod_cfid')
+        committed_ids = resolved_committed_ids
+        completed = completed_issues
+        ids = (completed.map(&:id) + committed_ids + be_ids + fe_ids + qa_ids + dod_ids).uniq
+        return [] if ids.blank?
+
+        be_set = be_ids.to_set
+        fe_set = fe_ids.to_set
+        qa_set = qa_ids.to_set
+        dod_set = dod_ids.to_set
+        committed_set = committed_ids.to_set
+        be_sp = issue_team_sp_map(be_ids, 'sp_be_cfid', :sp_be)
+        fe_sp = issue_team_sp_map(fe_ids, 'sp_fe_cfid', :sp_fe)
+        qa_sp = issue_team_sp_map(qa_ids, 'sp_qa_cfid', :sp_qa)
+        issues = completed.index_by(&:id)
+        missing = ids - issues.keys
+        if missing.any?
+          Issue.where(id: missing)
+               .includes(:tracker, :status, :assigned_to)
+               .each { |issue| issues[issue.id] = issue }
+        end
+        ids.sort.reverse.filter_map do |iid|
+          issue = issues[iid]
+          next unless issue
+
+          committed = committed_set.include?(iid)
+          dod = dod_set.include?(iid)
+          CodedIssueRow.new(
+            issue: issue,
+            committed: committed,
+            dod: dod,
+            be_done: be_set.include?(iid),
+            fe_done: fe_set.include?(iid),
+            qa_done: qa_set.include?(iid),
+            be_sp: be_sp[iid].to_f,
+            fe_sp: fe_sp[iid].to_f,
+            qa_sp: qa_sp[iid].to_f,
+            outcome: ticket_outcome(issue, committed, dod, be_set.include?(iid) || fe_set.include?(iid) || qa_set.include?(iid))
+          )
+        end
+      end
+
+      def ticket_outcome(issue, committed, dod, team_done)
+        on_sprint = issue.fixed_version_id.to_i == @sid
+        closed = issue.status&.is_closed?
+        if committed && dod
+          'done'
+        elsif committed && !dod && closed
+          'closed_without_dod'
+        elsif committed && !dod && !on_sprint
+          'carried_over'
+        elsif !committed && team_done
+          'unplanned'
+        elsif committed
+          'in_sprint'
+        else
+          'other'
+        end
+      end
+
+      def cf_present_ids(issue_ids, field_id)
+        return [] if field_id.to_i <= 0 || issue_ids.blank?
+
+        CustomValue.where(
+          customized_type: 'Issue',
+          custom_field_id: field_id,
+          customized_id: issue_ids
+        ).where("custom_values.value IS NOT NULL AND custom_values.value != ''")
+         .distinct.pluck(:customized_id)
+      end
+
+      def sprint_history_by_issue(issue_ids)
+        return {} unless defined?(SananIssueSprintSp) && issue_ids.present?
+
+        SananIssueSprintSp.where(version_id: @sid, issue_id: issue_ids).index_by(&:issue_id)
+      end
+
+      def issue_size_by_issue(issue_ids)
+        return {} unless defined?(SananIssueSpSize) && issue_ids.present?
+
+        SananIssueSpSize.where(issue_id: issue_ids).index_by(&:issue_id)
+      end
+
       def completed_issues
+        @completed_issues ||= load_completed_issues
+      end
+
+      def load_completed_issues
         return [] if standard_ids.blank?
 
         closed_ids = IssueStatus.where(is_closed: true).pluck(:id)

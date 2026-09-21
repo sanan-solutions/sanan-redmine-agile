@@ -73,43 +73,27 @@
   }
 
   function ensureFilterBar() {
-    var anchor = document.querySelector('.agile-board-header, #sa-release-filterbar, .agile-board .query-totals, .agile-board');
-    if (!anchor) anchor = document.querySelector('#content');
-    if (!anchor) return;
-
-    if (!document.getElementById('sa-intake-filterbar')) {
-      var bar = document.createElement('div');
-      bar.id = 'sa-intake-filterbar';
-      bar.innerHTML =
-        '<label for="sa-intake-filter"><strong>Intake:</strong></label>' +
-        '<select id="sa-intake-filter">' +
-          '<option value="">All sources</option>' +
-          '<option value="cs">CS</option>' +
-          '<option value="sale">Sale</option>' +
-          '<option value="product">Product (no CS/Sale)</option>' +
-        '</select>' +
-        '<button id="sa-intake-clear" type="button">Clear</button>';
-      if (anchor.id === 'sa-release-filterbar' && anchor.parentNode) {
-        anchor.parentNode.insertBefore(bar, anchor.nextSibling);
-      } else {
-        anchor.prepend(bar);
-      }
-    }
-
-    var sel = document.getElementById('sa-intake-filter');
+    if (!U.ensureBoardFilterField) return;
+    var sel = U.ensureBoardFilterField(
+      'sa-intake-filter',
+      '<label for="sa-intake-filter"><strong>Intake:</strong></label>' +
+      '<select id="sa-intake-filter">' +
+        '<option value="">All sources</option>' +
+        '<option value="cs">CS</option>' +
+        '<option value="sale">Sale</option>' +
+        '<option value="product">Product (no CS/Sale)</option>' +
+      '</select>',
+      20
+    );
     if (sel && !sel._saBound) {
       sel._saBound = true;
       sel.addEventListener('change', applyFilter);
-      document.getElementById('sa-intake-clear').addEventListener('click', function () {
-        sel.value = '';
-        applyFilter();
-      });
     }
   }
 
   function collectCards() {
     return Array.prototype.slice.call(document.querySelectorAll(
-      '.agile-board .issue-card, .agile-board .issue, .agile-card, .agile__issue, .card'
+      '.agile-board .issue-card, .agile-board .agile-card, .agile-board .agile__issue'
     ));
   }
 
@@ -117,6 +101,13 @@
     var sel = document.getElementById('sa-intake-filter');
     if (!sel) return;
     var value = sel.value;
+    // Board body is a single <tr class="issue"> wrapping all columns.
+    // Never hide that row or status cells — only issue cards.
+    Array.prototype.slice.call(document.querySelectorAll(
+      '.agile-board tr.issue.sa-hidden-by-intake, .agile-board .issue-status-col.sa-hidden-by-intake'
+    )).forEach(function (el) {
+      el.classList.remove('sa-hidden-by-intake');
+    });
     collectCards().forEach(function (el) {
       var src = el.dataset.intakeSource || '';
       var match;
@@ -130,6 +121,7 @@
       if (match) el.classList.remove('sa-hidden-by-intake');
       else el.classList.add('sa-hidden-by-intake');
     });
+    if (U.syncBoardColumnCounts) U.syncBoardColumnCounts();
   }
 
   document.addEventListener('DOMContentLoaded', function () {

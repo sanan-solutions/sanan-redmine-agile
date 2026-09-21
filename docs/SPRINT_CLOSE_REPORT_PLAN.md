@@ -6,10 +6,11 @@ Khi **đóng sprint** (đóng Redmine Version), hệ thống:
 
 1. Tính và **lưu** các chỉ số SP Commit / SP Actual (tổng + BE/FE/Tester)
 2. Sinh **báo cáo sprint** gồm:
-   - Thông tin cơ bản sprint
+   - Thông tin cơ bản sprint + **sprint goal**
    - Chỉ số SP commit / actual
-   - Danh sách ticket đã xong
+   - **Một bảng ticket**: commit (live), DoD, BE/FE/QA, outcome
    - Bảng SP theo thành viên
+   - **Goal met** lúc đóng sprint (SM chọn, không tự suy từ %)
 
 Báo cáo xem lại được sau khi đóng (không chỉ tính one-shot rồi mất).
 
@@ -21,7 +22,12 @@ Báo cáo xem lại được sau khi đóng (không chỉ tính one-shot rồi m
 |---|---|---|
 | Q1 | Tester Done In Sprint? | **Done QA In Sprint** → setting `done_qa_cfid` (CF Version trên issue) |
 | Q2 | SP Commit có freeze lúc Start? | **Không.** Commit **thay đổi trong sprint** — luôn = Σ SP standard đang `fixed_version_id = sprint` (tính live khi sprint còn open; **ghi snapshot lúc close**) |
+| Q2b | Ticket chuyển sprint thì SP team? | **Snapshot sprint cũ + reset CF team.** Size (`story_point_cfid`) không reset. Spec: [ISSUE_SPRINT_SP_HISTORY.md](ISSUE_SPRINT_SP_HISTORY.md) |
+| Q2c | Danh sách ticket commit freeze lúc Start? | **Không.** Commit **live** sau Start: kéo vào/ra → bảng + SP đổi ngay. Snapshot ID **chỉ lúc close**. |
+| Q2d | Deadline hết được sửa commit? | **Có, config.** Setting `commit_lock_days_before_end` (integer ≥ 0). **N = 0** (default): không khóa theo ngày, live đến Complete. **N > 0**: ngày cuối được **thêm/gỡ ticket khỏi sprint** = `effective_date − N`. Từ ngày hôm sau → khóa commit set. Không `effective_date` → không khóa theo ngày. Khóa **tập ticket** (đổi Target version vào/ra sprint này); vẫn sửa status / DoD / SP trên ticket đã commit. Complete sprint vẫn move unfinished. |
 | Q3 | SP member? | **Chỉ** Σ `story_point_cfid` trên **subtask closed** trong sprint |
+| Q4 | Bảng ticket trên report? | **Một bảng.** Cột: source, **Committed**, **DoD**, BE / FE / QA, status, assignee. Footer cộng SP BE/FE/QA done sprint này. |
+| Q5 | Sprint goal / meet goal? | Goal = `Version.description` (đã nhập lúc create/edit sprint). Lúc Complete: SM chọn **Met / Partial / Missed** (+ note tùy chọn) → `sanan_agile_version_metas`. **Không** coi Actual/Commit % là “đạt goal”. Bỏ chọn → `unreviewed`. |
 
 ---
 
@@ -64,8 +70,8 @@ Tập issue commit = Standard issues có **`fixed_version_id = sprint`** (tại 
 | SP Frontend Commit | Σ `sp_fe_cfid` |
 | SP Tester Commit | Σ `sp_qa_cfid` |
 
-- Sprint **open**: report/API tính live (kéo issue vào/ra sprint → commit đổi).
-- Sprint **close**: tính lần cuối + **ghi vào Version CF** `sp_*_commit_version_cfid` để retrospective ổn định.
+- Sprint **open**: report/API tính live (kéo issue vào/ra sprint → **cả SP lẫn danh sách ticket** commit đổi).
+- Sprint **close**: tính lần cuối + **ghi** Version CF `sp_*_commit_version_cfid` **và** snapshot issue ID commit (xem §3.4). Không freeze giữa sprint.
 
 #### B) SP Actual (thực tế lúc **Close sprint** / khi xem report)
 
@@ -80,14 +86,94 @@ Chỉ Standard issues; “done in sprint này” theo CF:
 
 Lưu Version CF actual_* khi close (`sp_actual_version_cfid`, …).
 
-#### C) Ticket đã xong
+#### C) Bảng ticket (một bảng — không tách “completed” / “code done”)
 
-Standard issues trong phạm vi sprint thỏa **ít nhất một**:
+Hàng = union:
 
-- Status closed, **hoặc**
-- `dod_cfid = sprint.id`
+| Nguồn | Điều kiện |
+|---|---|
+| Committed | standard + `fixed_version_id = sprint` (**live** nếu open; **snapshot ID** nếu closed) |
+| DoD | `dod_cfid` = sprint |
+| Done team | `done_be` / `done_fe` / `done_qa` = sprint |
 
-Phạm vi sprint: `fixed_version_id = sprint` **OR** `dod_cfid = sprint.id`.
+Cột cờ:
+
+| Cột | Yes khi |
+|---|---|
+| **Committed** | ID nằm trong tập commit (§C2) |
+| **DoD** | `dod_cfid` = sprint (ticket closed **không** đủ để hiện Yes) |
+| Backend / Frontend / QA | CF Done * In Sprint = sprint; ô hiện `Xong · SP` |
+
+**Outcome** (derived, không nhập tay):
+
+| Outcome | Rule |
+|---|---|
+| Done in sprint | Committed + DoD |
+| Closed without DoD | Committed + status closed + không DoD |
+| Carried over | Committed + không DoD + đã rời version (sau close) |
+| Unplanned | Không committed + có Done BE/FE/QA sprint này |
+
+Footer: Σ SP các ô BE/FE/QA đã xong (không cộng Size DoD vào hàng này).
+
+> Ticket closed nhưng chưa DoD vẫn **No** ở cột DoD — phân biệt “đóng status” vs “DoD In Sprint”.
+
+#### C2) Tập commit ticket — live, khóa gần cuối sprint (config)
+
+Cùng rule Q2 / Q2c với SP commit. **Không freeze lúc Start.** Khóa tập ticket theo Q2d.
+
+```text
+N = cfg['commit_lock_days_before_end'].to_i   # default 0
+end = version.effective_date
+
+commit_set_locked? =
+  version still open
+  AND N > 0
+  AND end.present?
+  AND Date.current > (end - N.days)
+  # Ngày cuối được add/remove = end - N (inclusive)
+  # N = 0 hoặc thiếu due date → không khóa theo ngày
+
+Sprint OPEN && !locked:
+  committed_ids = standard where fixed_version_id = sprint
+  (mỗi lần mở report tính lại; add/remove trên backlog/board → bảng đổi)
+
+Sprint OPEN && locked:
+  committed_ids vẫn = live fixed_version_id
+  (set không đổi vì API/UI từ chối kéo vào/ra)
+  Report hiện badge “Commit locked” + cutoff date
+
+Sprint CLOSED:
+  committed_ids = snapshot lúc Complete (Closer), ghi version meta
+  Fallback nếu chưa có snapshot (sprint đóng trước feature):
+    unique( SananIssueSprintSp(version) ∪ still on version ∪ dod/done_* = sprint )
+```
+
+Enforce khi `commit_set_locked?` (backlog DnD / bulk move / issue Target version / board đổi version vào **hoặc ra** sprint đang mở đó):
+
+- Chặn, flash/JSON error: không còn đổi commit (còn N ngày trước due, đã hết hạn).
+- **Không** chặn: sửa issue khác, DoD/BE/FE/QA, SP trên ticket **đã** trong sprint, Complete sprint.
+
+Project Settings (Sanan Agile → Backlog / Sprint):
+
+| Setting | Default | Ý nghĩa |
+|---|---|---|
+| `commit_lock_days_before_end` | `0` | Số ngày **trước due** (`effective_date`) mà sau ngày `due − N` không còn thêm/gỡ ticket commit. `0` = tắt. |
+
+#### C3) Sprint goal & goal met
+
+| Dữ liệu | Nơi lưu | Khi nào |
+|---|---|---|
+| Goal text | `versions.description` | Create/edit sprint (đã có) |
+| Goal met | `sanan_agile_version_metas.goal_met` = `met` / `partial` / `missed` / `unreviewed` | Complete sprint |
+| Note | `sanan_agile_version_metas.goal_note` (text, optional) | Complete sprint |
+| Commit IDs lúc close | `sanan_agile_version_metas.commit_issue_ids` (JSON array int) | Closer, cùng lúc SP totals |
+
+Report:
+
+- Khối **Goal** (wiki description) ngay header — không để chìm dưới KPI.
+- Badge Met / Partial / Missed / Unreviewed.
+- Số hỗ trợ (committed count, DoD count, carried-over, Commit SP vs Actual SP) — **không** tự gắn “đạt goal”.
+- Chart completion % = Actual SP / Commit SP **giữ** cho trend SP; **không** dùng làm verdict goal (Actual = Size DoD, Commit = SP team).
 
 #### D) SP theo member
 
@@ -127,8 +213,8 @@ Subtask (`subtask_tracker`) **closed**:
 
 ### 5.3. Report data
 
-- **Phase 1:** Open sprint → tính live. Closed sprint → ưu tiên đọc Version CF cho 8 chỉ số; tickets/members tính lại từ Issue (hoặc snapshot Phase 3).
-- **Phase 3 (optional):** JSON snapshot tickets + members lúc close.
+- **Phase 1:** Open sprint → tính live. Closed sprint → ưu tiên đọc Version CF cho 8 chỉ số; tickets/members tính lại từ Issue.
+- **Phase 4:** Snapshot `commit_issue_ids` + `goal_met` lúc close (thay JSON tickets đầy đủ Phase 3 nếu chưa cần).
 
 ### 5.4. UI
 
@@ -137,7 +223,8 @@ Subtask (`subtask_tracker`) **closed**:
 ```
 ┌─────────────────────────────────────────────────────┐
 │ Sprint Report: Sprint 54                            │
-│ closed · dates · …                                  │
+│ closed · dates · Goal met: Partial                  │
+│ GOAL (description)                                  │
 ├───────────────┬─────────────────────────────────────┤
 │ COMMIT (live→ │ ACTUAL                              │
 │  snapshot)    │                                     │
@@ -147,7 +234,9 @@ Subtask (`subtask_tracker`) **closed**:
 │ Last 5 sprints comparison + charts                  │
 │  table · Commit vs Actual · BE/FE/QA · % · members  │
 ├─────────────────────────────────────────────────────┤
-│ Completed tickets                                   │
+│ Tickets (1 table)                                   │
+│  Committed · DoD · BE · FE · QA · outcome           │
+│  footer Σ SP team done                              │
 ├─────────────────────────────────────────────────────┤
 │ Member SP (subtask closed × story_point)            │
 └─────────────────────────────────────────────────────┘
@@ -159,12 +248,12 @@ Subtask (`subtask_tracker`) **closed**:
 
 ```
 lib/sanan_agile/sprint_report/
-  calculator.rb   # commit (live) + actual + completed + members
-  closer.rb       # lúc close: calc + ghi Version CF commit_* & actual_*
+  calculator.rb   # commit (live) + actual + ticket rows (committed/dod/be/fe/qa) + members
+  closer.rb       # lúc close: calc + Version CF + commit_issue_ids (+ goal_met từ complete form)
   history.rb      # so sánh tối đa 5 sprint gần nhất (kết thúc ở sprint hiện tại)
 ```
 
-Không cần `commit_freezer` lúc Start (commit đổi trong sprint).
+Không cần `commit_freezer` lúc Start (commit SP **và** danh sách ticket đổi trong sprint).
 
 `VersionPatch` close → `SprintReport::Closer.call(version)`.
 
@@ -194,10 +283,39 @@ Không cần `commit_freezer` lúc Start (commit đổi trong sprint).
 - [ ] Complete sprint từ Backlog → đóng Version + mở report
 - [ ] Start sprint chỉ set active (không freeze commit)
 
+### Phase 2b — Lịch sử SP theo sprint
+
+Chưa làm. Spec đầy đủ: [ISSUE_SPRINT_SP_HISTORY.md](ISSUE_SPRINT_SP_HISTORY.md).
+
+- [ ] Snapshot team SP khi đổi Version; reset BE/FE/QA; không đụng Story Point tổng
+- [ ] Report sprint đã đóng đọc history nếu issue đã chuyển đi
+
 ### Phase 3 — Snapshot & export
 
-- [ ] JSON snapshot tickets/members lúc close
+- [ ] JSON snapshot tickets/members lúc close *(Phase 4 `commit_issue_ids` đủ cho list commit; JSON đầy đủ nếu cần export)*
 - [ ] CSV/PDF; % Commit vs Actual
+
+### Phase 4 — Commit list live + sprint goal met
+
+Chốt 2026-09-21: **không freeze lúc Start.** Live đến cutoff Q2d (hoặc đến Complete nếu N = 0). Snapshot ID lúc close.
+
+- [x] Một bảng ticket: DoD + BE/FE/QA + footer SP *(đã có trên report)*
+- [x] Cột **Committed** live = `fixed_version_id` khi sprint open
+- [x] Setting `commit_lock_days_before_end` + chặn add/remove sau cutoff
+- [x] Badge cutoff / locked trên report + backlog
+- [x] Khối Goal từ `Version.description` trên header report
+- [x] Closer: snapshot `commit_issue_ids` lúc Complete
+- [x] Complete sprint: radio Met / Partial / Missed + note → version meta; badge trên report
+- [x] Outcome derived (done / carried over / unplanned / closed without DoD)
+
+**Acceptance**
+
+1. Sprint open, trước cutoff: kéo ticket vào/ra → cột Committed và Commit SP đổi ngay; không freeze lúc Start.
+2. N > 0 và `Date.current > effective_date − N`: không thêm/gỡ ticket khỏi sprint; SP/DoD trên ticket đã commit vẫn sửa được; Complete vẫn chạy.
+3. N = 0 hoặc không due date: không khóa theo ngày.
+4. Sprint closed: report vẫn liệt kê ticket đã commit lúc Complete dù unfinished đã move.
+5. DoD Yes chỉ khi CF DoD = sprint; closed status không đủ.
+6. Goal met chỉ từ lựa chọn SM; không auto từ Actual/Commit %.
 
 ---
 
@@ -220,8 +338,16 @@ actual_be     = sum_cf(standard where CF(done_be_cfid)=sid, sp_be_cfid)
 actual_fe     = sum_cf(standard where CF(done_fe_cfid)=sid, sp_fe_cfid)
 actual_qa     = sum_cf(standard where CF(done_qa_cfid)=sid, sp_qa_cfid)
 
+committed_ids_live = standard where fixed_version_id=sid
+committed_ids = version.open? ? committed_ids_live
+              : (meta.commit_issue_ids.presence || fallback_union)
+
+ticket_rows = unique(committed_ids ∪ dod ∪ done_be ∪ done_fe ∪ done_qa)
+  → Committed / DoD / BE / FE / QA flags + outcome
+
 completed = standard where (closed OR CF(dod)=sid)
             AND (fixed_version_id=sid OR CF(dod)=sid)
+            # intake buckets vẫn dùng completed; bảng UI = ticket_rows
 
 members = subtask closed
           AND (fixed_version_id=sid OR parent.fixed_version_id=sid)
@@ -258,6 +384,7 @@ docs/SPRINT_CLOSE_REPORT_PLAN.md
 ## 11. Open còn lại (nhỏ)
 
 1. `done_qa_cfid` — tạo CF mới hay reuse CF “Done QA In Sprint” đã có trên Redmine (chỉ map id trong settings)?
+2. Complete sprint: bắt buộc chọn Met/Partial/Missed hay cho skip → `unreviewed`? **Mặc định cho skip.**
 
 ---
 

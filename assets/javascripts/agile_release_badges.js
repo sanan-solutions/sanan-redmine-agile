@@ -14,7 +14,7 @@
   function collectIssueEls() {
     // Card của redmine_agile thường có data-issue-id hoặc data-id
     const candidates = Array.from(document.querySelectorAll(
-      '.agile-board .issue-card, .agile-board .issue, .agile-card'
+      '.agile-board .issue-card, .agile-board .agile-card, .agile-board .agile__issue'
     ));
     const pairs = [];
     for (const el of candidates) {
@@ -113,43 +113,26 @@
 
   // Toolbar filter (client-side)
   function ensureFilterBar(allReleases) {
-    // đặt trong header Agile (gần form filter có sẵn)
-    let anchor = document.querySelector('.agile-board-header, .agile-board .query-totals, .agile-board');
-    if (!anchor) anchor = document.querySelector('#content');
+    if (!U.ensureBoardFilterField) return;
+    const sel = U.ensureBoardFilterField(
+      'sa-release-filter',
+      '<label for="sa-release-filter"><strong>Release:</strong></label>' +
+      '<select id="sa-release-filter"><option value="">All releases</option></select>',
+      10
+    );
+    if (!sel) return;
 
-    if (!document.getElementById('sa-release-filterbar')) {
-      const bar = document.createElement('div');
-      bar.id = 'sa-release-filterbar';
-      bar.innerHTML = `
-        <label for="sa-release-filter"><strong>Release:</strong></label>
-        <select id="sa-release-filter">
-          <option value="">All releases</option>
-        </select>
-        <button id="sa-release-clear" type="button">Clear</button>
-      `;
-      anchor.prepend(bar);
-    }
-
-    const sel = document.getElementById('sa-release-filter');
-    // Build options duy nhất, sort theo tên
     const unique = Array.from(new Map(allReleases.map(r => [r.id, r])).values())
       .sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
-    // fill
     const current = sel.value;
     sel.innerHTML = `<option value="">All releases</option>` +
       unique.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
-    // giữ lại chọn hiện tại nếu còn tồn tại
     if (unique.some(r => String(r.id) === current)) sel.value = current;
 
-    // bind
     if (!sel._saBound) {
       sel._saBound = true;
       sel.addEventListener('change', applyFilter);
-      document.getElementById('sa-release-clear').addEventListener('click', () => {
-        sel.value = '';
-        applyFilter();
-      });
     }
   }
 
@@ -158,13 +141,14 @@
     const cards = collectIssueEls().map(p => p.el);
     if (!value) {
       cards.forEach(el => el.classList.remove('sa-hidden-by-release'));
-      return;
+    } else {
+      cards.forEach(el => {
+        const ids = (el.dataset.releaseIds || '').split(',').filter(Boolean);
+        if (ids.includes(String(value))) el.classList.remove('sa-hidden-by-release');
+        else el.classList.add('sa-hidden-by-release');
+      });
     }
-    cards.forEach(el => {
-      const ids = (el.dataset.releaseIds || '').split(',').filter(Boolean);
-      if (ids.includes(String(value))) el.classList.remove('sa-hidden-by-release');
-      else el.classList.add('sa-hidden-by-release');
-    });
+    if (U.syncBoardColumnCounts) U.syncBoardColumnCounts();
   }
 
   // Kick

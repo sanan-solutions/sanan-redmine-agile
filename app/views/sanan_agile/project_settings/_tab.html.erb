@@ -130,6 +130,31 @@
             <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
           </span>
         </p>
+        <p>
+          <label><%= l(:label_sanan_backlog_version) %></label>
+          <span>
+            <%= select_tag 'settings[backlog_version_id]',
+                  options_for_select([[l(:label_sanan_backlog_version_nil), '']] + open_versions.map { |v| [v.name, v.id] }, cfg['backlog_version_id'].to_s) %>
+            <em><%= l(:text_sanan_backlog_version_hint) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_velocity_window) %></label>
+          <span>
+            <%= select_tag 'settings[velocity_window]',
+                  options_for_select([['3', '3'], ['5', '5']], (cfg['velocity_window'].presence || '3').to_s) %>
+            <em><%= l(:text_sanan_velocity_window_hint) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_commit_lock_days) %></label>
+          <span>
+            <%= number_field_tag 'settings[commit_lock_days_before_end]',
+                  (cfg['commit_lock_days_before_end'].presence || '0'),
+                  min: 0, step: 1 %>
+            <em><%= l(:text_sanan_commit_lock_days_hint) %></em>
+          </span>
+        </p>
       </div>
     </section>
 
@@ -360,20 +385,46 @@
           <label>Story Point (tổng)</label>
           <span>
             <%= select_tag 'settings[story_point_cfid]', options_for_select(issue_cf_opts, cfg['story_point_cfid']) %>
-            <em>Đồng bộ vào <code>agile_data.story_points</code> khi lưu Issue</em>
+            <em>Size tổng — đồng bộ <code>agile_data.story_points</code>. Không reset khi đổi sprint.</em>
+          </span>
+        </p>
+        <% sp_formula = %w[max avg].include?(cfg['sp_total_formula'].to_s) ? cfg['sp_total_formula'] : 'manual' %>
+        <p>
+          <label><%= l(:label_sanan_sp_total_formula) %></label>
+          <span class="sanan-settings__radios">
+            <label class="sanan-settings__radio">
+              <%= radio_button_tag 'settings[sp_total_formula]', 'manual', sp_formula == 'manual' %>
+              <span><%= l(:label_sanan_sp_total_formula_manual) %></span>
+            </label>
+            <label class="sanan-settings__radio">
+              <%= radio_button_tag 'settings[sp_total_formula]', 'max', sp_formula == 'max' %>
+              <span><%= l(:label_sanan_sp_total_formula_max) %></span>
+            </label>
+            <label class="sanan-settings__radio">
+              <%= radio_button_tag 'settings[sp_total_formula]', 'avg', sp_formula == 'avg' %>
+              <span><%= l(:label_sanan_sp_total_formula_avg) %></span>
+            </label>
+          </span>
+          <em><%= l(:text_sanan_sp_total_formula_hint) %></em>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_sp_total_require_qa) %></label>
+          <span>
+            <%= check_box_tag 'settings[sp_total_require_qa]', '1', cfg['sp_total_require_qa'].to_s == '1' %>
+            <em><%= l(:text_sanan_sp_total_require_qa_hint) %></em>
           </span>
         </p>
         <div class="sanan-settings__subgrid">
           <p>
-            <label>SP Backend</label>
+            <label>SP Backend (sprint)</label>
             <%= select_tag 'settings[sp_be_cfid]', options_for_select(issue_cf_opts, cfg['sp_be_cfid']), include_blank: true %>
           </p>
           <p>
-            <label>SP Frontend</label>
+            <label>SP Frontend (sprint)</label>
             <%= select_tag 'settings[sp_fe_cfid]', options_for_select(issue_cf_opts, cfg['sp_fe_cfid']), include_blank: true %>
           </p>
           <p>
-            <label>SP QA</label>
+            <label>SP QA (sprint)</label>
             <%= select_tag 'settings[sp_qa_cfid]', options_for_select(issue_cf_opts, cfg['sp_qa_cfid']), include_blank: true %>
           </p>
         </div>

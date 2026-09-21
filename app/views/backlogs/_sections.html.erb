@@ -1,0 +1,209 @@
+<% sections = [] %>
+<% sections << @data[:active] if @data[:active] %>
+<% sections.concat(@data[:future]) %>
+<% sections << @data[:backlog] %>
+
+<% sections.each do |section| %>
+  <% next unless section %>
+  <% section_key = section.version ? "v#{section.version.id}" : 'backlog' %>
+  <% collapse_default = section.version && !section.active %>
+  <% total_count = backlog_section_issue_count(section) %>
+  <div class="box backlog-card backlog-section <%= 'backlog-section-active' if section.active %>"
+       data-version-id="<%= section.version&.id %>"
+       data-section-key="<%= section_key %>"
+       data-collapse-default="<%= collapse_default ? '1' : '0' %>">
+    <div class="backlog-section-header" data-section-toggle>
+      <button type="button"
+              class="backlog-section-chevron"
+              aria-expanded="<%= collapse_default ? 'false' : 'true' %>"
+              aria-controls="backlog-section-body-<%= section_key %>"
+              title="<%= l(:label_backlog_toggle_section) %>">
+        <svg class="backlog-section-chevron__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="M5 6.5L8 9.5L11 6.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="backlog-section-title">
+        <h3>
+          <% if section.active %><span class="badge badge-active"><%= l(:label_backlog_active) %></span><% end %>
+          <%= backlog_section_title(section) %>
+        </h3>
+        <% if section.version %>
+          <div class="backlog-version-status"><%= backlog_version_meta(section.version) %></div>
+        <% end %>
+      </div>
+      <div class="backlog-section-meta" data-no-toggle>
+        <%= backlog_commit_sp_chips(section) %>
+        <% if section.version && @intake_quota_by_version && @intake_quota_by_version[section.version.id] %>
+          <% qstats = @intake_quota_by_version[section.version.id] %>
+          <% if @intake && @intake[:cs_enabled] %>
+            <%= backlog_quota_chip('cs', qstats[:cs]) %>
+          <% end %>
+          <% if @intake && @intake[:sale_enabled] %>
+            <%= backlog_quota_chip('sale', qstats[:sale]) %>
+          <% end %>
+        <% end %>
+        <span class="backlog-count" title="<%= total_count %> <%= l(:label_issue_plural) %>"><%= total_count %></span>
+        <% if section.version && @filters[:without_release].to_s != '1' && section.respond_to?(:without_release_count) && section.without_release_count > 0 %>
+          <%= link_to section.without_release_count,
+                project_backlog_path(@project, @filters.merge(without_release: '1')),
+                class: 'backlog-without-release-hint',
+                title: l(:label_backlog_without_release_count, count: section.without_release_count),
+                data: { backlog_ajax_filter: 'without_release' } %>
+        <% elsif @filters[:without_release].to_s == '1' %>
+          <span class="backlog-without-release-hint active"><%= l(:label_backlog_without_release) %></span>
+        <% end %>
+        <% if section.version %>
+          <% if User.current.allowed_to?(:view_sprint_reports, @project) %>
+            <%= link_to '',
+                  project_sprint_report_path(@project, section.version),
+                  class: 'icon icon-only icon-stats backlog-meta-icon',
+                  title: l(:label_sprint_report),
+                  aria: { label: l(:label_sprint_report) } %>
+          <% end %>
+          <% if backlog_agile_metrics_available?(@project) %>
+            <%= link_to '',
+                  backlog_agile_metrics_path_for(@project, section.version),
+                  class: 'icon icon-only icon-report backlog-meta-icon',
+                  title: l(:label_agile_metrics),
+                  aria: { label: l(:label_agile_metrics) } %>
+          <% end %>
+          <% if @can_manage && User.current.allowed_to?(:manage_versions, @project) %>
+            <div class="backlog-section-actions">
+              <% unless section.active %>
+                <%= button_to l(:button_backlog_start_sprint),
+                      project_backlog_start_sprint_path(@project, section.version),
+                      method: :post,
+                      class: 'backlog-btn backlog-btn--secondary backlog-btn--sm',
+                      form_class: 'backlog-inline-form' %>
+              <% end %>
+              <% counts = backlog_section_completion_counts(section) %>
+              <% move_opts = backlog_complete_move_options(section.version, @open_versions) %>
+              <div class="backlog-sprint-toolbar">
+                <button type="button"
+                        class="backlog-btn backlog-btn--primary backlog-btn--sm backlog-complete-trigger"
+                        data-url="<%= project_backlog_complete_sprint_path(@project, section.version) %>"
+                        data-name="<%= h section.version.name %>"
+                        data-completed="<%= counts[:completed] %>"
+                        data-open="<%= counts[:open] %>"
+                        data-move-options="<%= ERB::Util.h(move_opts.map { |label, value| { label: label, value: value } }.to_json) %>"
+                        data-dod-candidates="<%= ERB::Util.h(backlog_complete_dod_candidates(section).to_json) %>">
+                  <%= l(:button_backlog_complete_sprint) %>
+                </button>
+                <div class="backlog-kebab">
+                  <button type="button"
+                          class="backlog-kebab__btn"
+                          aria-haspopup="true"
+                          aria-expanded="false"
+                          title="<%= l(:label_backlog_sprint_more) %>">
+                    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <circle cx="3.5" cy="8" r="1.4" fill="currentColor"/>
+                      <circle cx="8" cy="8" r="1.4" fill="currentColor"/>
+                      <circle cx="12.5" cy="8" r="1.4" fill="currentColor"/>
+                    </svg>
+                  </button>
+                  <div class="backlog-kebab__menu" hidden>
+                    <button type="button"
+                            class="backlog-kebab__item backlog-edit-sprint-open"
+                            data-version-id="<%= section.version.id %>"
+                            data-update-url="<%= project_backlog_sprint_path(@project, section.version) %>"
+                            data-name="<%= h section.version.name %>"
+                            data-goal="<%= h backlog_goal_text(section.version) %>"
+                            data-start-date="<%= section.version.sanan_sprint_start_date %>"
+                            data-effective-date="<%= section.version.effective_date %>"
+                            data-cs-quota="<%= section.version.sanan_cs_quota_sp %>"
+                            data-sale-quota="<%= section.version.sanan_sale_quota_sp %>"
+                            data-commit-sp="<%= h backlog_version_cf_value(section.version, 'sp_commit_version_cfid') %>"
+                            data-commit-sp-be="<%= h backlog_version_cf_value(section.version, 'sp_be_commit_version_cfid') %>"
+                            data-commit-sp-fe="<%= h backlog_version_cf_value(section.version, 'sp_fe_commit_version_cfid') %>"
+                            data-commit-sp-qa="<%= h backlog_version_cf_value(section.version, 'sp_qa_commit_version_cfid') %>">
+                      <%= l(:label_backlog_edit_sprint) %>
+                    </button>
+                    <% if @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
+                      <button type="button"
+                              class="backlog-kebab__item backlog-quota-edit-open"
+                              data-version-id="<%= section.version.id %>"
+                              data-version-name="<%= h section.version.name %>"
+                              data-cs-quota="<%= section.version.sanan_cs_quota_sp %>"
+                              data-sale-quota="<%= section.version.sanan_sale_quota_sp %>">
+                        <%= l(:label_intake_edit_quota) %>
+                      </button>
+                    <% end %>
+                    <div class="backlog-kebab__sep" role="separator"></div>
+                    <%= button_to project_backlog_sprint_path(@project, section.version),
+                          method: :delete,
+                          form_class: 'backlog-kebab__form',
+                          class: 'backlog-kebab__item backlog-kebab__item--danger',
+                          data: { confirm: l(:text_backlog_delete_sprint_confirm, name: section.version.name) } do %>
+                      <%= l(:label_backlog_delete_sprint) %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        <% elsif @can_manage && User.current.allowed_to?(:manage_versions, @project) %>
+          <button type="button"
+                  class="backlog-btn backlog-btn--secondary backlog-btn--sm backlog-create-sprint-open">
+            <%= l(:label_backlog_create_sprint) %>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="backlog-section-body" id="backlog-section-body-<%= section_key %>">
+      <div class="backlog-section-scroll">
+        <table class="list backlog-table">
+          <thead>
+            <tr>
+              <% if @can_manage %>
+                <th class="backlog-drag-col"></th>
+                <th class="checkbox"><%= check_box_tag 'backlog_select_all', '1', false, class: 'backlog-select-all' %></th>
+              <% end %>
+              <th class="id">#</th>
+              <th><%= l(:field_tracker) %></th>
+              <th><%= l(:field_subject) %></th>
+              <th><%= l(:label_backlog_epic) %></th>
+              <th><%= l(:label_release_version) %></th>
+              <th><%= l(:field_priority) %></th>
+              <th><%= l(:field_assigned_to) %></th>
+              <th><%= l(:label_sprint_report_sp) %></th>
+              <th><%= l(:field_status) %></th>
+            </tr>
+          </thead>
+          <tbody class="backlog-section-list"
+                 data-version-id="<%= section.version&.id.to_s %>"
+                 data-commit-locked="<%= section.version && SananAgile::CommitLock.locked?(section.version, @settings) ? '1' : '0' %>">
+            <% if section.issues.empty? %>
+              <tr class="backlog-empty-row"><td colspan="<%= backlog_col_count %>" class="nodata"><%= l(:label_no_data) %></td></tr>
+            <% else %>
+              <%= render partial: 'issue_rows',
+                    locals: {
+                      issues: section.issues,
+                      row_offset: 0,
+                      has_more: section.has_more,
+                      next_offset: section.next_offset,
+                      loaded: section.issues.size,
+                      total: total_count
+                    } %>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @can_add_issues && @can_manage %>
+        <div class="backlog-quick-create">
+          <%= form_tag project_backlog_create_issue_path(@project), method: :post do %>
+            <% @filters.each do |k, v| %><% next if v.blank? %><%= hidden_field_tag k, v %><% end %>
+            <% if section.version %><%= hidden_field_tag :version_id, section.version.id %><% end %>
+            <% if @filters[:epic_id].present? %><%= hidden_field_tag :parent_id, @filters[:epic_id] %><% end %>
+            <%= select_tag :tracker_id,
+                  options_from_collection_for_select(@data[:trackers], :id, :name, @filters[:tracker_id].presence || @data[:trackers].first&.id),
+                  class: 'backlog-quick-create__tracker' %>
+            <%= text_field_tag :subject, '', placeholder: l(:label_backlog_quick_create_placeholder), size: 40, required: true, class: 'backlog-quick-create__subject' %>
+            <%= submit_tag l(:button_backlog_quick_create), class: 'backlog-btn backlog-btn--primary backlog-btn--sm' %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

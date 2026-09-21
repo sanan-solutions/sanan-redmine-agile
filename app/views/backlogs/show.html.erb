@@ -1,14 +1,19 @@
 <% html_title l(:label_backlog) %>
 <% epic_tracker_id = @settings['epic_tracker'].to_i %>
-<% col_count = @can_manage ? 11 : 10 %>
 
 <div class="sanan-backlog"
      id="sanan-backlog"
      data-project-id="<%= @project.id %>"
      data-reorder-url="<%= project_backlog_reorder_path(@project) %>"
      data-quick-update-url="<%= project_backlog_quick_update_path(@project) %>"
+     data-sections-url="<%= project_backlog_sections_path(@project) %>"
+     data-issues-url="<%= project_backlog_issues_path(@project) %>"
+     data-backlog-url="<%= project_backlog_path(@project) %>"
+     data-epic-id="<%= @filters[:epic_id].to_s %>"
      data-can-manage="<%= @can_manage ? '1' : '0' %>"
-     data-empty-label="<%= l(:label_no_data) %>">
+     data-empty-label="<%= l(:label_no_data) %>"
+     data-commit-locked-msg="<%= h l(:error_sanan_commit_locked) %>"
+     data-loading-label="<%= l(:label_backlog_loading) %>">
 
   <% if @can_manage %>
     <script type="application/json" id="backlog-edit-options">
@@ -40,7 +45,15 @@
             class: 'backlog-btn backlog-btn--ghost' %>
     <% end %>
     <% if @can_add_issues %>
-      <%= link_to l(:label_issue_new), new_project_issue_path(@project), class: 'backlog-btn backlog-btn--secondary' %>
+      <%= link_to l(:label_issue_new),
+            new_project_issue_path(@project),
+            class: 'backlog-btn backlog-btn--secondary',
+            id: 'new-agile-issue-btn',
+            data: {
+              backlog_version_id: (SananAgile::ProductBacklog.configured?(@settings) ? SananAgile::ProductBacklog.version_id(@settings) : ''),
+              parent_issue_id: @filters[:epic_id],
+              tracker_id: @filters[:tracker_id]
+            } %>
     <% end %>
     <% if @can_manage && @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
       <button type="button"
@@ -73,6 +86,8 @@
     </div>
   <% end %>
 
+  <%= render 'velocity' %>
+
   <div class="backlog-layout">
     <% if epic_tracker_id > 0 %>
       <aside class="box backlog-card backlog-epic-panel" id="backlog-epic-panel">
@@ -89,7 +104,8 @@
           <ul class="backlog-epic-list">
             <li class="<%= 'selected' if @filters[:epic_id].blank? %>">
               <%= link_to project_backlog_path(@project, @filters.except(:epic_id)),
-                    class: 'backlog-epic-link backlog-epic-link--all' do %>
+                    class: 'backlog-epic-link backlog-epic-link--all',
+                    data: { epic_id: '' } do %>
                 <span class="epic-top">
                   <span class="epic-name"><%= l(:label_backlog_all_epics) %></span>
                 </span>
@@ -101,6 +117,7 @@
               <li class="<%= 'selected' if @filters[:epic_id].to_s == epic.id.to_s %>">
                 <%= link_to project_backlog_path(@project, @filters.merge(epic_id: epic.id)),
                             class: 'backlog-epic-link',
+                            data: { epic_id: epic.id },
                             title: "#{epic.subject} — #{pct}%" do %>
                   <span class="epic-top">
                     <span class="epic-name"><%= h truncate(epic.subject, length: 40) %></span>
@@ -154,8 +171,8 @@
     <div class="backlog-main">
       <div class="backlog-filters-host" id="backlog-filters-host">
         <div class="box backlog-card backlog-filters" id="backlog-filters">
-        <%= form_tag project_backlog_path(@project), method: :get, class: 'backlog-filters__form' do %>
-          <% if @filters[:epic_id].present? %><%= hidden_field_tag :epic_id, @filters[:epic_id] %><% end %>
+        <%= form_tag project_backlog_path(@project), method: :get, class: 'backlog-filters__form', id: 'backlog-filters-form' do %>
+          <%= hidden_field_tag :epic_id, @filters[:epic_id], id: 'backlog-filter-epic-id' %>
           <div class="backlog-filters__field">
             <span class="backlog-filters__label"><%= l(:field_tracker) %></span>
             <%= select_tag :tracker_id,
@@ -185,8 +202,7 @@
                 <%= check_box_tag :without_release, '1', @filters[:without_release].to_s == '1' %>
                 <%= l(:label_backlog_without_release) %>
               </label>
-              <%= submit_tag l(:button_apply), class: 'backlog-btn backlog-btn--secondary backlog-btn--sm' %>
-              <%= link_to l(:button_clear), project_backlog_path(@project), class: 'backlog-btn backlog-btn--ghost backlog-btn--sm' %>
+              <%= link_to l(:button_clear), project_backlog_path(@project), class: 'backlog-btn backlog-btn--ghost backlog-btn--sm', id: 'backlog-filters-clear' %>
             </div>
           </div>
         <% end %>
@@ -316,204 +332,9 @@
         </div>
       <% end %>
 
-      <% sections = [] %>
-      <% sections << @data[:active] if @data[:active] %>
-      <% sections.concat(@data[:future]) %>
-      <% sections << @data[:backlog] %>
-
-      <% sections.each do |section| %>
-        <% next unless section %>
-        <% section_key = section.version ? "v#{section.version.id}" : 'backlog' %>
-        <% # Future (non-active) sprints collapse by default to keep Backlog reachable %>
-        <% collapse_default = section.version && !section.active %>
-        <div class="box backlog-card backlog-section <%= 'backlog-section-active' if section.active %>"
-             data-version-id="<%= section.version&.id %>"
-             data-section-key="<%= section_key %>"
-             data-collapse-default="<%= collapse_default ? '1' : '0' %>">
-          <div class="backlog-section-header" data-section-toggle>
-            <button type="button"
-                    class="backlog-section-chevron"
-                    aria-expanded="<%= collapse_default ? 'false' : 'true' %>"
-                    aria-controls="backlog-section-body-<%= section_key %>"
-                    title="<%= l(:label_backlog_toggle_section) %>">
-              <svg class="backlog-section-chevron__icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                <path d="M5 6.5L8 9.5L11 6.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="backlog-section-title">
-              <h3>
-                <% if section.active %><span class="badge badge-active"><%= l(:label_backlog_active) %></span><% end %>
-                <%= backlog_section_title(section) %>
-              </h3>
-              <% if section.version %>
-                <div class="backlog-version-status"><%= backlog_version_meta(section.version) %></div>
-              <% end %>
-            </div>
-            <div class="backlog-section-meta" data-no-toggle>
-              <% if section.version %>
-                <%= link_to l(:label_sprint_report), project_sprint_report_path(@project, section.version), class: 'icon icon-stats' if User.current.allowed_to?(:view_sprint_reports, @project) %>
-                <% if backlog_agile_metrics_available?(@project) %>
-                  <%= link_to l(:label_agile_metrics),
-                        backlog_agile_metrics_path_for(@project, section.version),
-                        class: 'icon icon-report',
-                        title: l(:label_agile_metrics) %>
-                <% end %>
-                <% if @can_manage && User.current.allowed_to?(:manage_versions, @project) %>
-                  <div class="backlog-section-actions">
-                    <% unless section.active %>
-                      <%= button_to l(:button_backlog_start_sprint),
-                            project_backlog_start_sprint_path(@project, section.version),
-                            method: :post,
-                            class: 'backlog-btn backlog-btn--secondary backlog-btn--sm',
-                            form_class: 'backlog-inline-form' %>
-                    <% end %>
-                    <% counts = backlog_section_completion_counts(section) %>
-                    <% move_opts = backlog_complete_move_options(section.version, @open_versions) %>
-                    <button type="button"
-                            class="backlog-btn backlog-btn--primary backlog-btn--sm backlog-complete-trigger"
-                            data-url="<%= project_backlog_complete_sprint_path(@project, section.version) %>"
-                            data-name="<%= h section.version.name %>"
-                            data-completed="<%= counts[:completed] %>"
-                            data-open="<%= counts[:open] %>"
-                            data-move-options='<%= move_opts.map { |label, value| { label: label, value: value } }.to_json %>'>
-                      <%= l(:button_backlog_complete_sprint) %>
-                    </button>
-                  </div>
-                <% end %>
-              <% elsif @can_manage && User.current.allowed_to?(:manage_versions, @project) %>
-                <button type="button"
-                        class="backlog-btn backlog-btn--secondary backlog-btn--sm backlog-create-sprint-open">
-                  <%= l(:label_backlog_create_sprint) %>
-                </button>
-              <% end %>
-              <span class="backlog-sp-total"><%= l(:label_backlog_sp_total) %>: <strong><%= backlog_sp_number(section.sp_total) %></strong></span>
-              <% if section.version && @intake_quota_by_version && @intake_quota_by_version[section.version.id] %>
-                <% qstats = @intake_quota_by_version[section.version.id] %>
-                <% if @intake && @intake[:cs_enabled] %>
-                  <%= backlog_quota_chip('cs', qstats[:cs]) %>
-                <% end %>
-                <% if @intake && @intake[:sale_enabled] %>
-                  <%= backlog_quota_chip('sale', qstats[:sale]) %>
-                <% end %>
-                <% if @can_manage %>
-                  <button type="button"
-                          class="backlog-btn backlog-btn--ghost backlog-btn--sm backlog-quota-edit-open"
-                          data-version-id="<%= section.version.id %>"
-                          data-version-name="<%= h section.version.name %>"
-                          data-cs-quota="<%= section.version.sanan_cs_quota_sp %>"
-                          data-sale-quota="<%= section.version.sanan_sale_quota_sp %>">
-                    <%= l(:label_intake_edit_quota) %>
-                  </button>
-                <% end %>
-              <% end %>
-              <span class="backlog-count"><%= section.issues.size %> <%= l(:label_issue_plural) %></span>
-              <% if @filters[:without_release].to_s != '1' && section.respond_to?(:without_release_count) && section.without_release_count > 0 %>
-                <%= link_to l(:label_backlog_without_release_count, count: section.without_release_count),
-                      project_backlog_path(@project, @filters.merge(without_release: '1')),
-                      class: 'backlog-without-release-hint' %>
-              <% elsif @filters[:without_release].to_s == '1' %>
-                <span class="backlog-without-release-hint active"><%= l(:label_backlog_without_release) %></span>
-              <% end %>
-            </div>
-          </div>
-
-          <div class="backlog-section-body" id="backlog-section-body-<%= section_key %>">
-            <div class="backlog-section-scroll">
-              <table class="list backlog-table">
-                <thead>
-                  <tr>
-                    <% if @can_manage %>
-                      <th class="backlog-drag-col"></th>
-                      <th class="checkbox"><%= check_box_tag 'backlog_select_all', '1', false, class: 'backlog-select-all' %></th>
-                    <% end %>
-                    <th class="id">#</th>
-                    <th><%= l(:field_tracker) %></th>
-                    <th><%= l(:field_subject) %></th>
-                    <th><%= l(:label_backlog_epic) %></th>
-                    <th><%= l(:label_release_version) %></th>
-                    <th><%= l(:field_priority) %></th>
-                    <th><%= l(:field_assigned_to) %></th>
-                    <th><%= l(:label_sprint_report_sp) %></th>
-                    <th><%= l(:field_status) %></th>
-                  </tr>
-                </thead>
-                <tbody class="backlog-section-list"
-                       data-version-id="<%= section.version&.id.to_s %>">
-                  <% if section.issues.empty? %>
-                    <tr class="backlog-empty-row"><td colspan="<%= col_count %>" class="nodata"><%= l(:label_no_data) %></td></tr>
-                  <% else %>
-                    <% section.issues.each do |issue| %>
-                      <% epic = backlog_epic_label(issue, epic_tracker_id) %>
-                      <% release = defined?(ReleaseVersion) ? ReleaseVersion.for_issue(issue) : nil %>
-                      <% release_badge = backlog_release_badge(issue) %>
-                      <% edit = @can_manage %>
-                      <tr class="backlog-row <%= cycle('odd', 'even') %>"
-                          data-id="<%= issue.id %>"
-                          data-issue-id="<%= issue.id %>">
-                        <% if @can_manage %>
-                          <td class="backlog-drag-handle" title="<%= l(:label_backlog_drag) %>">⠿</td>
-                          <td class="checkbox"><%= check_box_tag 'issue_ids[]', issue.id, false, class: 'backlog-row-check', form: 'backlog-bulk-form' %></td>
-                        <% end %>
-                        <td class="id"><%= link_to issue.id, issue_path(issue), class: 'backlog-issue-link' %></td>
-                        <td class="tracker<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="tracker_id" data-value="<%= issue.tracker_id %>"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= h issue.tracker %></span>
-                        </td>
-                        <td class="subject<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="subject" data-value="<%= h issue.subject %>" data-edit-type="text"<% end %>>
-                          <% intake_badge = backlog_intake_source_badge(issue) %>
-                          <% if intake_badge %><%= intake_badge %> <% end %>
-                          <%= link_to h(issue.subject), issue_path(issue),
-                                class: 'backlog-issue-subject backlog-issue-link backlog-cell-edit__display' %>
-                        </td>
-                        <td class="epic<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="parent_id" data-value="<%= issue.parent_id.to_i %>" data-edit-type="epic"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= epic ? h(epic) : '—' %></span>
-                        </td>
-                        <td class="release<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="release_id" data-value="<%= release&.id.to_i %>" data-edit-type="release"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= release_badge || '—' %></span>
-                        </td>
-                        <td class="priority sanan-agile-priority<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="priority_id" data-value="<%= issue.priority_id %>" data-edit-type="priority"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= backlog_priority_badge(issue.priority) %></span>
-                        </td>
-                        <td class="assigned_to<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="assigned_to_id" data-value="<%= issue.assigned_to_id.to_i %>" data-edit-type="assignee"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></span>
-                        </td>
-                        <td class="sp<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="story_points" data-value="<%= backlog_issue_sp(issue) %>" data-edit-type="sp"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= backlog_issue_sp(issue) %></span>
-                        </td>
-                        <td class="status<%= ' backlog-cell-edit' if edit %>"
-                            <% if edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>
-                          <span class="backlog-cell-edit__display"><%= h issue.status %></span>
-                        </td>
-                      </tr>
-                    <% end %>
-                  <% end %>
-                </tbody>
-              </table>
-            </div>
-
-            <% if @can_add_issues && @can_manage %>
-              <div class="backlog-quick-create">
-                <%= form_tag project_backlog_create_issue_path(@project), method: :post do %>
-                  <% @filters.each do |k, v| %><% next if v.blank? %><%= hidden_field_tag k, v %><% end %>
-                  <% if section.version %><%= hidden_field_tag :version_id, section.version.id %><% end %>
-                  <% if @filters[:epic_id].present? %><%= hidden_field_tag :parent_id, @filters[:epic_id] %><% end %>
-                  <%= select_tag :tracker_id,
-                        options_from_collection_for_select(@data[:trackers], :id, :name, @filters[:tracker_id].presence || @data[:trackers].first&.id),
-                        class: 'backlog-quick-create__tracker' %>
-                  <%= text_field_tag :subject, '', placeholder: l(:label_backlog_quick_create_placeholder), size: 40, required: true, class: 'backlog-quick-create__subject' %>
-                  <%= submit_tag l(:button_backlog_quick_create), class: 'backlog-btn backlog-btn--primary backlog-btn--sm' %>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
+      <div id="backlog-sections" class="backlog-sections">
+        <%= render 'sections' %>
+      </div>
     </div>
   </div>
 
@@ -521,7 +342,14 @@
     <div id="backlog-create-sprint-modal" class="backlog-modal" hidden
          data-none-selected="<%= h l(:text_backlog_create_sprint_none_selected) %>"
          data-selected-template="<%= h l(:text_backlog_create_sprint_selected) %>"
-         data-remove-label="<%= h l(:button_delete) %>">
+         data-remove-label="<%= h l(:button_delete) %>"
+         data-create-url="<%= project_backlog_create_sprint_path(@project) %>"
+         data-create-title="<%= h l(:label_backlog_create_sprint) %>"
+         data-edit-title="<%= h l(:label_backlog_edit_sprint) %>"
+         data-create-submit="<%= h l(:button_create) %>"
+         data-edit-submit="<%= h l(:button_save) %>"
+         data-default-cs-quota="<%= @settings['default_cs_quota_sp'] %>"
+         data-default-sale-quota="<%= @settings['default_sale_quota_sp'] %>">
       <div class="backlog-modal__backdrop" data-create-sprint-dismiss></div>
       <div class="backlog-modal__dialog backlog-modal__dialog--wide" role="dialog" aria-modal="true" aria-labelledby="backlog-create-sprint-title">
         <div class="backlog-modal__body">
@@ -550,6 +378,18 @@
                 <%= date_field_tag :effective_date, nil, id: 'backlog-create-sprint-date' %>
               </div>
             </div>
+            <% commit_sp_fields = backlog_sprint_commit_sp_fields %>
+            <% if commit_sp_fields.any? %>
+              <div class="backlog-modal__dates backlog-modal__commit-sp">
+                <% commit_sp_fields.each do |field| %>
+                  <div class="backlog-modal__field">
+                    <label for="<%= field[:input_id] %>"><%= field[:label] %></label>
+                    <%= number_field_tag field[:param], '',
+                          id: field[:input_id], min: 0, step: 0.5 %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
             <% if @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
               <div class="backlog-modal__dates">
                 <% if @intake[:cs_enabled] %>
@@ -581,7 +421,7 @@
               <button type="button" class="backlog-btn backlog-btn--ghost" data-create-sprint-dismiss>
                 <%= l(:button_cancel) %>
               </button>
-              <%= submit_tag l(:button_create), class: 'backlog-btn backlog-btn--primary' %>
+              <%= submit_tag l(:button_create), class: 'backlog-btn backlog-btn--primary', id: 'backlog-create-sprint-submit' %>
             </div>
           <% end %>
         </div>
@@ -607,6 +447,54 @@
           </ul>
 
           <%= form_tag '#', method: :post, id: 'backlog-complete-form', class: 'backlog-complete-modal__form' do %>
+            <div class="backlog-complete-modal__dod" id="backlog-complete-dod-wrap" hidden>
+              <%= hidden_field_tag :dod_confirmed, '1', id: 'backlog-complete-dod-confirmed', disabled: true %>
+              <div class="backlog-complete-modal__dod-head">
+                <label><%= l(:label_backlog_complete_dod) %></label>
+                <button type="button"
+                        class="backlog-complete-modal__dod-all"
+                        id="backlog-complete-dod-all"
+                        data-label-all="<%= h l(:label_backlog_complete_dod_all) %>"
+                        data-label-none="<%= h l(:label_backlog_complete_dod_none) %>">
+                  <%= l(:label_backlog_complete_dod_all) %>
+                </button>
+              </div>
+              <p class="backlog-complete-modal__dod-hint"><%= l(:text_backlog_complete_dod_hint) %></p>
+              <ul class="backlog-complete-modal__dod-list" id="backlog-complete-dod-list"></ul>
+              <div class="backlog-complete-modal__actual" id="backlog-complete-actual">
+                <span><%= l(:label_backlog_complete_actual) %>
+                  <strong id="backlog-complete-actual-sp">0</strong>
+                </span>
+                <span>BE <strong id="backlog-complete-actual-be">0</strong></span>
+                <span>FE <strong id="backlog-complete-actual-fe">0</strong></span>
+                <span>QA <strong id="backlog-complete-actual-qa">0</strong></span>
+              </div>
+            </div>
+
+            <div class="backlog-complete-modal__goal">
+              <label><%= l(:label_sprint_report_goal_met) %></label>
+              <div class="backlog-complete-modal__goal-opts">
+                <label>
+                  <%= radio_button_tag :goal_met, 'met', false %>
+                  <%= l(:label_sprint_report_goal_met_met) %>
+                </label>
+                <label>
+                  <%= radio_button_tag :goal_met, 'partial', false %>
+                  <%= l(:label_sprint_report_goal_met_partial) %>
+                </label>
+                <label>
+                  <%= radio_button_tag :goal_met, 'missed', false %>
+                  <%= l(:label_sprint_report_goal_met_missed) %>
+                </label>
+                <label>
+                  <%= radio_button_tag :goal_met, 'unreviewed', true %>
+                  <%= l(:label_sprint_report_goal_met_unreviewed) %>
+                </label>
+              </div>
+              <label for="backlog-complete-goal-note"><%= l(:label_sprint_report_goal_note) %></label>
+              <%= text_area_tag :goal_note, '', rows: 2, id: 'backlog-complete-goal-note' %>
+            </div>
+
             <div class="backlog-complete-modal__move" id="backlog-complete-move-wrap">
               <label for="backlog-complete-move-to"><%= l(:label_backlog_move_open_items_to) %></label>
               <select name="move_unfinished_to" id="backlog-complete-move-to" class="backlog-complete-modal__select"></select>

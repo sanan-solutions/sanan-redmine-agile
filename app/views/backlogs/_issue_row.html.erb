@@ -1,0 +1,49 @@
+<% row_index ||= 0 %>
+<% epic = backlog_epic_label(issue, backlog_epic_tracker_id) %>
+<% release = defined?(ReleaseVersion) ? ReleaseVersion.for_issue(issue) : nil %>
+<% release_badge = backlog_release_badge(issue) %>
+<% edit = @can_manage %>
+<tr class="backlog-row <%= row_index.even? ? 'even' : 'odd' %>"
+    data-id="<%= issue.id %>"
+    data-issue-id="<%= issue.id %>">
+  <% if @can_manage %>
+    <td class="backlog-drag-handle" title="<%= l(:label_backlog_drag) %>">⠿</td>
+    <td class="checkbox"><%= check_box_tag 'issue_ids[]', issue.id, false, class: 'backlog-row-check', form: 'backlog-bulk-form' %></td>
+  <% end %>
+  <td class="id"><%= link_to issue.id, issue_path(issue), class: 'backlog-issue-link' %></td>
+  <td class="tracker<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="tracker_id" data-value="<%= issue.tracker_id %>"<% end %>>
+    <span class="backlog-cell-edit__display"><%= h issue.tracker %></span>
+  </td>
+  <td class="subject<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="subject" data-value="<%= h issue.subject %>" data-edit-type="text"<% end %>>
+    <% intake_badge = backlog_intake_source_badge(issue) %>
+    <% if intake_badge %><%= intake_badge %> <% end %>
+    <%= link_to h(issue.subject), issue_path(issue),
+          class: 'backlog-issue-subject backlog-issue-link backlog-cell-edit__display' %>
+  </td>
+  <td class="epic<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="parent_id" data-value="<%= issue.parent_id.to_i %>" data-edit-type="epic"<% end %>>
+    <span class="backlog-cell-edit__display"><%= epic ? h(epic) : '—' %></span>
+  </td>
+  <td class="release<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="release_id" data-value="<%= release&.id.to_i %>" data-edit-type="release"<% end %>>
+    <span class="backlog-cell-edit__display"><%= release_badge || '—' %></span>
+  </td>
+  <td class="priority sanan-agile-priority<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="priority_id" data-value="<%= issue.priority_id %>" data-edit-type="priority"<% end %>>
+    <span class="backlog-cell-edit__display"><%= backlog_priority_badge(issue.priority) %></span>
+  </td>
+  <td class="assigned_to<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="assigned_to_id" data-value="<%= issue.assigned_to_id.to_i %>" data-edit-type="assignee"<% end %>>
+    <span class="backlog-cell-edit__display"><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></span>
+  </td>
+  <td class="sp<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="story_points" data-value="<%= backlog_issue_sp(issue) %>" data-edit-type="sp"<% end %>>
+    <span class="backlog-cell-edit__display"><%= backlog_issue_sp(issue) %></span>
+  </td>
+  <td class="status<%= ' backlog-cell-edit' if edit %>"
+      <% if edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>
+    <span class="backlog-cell-edit__display"><%= h issue.status %></span>
+  </td>
+</tr>

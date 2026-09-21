@@ -1,28 +1,68 @@
 # frozen_string_literal: true
+require_dependency File.expand_path('lib/sanan_agile/agile_data_association', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/agile_story_points', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/project_settings', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/commit_lock', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/projects_helper_patch.rb', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_card_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issue_show_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/issue_sp_hook', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/sprint_sp_history', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/sp_total_formula', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/velocity', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/issues_helper_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_show_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/assets_hook', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/global_modal_hook', __dir__)
 
 Rails.application.config.to_prepare do
+  require_dependency File.expand_path('lib/sanan_agile/agile_data_association', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/agile_story_points', __dir__)
+  SananAgile::AgileDataAssociation.ensure!
+
+  require_dependency File.expand_path('lib/sanan_agile/issue_patch', __dir__)
+  unless Issue.included_modules.include?(SananAgile::IssuePatch)
+    Issue.send(:include, SananAgile::IssuePatch)
+  end
+  begin
+    if defined?(RedmineAgile::Patches::IssuePatch) &&
+       !Issue.included_modules.include?(RedmineAgile::Patches::IssuePatch)
+      Issue.send(:include, RedmineAgile::Patches::IssuePatch)
+    end
+  rescue StandardError => e
+    Rails.logger.error "[sanan_redmine_agile] RedmineAgile IssuePatch: #{e.class}: #{e.message}"
+  end
+  if defined?(RedmineChecklists::Patches::IssuePatch) &&
+     !Issue.included_modules.include?(RedmineChecklists::Patches::IssuePatch)
+    begin
+      Issue.send(:include, RedmineChecklists::Patches::IssuePatch)
+    rescue StandardError => e
+      Rails.logger.error "[sanan_redmine_agile] checklists IssuePatch: #{e.class}: #{e.message}"
+    end
+  end
+  SananAgile::AgileDataAssociation.ensure!
+  SananAgile::AgileStoryPoints.install!
+
   require_dependency 'releases_controller'
   require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/issues_helper_patch', __dir__)
   SananAgile::IssuesHelperPatch.apply!
+  require_dependency File.expand_path('lib/sanan_agile/sprint_sp_history', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/sp_total_formula', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/issue_sp_hook', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/commit_lock', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/calculator', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/velocity', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/product_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_pull', __dir__)
@@ -31,6 +71,12 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
   unless VersionsController.ancestors.include?(SananAgile::VersionsControllerPatch)
     VersionsController.prepend(SananAgile::VersionsControllerPatch)
+  end
+  begin
+    require_dependency 'agile_boards_controller'
+    SananAgile::AgileStoryPoints.install!
+    SananAgile::AgileStoryPoints.install_controller!
+  rescue LoadError
   end
 rescue LoadError => e
   Rails.logger.error "[sanan_redmine_agile] to_prepare LoadError: #{e.message}"
@@ -54,11 +100,11 @@ Redmine::Plugin.register :sanan_redmine_agile do
                require: :member
 
     permission :view_backlog,
-               { backlogs: [:show] },
+               { backlogs: [:show, :sections, :issues] },
                require: :member
 
     permission :manage_backlog,
-               { backlogs: [:reorder, :create_sprint, :start_sprint, :complete_sprint,
+               { backlogs: [:reorder, :create_sprint, :update_sprint, :destroy_sprint, :start_sprint, :complete_sprint,
                             :create_issue, :create_epic, :bulk_move, :attach_to_release,
                             :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
                             :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota] },

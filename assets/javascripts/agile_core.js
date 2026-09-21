@@ -269,6 +269,101 @@
     tidyAttributesBlock(p);
   }
 
+  function ensureBoardFilterBar() {
+    var bar = document.getElementById('sa-board-filterbar');
+    if (bar) return bar;
+    var anchor = document.querySelector('.agile-board-header, .agile-board .query-totals, .agile-board')
+      || document.querySelector('#content');
+    if (!anchor) return null;
+    bar = document.createElement('div');
+    bar.id = 'sa-board-filterbar';
+    bar.className = 'sa-board-filterbar';
+    bar.innerHTML =
+      '<div class="sa-board-filterbar__fields"></div>' +
+      '<button type="button" id="sa-board-filter-clear">Clear</button>';
+    if (anchor.firstChild) anchor.insertBefore(bar, anchor.firstChild);
+    else anchor.appendChild(bar);
+    bar.querySelector('#sa-board-filter-clear').addEventListener('click', function () {
+      var ev = document.createEvent('HTMLEvents');
+      ev.initEvent('change', true, false);
+      $all('select', bar).forEach(function (sel) {
+        sel.value = '';
+        sel.dispatchEvent(ev);
+      });
+    });
+    return bar;
+  }
+
+  function ensureBoardFilterField(id, html, order) {
+    var bar = ensureBoardFilterBar();
+    if (!bar) return null;
+    var existing = document.getElementById(id);
+    if (existing) return existing;
+    var wrap = document.createElement('div');
+    wrap.className = 'sa-board-filterbar__field';
+    wrap.setAttribute('data-sa-filter-order', String(order || 0));
+    wrap.innerHTML = html;
+    var fields = bar.querySelector('.sa-board-filterbar__fields');
+    var next = null;
+    var kids = fields.children;
+    for (var i = 0; i < kids.length; i++) {
+      var o = parseInt(kids[i].getAttribute('data-sa-filter-order') || '0', 10);
+      if ((order || 0) < o) { next = kids[i]; break; }
+    }
+    if (next) fields.insertBefore(wrap, next);
+    else fields.appendChild(wrap);
+    return document.getElementById(id);
+  }
+
+  function cardHiddenByBoardFilter(el) {
+    return el.classList.contains('sa-hidden-by-intake')
+      || el.classList.contains('sa-hidden-by-release');
+  }
+
+  function formatColumnHoursSp(hours, sp) {
+    var parts = [];
+    if (hours > 0) parts.push(hours.toFixed(2) + 'h');
+    if (sp > 0) {
+      var rounded = Math.round(sp * 10) / 10;
+      parts.push((rounded % 1 === 0 ? rounded.toFixed(1) : String(rounded)) + 'sp');
+    }
+    return parts.length ? (' ' + parts.join('/')) : '';
+  }
+
+  function syncBoardColumnCounts() {
+    $all('table.issues-board td.issue-status-col').forEach(function (col) {
+      var colId = col.getAttribute('data-id');
+      if (!colId) return;
+      var cards = $all('.issue-card[data-id]', col).filter(function (el) {
+        return !cardHiddenByBoardFilter(el);
+      });
+      var hours = 0;
+      var sp = 0;
+      cards.forEach(function (c) {
+        hours += parseFloat(c.getAttribute('data-estimated-hours') || '0') || 0;
+        sp += parseFloat(c.getAttribute('data-story-points') || '0') || 0;
+      });
+      var ths = document.querySelectorAll('table.issues-board thead th[data-column-id="' + colId + '"]');
+      var label = formatColumnHoursSp(hours, sp);
+      Array.prototype.forEach.call(ths, function (th) {
+        var countEl = th.querySelector('span.count');
+        if (countEl) countEl.textContent = String(cards.length);
+        var hoursEl = th.querySelector('span.hours');
+        if (hoursEl) {
+          hoursEl.textContent = label;
+          hoursEl.style.display = label ? '' : 'none';
+        } else if (label) {
+          hoursEl = document.createElement('span');
+          hoursEl.className = 'hours';
+          hoursEl.textContent = label;
+          th.appendChild(hoursEl);
+        }
+      });
+      if (cards.length) col.classList.remove('empty');
+      else col.classList.add('empty');
+    });
+  }
+
   w.SananAgileUtil = {
     $: $,
     $all: $all,
@@ -282,5 +377,8 @@
     boot: boot,
     removeAttributeLine,
     addAttributeLine,
+    ensureBoardFilterBar: ensureBoardFilterBar,
+    ensureBoardFilterField: ensureBoardFilterField,
+    syncBoardColumnCounts: syncBoardColumnCounts,
   };
 })(window, document);

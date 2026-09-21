@@ -40,8 +40,12 @@ Rails.application.routes.draw do
 
     # Backlog (Sprint = Version)
     get 'backlog', to: 'backlogs#show', as: :backlog
+    get 'backlog/sections', to: 'backlogs#sections', as: :backlog_sections
+    get 'backlog/issues', to: 'backlogs#issues', as: :backlog_issues
     patch 'backlog/reorder', to: 'backlogs#reorder', as: :backlog_reorder
     post 'backlog/sprints', to: 'backlogs#create_sprint', as: :backlog_create_sprint
+    patch 'backlog/sprints/:version_id', to: 'backlogs#update_sprint', as: :backlog_sprint
+    delete 'backlog/sprints/:version_id', to: 'backlogs#destroy_sprint'
     post 'backlog/sprints/:version_id/start', to: 'backlogs#start_sprint', as: :backlog_start_sprint
     post 'backlog/sprints/:version_id/complete', to: 'backlogs#complete_sprint', as: :backlog_complete_sprint
     post 'backlog/issues', to: 'backlogs#create_issue', as: :backlog_create_issue

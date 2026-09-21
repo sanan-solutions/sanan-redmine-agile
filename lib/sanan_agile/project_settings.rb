@@ -10,6 +10,8 @@ module SananAgile
       'card_color_tracker_mode' => 'border',
       # Auto set story point for redmine agile
       'story_point_cfid'    => '',
+      'sp_total_formula'    => 'manual',  # manual | max | avg
+      'sp_total_require_qa' => '0',       # Total empty unless tester SP is set
 
       # auto set version by status
       'code_done_status_name'        => '',  # tên status “Done code in version”
@@ -67,6 +69,11 @@ module SananAgile
       'backlog_enabled' => '0',
       'backlog_trackers' => [],   # empty = use standard_tracker
       'backlog_hide_subtasks' => '1',
+      # Optional Version used as Product Backlog bucket; blank = fixed_version_id nil
+      'backlog_version_id' => '',
+      'velocity_window' => '3',
+      # Last day to add/remove committed tickets = due - N. 0 = no calendar lock.
+      'commit_lock_days_before_end' => '0',
 
       # Agile board: hide these trackers from cards/column counts (e.g. Epic)
       'agile_board_hidden_tracker_ids' => [],

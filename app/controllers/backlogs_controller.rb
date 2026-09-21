@@ -8,7 +8,7 @@ class BacklogsController < ApplicationController
   before_action :ensure_backlog_enabled
   before_action :authorize
   before_action :authorize_manage, only: [
-    :reorder, :create_sprint, :start_sprint, :complete_sprint,
+    :reorder, :create_sprint, :update_sprint, :destroy_sprint, :start_sprint, :complete_sprint,
     :create_issue, :create_epic, :bulk_move, :attach_to_release,
     :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
     :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota
@@ -17,37 +17,46 @@ class BacklogsController < ApplicationController
   helper :backlogs
 
   def show
-    @filters = {
-      tracker_id: params[:tracker_id],
-      assigned_to_id: params[:assigned_to_id],
-      epic_id: params[:epic_id],
-      q: params[:q],
-      without_release: params[:without_release]
-    }
-    @data = SananAgile::BacklogQuery.call(@project, cfg: @settings, filters: @filters)
-    @can_manage = User.current.allowed_to?(:manage_backlog, @project)
-    @can_add_issues = User.current.allowed_to?(:add_issues, @project)
-    @can_manage_releases = User.current.allowed_to?(:manage_releases, @project)
-    @can_delete_issues = User.current.allowed_to?(:delete_issues, @project)
-    queue_ids = SananAgile::IntakeSource.intake_queue_version_ids(@settings)
-    @open_versions = @project.shared_versions.open
-                             .reject { |v| queue_ids.include?(v.id) }
-                             .sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
-    @attachable_releases = attachable_releases
-    @issue_statuses = IssueStatus.sorted.to_a
-    @priorities = IssuePriority.active
-    @assignables = @project.assignable_users.sort_by { |u| u.name.to_s.downcase }
-    @intake = SananAgile::IntakeCandidates.for_project(@project, cfg: @settings)
-    @intake_quota_by_version = {}
-    ([@data[:active]] + Array(@data[:future])).compact.each do |section|
-      next unless section.version
-
-      @intake_quota_by_version[section.version.id] =
-        SananAgile::IntakeCandidates.new(@project, cfg: @settings).quota_stats_for(section.version)
-    end
-    preload_releases!
-    annotate_without_release_counts!
+    assign_backlog_filters
+    load_backlog_board!
     load_intake_alerts!
+  end
+
+  def sections
+    assign_backlog_filters
+    load_backlog_board!
+    render partial: 'sections', layout: false
+  end
+
+  def issues
+    assign_backlog_filters
+    @can_manage = User.current.allowed_to?(:manage_backlog, @project)
+    query = SananAgile::BacklogQuery.new(@project, cfg: @settings, filters: @filters)
+    offset = [params[:offset].to_i, 0].max
+    page = query.backlog_page(offset: offset, compute_sp: false)
+    @issues = page[:issues]
+    ReleaseVersion.preload_for_issues!(@issues) if @issues.any? && defined?(ReleaseVersion)
+    html = render_to_string(
+      partial: 'issue_rows',
+      locals: { issues: @issues, row_offset: offset }
+    )
+    if page[:has_more]
+      html += render_to_string(
+        partial: 'load_more_row',
+        locals: {
+          next_offset: page[:next_offset],
+          loaded: page[:loaded],
+          total: page[:total]
+        }
+      )
+    end
+    render json: {
+      html: html,
+      next_offset: page[:next_offset],
+      has_more: page[:has_more],
+      loaded: page[:loaded],
+      total: page[:total]
+    }
   end
 
   def reorder
@@ -56,7 +65,8 @@ class BacklogsController < ApplicationController
 
     apply_version!(issue, params[:to_version_id])
     unless issue.save
-      return render json: { ok: false, errors: issue.errors.full_messages }, status: :unprocessable_entity
+      return render json: { ok: false, error: issue.errors.full_messages.first, errors: issue.errors.full_messages },
+                    status: :unprocessable_entity
     end
 
     persist_positions!(params[:positions])
@@ -80,6 +90,7 @@ class BacklogsController < ApplicationController
     version.sanan_sprint_start_date = start_date if start_date
     version.sanan_cs_quota_sp = params[:cs_quota_sp].presence || @settings['default_cs_quota_sp']
     version.sanan_sale_quota_sp = params[:sale_quota_sp].presence || @settings['default_sale_quota_sp']
+    apply_sprint_commit_sp!(version)
 
     if version.name.blank?
       flash[:error] = l(:error_backlog_sprint_name_blank)
@@ -113,6 +124,64 @@ class BacklogsController < ApplicationController
     redirect_to project_backlog_path(@project, filter_redirect_params)
   end
 
+  def update_sprint
+    unless User.current.allowed_to?(:manage_versions, @project)
+      return render_403
+    end
+
+    version = @project.versions.find(params[:version_id])
+    version.name = params[:name].to_s.strip
+    version.description = params[:goal].to_s.strip
+    version.effective_date = parse_date(params[:effective_date])
+    start_date = parse_date(params[:start_date])
+    version.sanan_sprint_start_date = start_date
+    version.sanan_cs_quota_sp = params[:cs_quota_sp] if params.key?(:cs_quota_sp)
+    version.sanan_sale_quota_sp = params[:sale_quota_sp] if params.key?(:sale_quota_sp)
+    apply_sprint_commit_sp!(version)
+
+    if version.name.blank?
+      flash[:error] = l(:error_backlog_sprint_name_blank)
+      return redirect_to project_backlog_path(@project, filter_redirect_params)
+    end
+
+    if version.save
+      version.save_sanan_sprint_start_date!
+      flash[:notice] = l(:notice_backlog_sprint_updated, name: version.name)
+    else
+      flash[:error] = version.errors.full_messages.join(', ')
+    end
+    redirect_to project_backlog_path(@project, filter_redirect_params)
+  end
+
+  def destroy_sprint
+    unless User.current.allowed_to?(:manage_versions, @project)
+      return render_403
+    end
+
+    version = @project.versions.find(params[:version_id])
+    name = version.name
+
+    if @project.default_version_id == version.id
+      @project.default_version = nil
+      @project.save
+    end
+
+    Issue.where(project_id: @project.id, fixed_version_id: version.id).find_each do |issue|
+      next unless User.current.allowed_to?(:edit_issues, @project)
+
+      issue.init_journal(User.current, '[backlog delete sprint]')
+      SananAgile::ProductBacklog.assign!(issue, @project, @settings)
+      issue.save
+    end
+
+    if version.destroy
+      flash[:notice] = l(:notice_backlog_sprint_deleted, name: name)
+    else
+      flash[:error] = version.errors.full_messages.join(', ')
+    end
+    redirect_to project_backlog_path(@project, filter_redirect_params)
+  end
+
   def start_sprint
     version = @project.shared_versions.open.find(params[:version_id])
     unless User.current.allowed_to?(:manage_versions, @project) || User.current.allowed_to?(:edit_project, @project)
@@ -134,30 +203,8 @@ class BacklogsController < ApplicationController
       return render_403
     end
 
-    move_to = params[:move_unfinished_to].to_s
-    unfinished = unfinished_issues_for(version)
-
-    case move_to
-    when 'backlog'
-      unfinished.find_each do |issue|
-        next unless User.current.allowed_to?(:edit_issues, @project)
-
-        issue.init_journal(User.current, '[backlog complete sprint]')
-        issue.fixed_version = nil
-        issue.save
-      end
-    when /\A\d+\z/
-      target = @project.shared_versions.open.find_by(id: move_to)
-      if target
-        unfinished.find_each do |issue|
-          next unless User.current.allowed_to?(:edit_issues, @project)
-
-          issue.init_journal(User.current, '[backlog complete sprint]')
-          issue.fixed_version = target
-          issue.save
-        end
-      end
-    end
+    dod_ids = apply_complete_dod!(version)
+    apply_sprint_goal_met!(version)
 
     if @project.default_version_id == version.id
       @project.default_version = nil
@@ -165,15 +212,16 @@ class BacklogsController < ApplicationController
     end
 
     version.status = 'closed'
-    if version.save
-      flash[:notice] = l(:notice_successful_update)
-      if User.current.allowed_to?(:view_sprint_reports, @project)
-        redirect_to project_sprint_report_path(@project, version)
-      else
-        redirect_to project_backlog_path(@project)
-      end
-    else
+    unless version.save
       flash[:error] = version.errors.full_messages.join(', ')
+      return redirect_to project_backlog_path(@project)
+    end
+
+    move_unfinished_after_complete!(version, params[:move_unfinished_to].to_s, dod_ids)
+    flash[:notice] = l(:notice_successful_update)
+    if User.current.allowed_to?(:view_sprint_reports, @project)
+      redirect_to project_sprint_report_path(@project, version)
+    else
       redirect_to project_backlog_path(@project)
     end
   end
@@ -198,6 +246,8 @@ class BacklogsController < ApplicationController
 
     if params[:version_id].present?
       issue.fixed_version = @project.shared_versions.open.find_by(id: params[:version_id])
+    else
+      SananAgile::ProductBacklog.assign!(issue, @project, @settings)
     end
     if params[:parent_id].present?
       issue.parent_issue_id = params[:parent_id]
@@ -263,7 +313,11 @@ class BacklogsController < ApplicationController
       next unless User.current.allowed_to?(:edit_issues, @project)
 
       issue.init_journal(User.current)
-      issue.fixed_version = version
+      if version
+        issue.fixed_version = version
+      else
+        SananAgile::ProductBacklog.assign!(issue, @project, @settings)
+      end
       count += 1 if issue.save
     end
     flash[:notice] = l(:notice_backlog_bulk_moved, count: count)
@@ -463,6 +517,44 @@ class BacklogsController < ApplicationController
     params.permit(:epic_id, :tracker_id, :q, :assigned_to_id, :without_release).to_h
   end
 
+  def assign_backlog_filters
+    @filters = {
+      tracker_id: params[:tracker_id],
+      assigned_to_id: params[:assigned_to_id],
+      epic_id: params[:epic_id],
+      q: params[:q],
+      without_release: params[:without_release]
+    }
+  end
+
+  def load_backlog_board!
+    @data = SananAgile::BacklogQuery.call(@project, cfg: @settings, filters: @filters)
+    @can_manage = User.current.allowed_to?(:manage_backlog, @project)
+    @can_add_issues = User.current.allowed_to?(:add_issues, @project)
+    @can_manage_releases = User.current.allowed_to?(:manage_releases, @project)
+    @can_delete_issues = User.current.allowed_to?(:delete_issues, @project)
+    queue_ids = SananAgile::IntakeSource.intake_queue_version_ids(@settings)
+    backlog_version_ids = SananAgile::ProductBacklog.version_ids(@settings)
+    @open_versions = @project.shared_versions.open
+                             .reject { |v| queue_ids.include?(v.id) || backlog_version_ids.include?(v.id) }
+                             .sort_by { |v| [v.effective_date || Date.new(9999, 1, 1), v.id] }
+    @attachable_releases = attachable_releases
+    @issue_statuses = IssueStatus.sorted.to_a
+    @priorities = IssuePriority.active
+    @assignables = @project.assignable_users.sort_by { |u| u.name.to_s.downcase }
+    @intake = SananAgile::IntakeCandidates.for_project(@project, cfg: @settings)
+    @velocity = SananAgile::Velocity.call(@project, cfg: @settings)
+    @intake_quota_by_version = {}
+    ([@data[:active]] + Array(@data[:future])).compact.each do |section|
+      next unless section.version
+
+      @intake_quota_by_version[section.version.id] =
+        SananAgile::IntakeCandidates.new(@project, cfg: @settings).quota_stats_for(section.version)
+    end
+    preload_releases!
+    annotate_without_release_counts!
+  end
+
   def attachable_releases
     return [] unless defined?(ReleaseVersion)
 
@@ -478,6 +570,8 @@ class BacklogsController < ApplicationController
     sections.concat(@data[:future])
     sections << @data[:backlog]
     sections.compact.each do |section|
+      next unless section.version
+
       section.define_singleton_method(:without_release_count) do
         @without_release_count ||= section.issues.count { |i| ReleaseVersion.for_issue(i).nil? }
       end
@@ -669,7 +763,7 @@ class BacklogsController < ApplicationController
 
       issue.fixed_version = version
     else
-      issue.fixed_version = nil
+      SananAgile::ProductBacklog.assign!(issue, @project, @settings)
     end
   end
 
@@ -677,14 +771,32 @@ class BacklogsController < ApplicationController
     return if positions.blank?
 
     AgileData.transaction do
-      Issue.eager_load(:agile_data).where(id: positions.keys, project_id: @project.id).find_each do |iss|
+      Issue.where(id: positions.keys, project_id: @project.id).find_each do |iss|
         pos = positions[iss.id.to_s]
         next unless pos
 
-        iss.agile_data.position = pos['position'].presence || pos[:position]
-        iss.agile_data.save
+        row = AgileData.find_or_initialize_by(issue_id: iss.id)
+        row.position = pos['position'].presence || pos[:position]
+        row.save
       end
     end
+  end
+
+  def apply_sprint_commit_sp!(version)
+    values = {}
+    {
+      commit_sp: 'sp_commit_version_cfid',
+      commit_sp_be: 'sp_be_commit_version_cfid',
+      commit_sp_fe: 'sp_fe_commit_version_cfid',
+      commit_sp_qa: 'sp_qa_commit_version_cfid'
+    }.each do |param_key, setting_key|
+      cfid = @settings[setting_key].to_i
+      next if cfid <= 0
+      next unless params.key?(param_key)
+
+      values[cfid.to_s] = params[param_key].to_s.strip
+    end
+    version.custom_field_values = values if values.any?
   end
 
   def unfinished_issues_for(version)
@@ -692,6 +804,84 @@ class BacklogsController < ApplicationController
     scope = Issue.where(project_id: @project.id, fixed_version_id: version.id)
     scope = scope.where.not(status_id: closed_ids) if closed_ids.any?
     scope
+  end
+
+  def complete_dod_eligible_ids(version)
+    status_ids = Array(@settings['dod_checkbox_statuses']).map(&:to_i).reject(&:zero?)
+    return [] if status_ids.empty?
+
+    scope = Issue.where(project_id: @project.id, fixed_version_id: version.id, status_id: status_ids)
+    tracker_ids = Array(@settings['dod_checkbox_trackers']).map(&:to_i).reject(&:zero?)
+    scope = scope.where(tracker_id: tracker_ids) if tracker_ids.any?
+    scope.pluck(:id)
+  end
+
+  def apply_complete_dod!(version)
+    return [] unless params[:dod_confirmed].present?
+
+    eligible = complete_dod_eligible_ids(version)
+    selected = Array(params[:dod_issue_ids]).map(&:to_i) & eligible
+    dod_cfid = @settings['dod_cfid'].to_i
+    return selected if dod_cfid <= 0 || eligible.empty?
+
+    cf = IssueCustomField.find_by(id: dod_cfid)
+    return selected unless cf
+
+    val = cf.field_format == 'version' ? version.id.to_s : version.name.to_s
+    match_vals = [version.id.to_s, version.name.to_s].uniq
+    Issue.where(id: eligible).find_each do |issue|
+      next unless User.current.allowed_to?(:edit_issues, @project)
+
+      current = Array(issue.custom_field_value(dod_cfid)).map { |v| v.to_s.strip }
+      want = selected.include?(issue.id)
+      already = (current & match_vals).any?
+      next if want == already
+
+      issue.init_journal(User.current, "[backlog complete sprint] DoD #{want ? 'set' : 'clear'}")
+      issue.safe_attributes = { 'custom_field_values' => { dod_cfid.to_s => (want ? val : '') } }
+      issue.save(validate: false)
+    end
+    selected
+  end
+
+  def apply_sprint_goal_met!(version)
+    allowed = SananAgileVersionMeta::GOAL_MET_VALUES
+    val = params[:goal_met].to_s
+    val = 'unreviewed' unless allowed.include?(val)
+    meta = version.sanan_agile_version_meta || version.build_sanan_agile_version_meta
+    meta.goal_met = val
+    meta.goal_note = params[:goal_note].to_s.strip.presence
+    meta.version_id = version.id
+    meta.save
+  end
+
+  def move_unfinished_after_complete!(version, move_to, keep_ids)
+    unfinished = unfinished_issues_for(version)
+    unfinished = unfinished.where.not(id: keep_ids) if keep_ids.present?
+
+    case move_to
+    when 'backlog'
+      unfinished.find_each do |issue|
+        next unless User.current.allowed_to?(:edit_issues, @project)
+
+        issue.sanan_skip_commit_lock = true
+        issue.init_journal(User.current, '[backlog complete sprint]')
+        SananAgile::ProductBacklog.assign!(issue, @project, @settings)
+        issue.save
+      end
+    when /\A\d+\z/
+      target = @project.shared_versions.open.find_by(id: move_to)
+      return unless target
+
+      unfinished.find_each do |issue|
+        next unless User.current.allowed_to?(:edit_issues, @project)
+
+        issue.sanan_skip_commit_lock = true
+        issue.init_journal(User.current, '[backlog complete sprint]')
+        issue.fixed_version = target
+        issue.save
+      end
+    end
   end
 
   def backlog_tracker_ids

@@ -23,19 +23,7 @@
 }
 
 #sa-intake-filterbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin: 8px 0;
-  padding: 6px 10px;
-  background: #f4f5f7;
-  border-radius: 6px;
-  font-size: 12px;
-}
-
-#sa-intake-filterbar select {
-  min-width: 140px;
+  display: none;
 }
 
 .sa-hidden-by-intake {

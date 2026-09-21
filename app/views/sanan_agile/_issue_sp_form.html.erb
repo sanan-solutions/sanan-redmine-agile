@@ -1,0 +1,140 @@
+<% issue = local_assigns[:issue] || @issue %>
+<% project = issue&.project || @project %>
+<% if issue && project && respond_to?(:sanan_agile_enabled_for?) && sanan_agile_enabled_for?(project) %>
+  <% cfg = SananAgile::ProjectSettings.load(project.id) %>
+  <% size_row = issue.id && defined?(SananIssueSpSize) ? SananIssueSpSize.find_by(issue_id: issue.id) : nil %>
+  <% sprint_row = (issue.id && issue.fixed_version_id.to_i.positive? && defined?(SananIssueSprintSp)) ? SananIssueSprintSp.find_by(issue_id: issue.id, version_id: issue.fixed_version_id) : nil %>
+  <% total_cf = cfg['story_point_cfid'].to_i %>
+  <% be_cf = cfg['sp_be_cfid'].to_i %>
+  <% fe_cf = cfg['sp_fe_cfid'].to_i %>
+  <% qa_cf = cfg['sp_qa_cfid'].to_i %>
+  <% total_on = total_cf.positive? %>
+  <% size_be = be_cf.positive? %>
+  <% size_fe = fe_cf.positive? %>
+  <% size_qa = qa_cf.positive? %>
+  <% show_size = total_on || size_be || size_fe || size_qa %>
+  <% sprint_be = be_cf.positive? %>
+  <% sprint_fe = fe_cf.positive? %>
+  <% sprint_qa = qa_cf.positive? %>
+  <% show_sprint = sprint_be || sprint_fe || sprint_qa %>
+  <% on_sprint = sanan_issue_on_sprint?(issue, cfg) %>
+  <% hide_ids = [total_on ? total_cf : nil, sprint_be ? be_cf : nil, sprint_fe ? fe_cf : nil, sprint_qa ? qa_cf : nil].compact %>
+  <% hide_ids += sanan_sprint_done_cf_ids_for(project) if respond_to?(:sanan_sprint_done_cf_ids_for) %>
+  <% backlog_vid = cfg['backlog_version_id'].to_i %>
+  <% sp_formula = defined?(SananAgile::SpTotalFormula) ? SananAgile::SpTotalFormula.formula(cfg) : 'manual' %>
+  <% sp_require_qa = defined?(SananAgile::SpTotalFormula) && SananAgile::SpTotalFormula.require_qa?(cfg) %>
+  <% size_total_val = sanan_cf_value_object_for(issue, total_cf)&.value.presence || issue.custom_field_value(total_cf) %>
+  <% sprint_total_val = sprint_row&.sp_total %>
+
+  <% if show_size || show_sprint %>
+    <div class="sanan-sp-forms">
+      <% if show_size %>
+        <fieldset class="sanan-sp-form" id="sanan-sp-size-form">
+      <legend><%= l(:label_sanan_sp_size_group) %></legend>
+      <p class="sanan-sp-form__hint"><%= l(:text_sanan_sp_size_hint) %></p>
+      <div class="sanan-sp-form__grid">
+        <% if size_be %>
+          <p>
+            <label for="sanan_sp_size_sp_be"><%= l(:label_sprint_report_sp_be) %></label>
+            <%= sanan_sp_fibo_select 'sanan_sp_size[sp_be]',
+                  size_row&.sp_be,
+                  id: 'sanan_sp_size_sp_be',
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'be', sanan_sp_group: 'size' } %>
+          </p>
+        <% end %>
+        <% if size_fe %>
+          <p>
+            <label for="sanan_sp_size_sp_fe"><%= l(:label_sprint_report_sp_fe) %></label>
+            <%= sanan_sp_fibo_select 'sanan_sp_size[sp_fe]',
+                  size_row&.sp_fe,
+                  id: 'sanan_sp_size_sp_fe',
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'fe', sanan_sp_group: 'size' } %>
+          </p>
+        <% end %>
+        <% if size_qa %>
+          <p>
+            <label for="sanan_sp_size_sp_qa"><%= l(:label_sprint_report_sp_qa) %></label>
+            <%= sanan_sp_fibo_select 'sanan_sp_size[sp_qa]',
+                  size_row&.sp_qa,
+                  id: 'sanan_sp_size_sp_qa',
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'qa', sanan_sp_group: 'size' } %>
+          </p>
+        <% end %>
+        <% if total_on %>
+          <p>
+            <label for="sanan_sp_cf_<%= total_cf %>"><%= l(:label_sanan_sp_total) %></label>
+            <%= sanan_sp_fibo_select "issue[custom_field_values][#{total_cf}]",
+                  size_total_val,
+                  id: "sanan_sp_cf_#{total_cf}",
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'total', sanan_sp_group: 'size' } %>
+          </p>
+        <% end %>
+      </div>
+        </fieldset>
+      <% end %>
+
+      <% if show_sprint %>
+    <fieldset class="sanan-sp-form" id="sanan-sp-sprint-form"
+              data-backlog-version-id="<%= backlog_vid.positive? ? backlog_vid : '' %>"
+              <%= 'hidden' unless on_sprint %>>
+      <legend><%= l(:label_sanan_sp_sprint_group) %></legend>
+      <p class="sanan-sp-form__hint"><%= l(:text_sanan_sp_sprint_hint) %></p>
+      <div class="sanan-sp-form__grid">
+        <% if sprint_be %>
+          <% cv = sanan_cf_value_object_for(issue, be_cf) %>
+          <p>
+            <label for="sanan_sp_cf_<%= be_cf %>"><%= l(:label_sprint_report_sp_be) %></label>
+            <%= sanan_sp_fibo_select "issue[custom_field_values][#{be_cf}]",
+                  cv&.value,
+                  id: "sanan_sp_cf_#{be_cf}",
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'be', sanan_sp_group: 'sprint' } %>
+          </p>
+        <% end %>
+        <% if sprint_fe %>
+          <% cv = sanan_cf_value_object_for(issue, fe_cf) %>
+          <p>
+            <label for="sanan_sp_cf_<%= fe_cf %>"><%= l(:label_sprint_report_sp_fe) %></label>
+            <%= sanan_sp_fibo_select "issue[custom_field_values][#{fe_cf}]",
+                  cv&.value,
+                  id: "sanan_sp_cf_#{fe_cf}",
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'fe', sanan_sp_group: 'sprint' } %>
+          </p>
+        <% end %>
+        <% if sprint_qa %>
+          <% cv = sanan_cf_value_object_for(issue, qa_cf) %>
+          <p>
+            <label for="sanan_sp_cf_<%= qa_cf %>"><%= l(:label_sprint_report_sp_qa) %></label>
+            <%= sanan_sp_fibo_select "issue[custom_field_values][#{qa_cf}]",
+                  cv&.value,
+                  id: "sanan_sp_cf_#{qa_cf}",
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'qa', sanan_sp_group: 'sprint' } %>
+          </p>
+        <% end %>
+        <p>
+          <label for="sanan_sp_sprint_sp_total"><%= l(:label_sanan_sp_total) %></label>
+          <%= sanan_sp_fibo_select 'sanan_sp_sprint[sp_total]',
+                sprint_total_val,
+                id: 'sanan_sp_sprint_sp_total',
+                class: 'sanan-sp-input',
+                data: { sanan_sp_role: 'total', sanan_sp_group: 'sprint' } %>
+        </p>
+      </div>
+        </fieldset>
+      <% end %>
+    </div>
+  <% end %>
+
+  <div id="sanan-sp-hide-cfs" hidden
+       data-cf-ids="<%= hide_ids.join(',') %>"
+       data-sp-formula="<%= sp_formula %>"
+       data-sp-require-qa="<%= sp_require_qa ? '1' : '0' %>"></div>
+
+  <%= render partial: 'sanan_agile/issue_sprint_done_form', locals: { issue: issue } %>
+<% end %>

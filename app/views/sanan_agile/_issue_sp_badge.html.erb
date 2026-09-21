@@ -24,14 +24,20 @@
       format_sp.call(issue.custom_field_value(cfid.to_i))
     end
 
+    size_by = if defined?(SananIssueSpSize)
+                SananIssueSpSize.where(issue_id: Array(issues).map(&:id)).index_by(&:issue_id)
+              else
+                {}
+              end
     sp_map = Array(issues).each_with_object({}) do |i, h|
       total = read_cf.call(i, sp_cf)
       if total.nil? && i.respond_to?(:story_points) && i.story_points.present?
         total = format_sp.call(i.story_points)
       end
-      be = read_cf.call(i, be_cf)
-      fe = read_cf.call(i, fe_cf)
-      qa = read_cf.call(i, qa_cf)
+      size = size_by[i.id]
+      be = format_sp.call(size&.sp_be)
+      fe = format_sp.call(size&.sp_fe)
+      qa = format_sp.call(size&.sp_qa)
       next if total.nil? && be.nil? && fe.nil? && qa.nil?
       h[i.id] = { sp: total, be: be, fe: fe, qa: qa }
     end

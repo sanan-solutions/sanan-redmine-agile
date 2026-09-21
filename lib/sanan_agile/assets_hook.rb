@@ -21,7 +21,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     when 'agile_boards'
       agile_board_assets(cfg)
     when 'issues'
-      c.action_name == 'show' ? issue_show_assets : ''
+      %w[show new create edit update].include?(c.action_name.to_s) ? issue_show_assets : ''
     when 'backlogs', 'cs_backlogs', 'sale_backlogs'
       backlog_assets
     else
@@ -38,9 +38,11 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     ).html_safe
   end
 
-  def agile_board_assets(cfg)
+    def agile_board_assets(cfg)
     all_css = ''
-    all_css += stylesheet_link_tag 'sanan_agile_board_table', plugin: 'sanan_redmine_agile'
+    # Screen copy: redmine_agile/_index.html.erb also links this file as media=print.
+    all_css += stylesheet_link_tag 'redmine_agile', plugin: 'redmine_agile', media: 'all'
+    all_css += stylesheet_link_tag 'sanan_agile_board_table', plugin: 'sanan_redmine_agile', media: 'all'
     all_css += stylesheet_link_tag 'agile_release_badges', plugin: 'sanan_redmine_agile'
     all_css += stylesheet_link_tag 'agile_intake_badges', plugin: 'sanan_redmine_agile'
     if cfg['story_point_cfid'].present?
@@ -62,7 +64,8 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
   def issue_show_assets
     (
       stylesheet_link_tag('agile_release_badges', plugin: 'sanan_redmine_agile') +
-      stylesheet_link_tag('issue_sprint_done_group', plugin: 'sanan_redmine_agile')
+      stylesheet_link_tag('issue_sprint_done_group', plugin: 'sanan_redmine_agile') +
+      javascript_include_tag('issue_sp_form', plugin: 'sanan_redmine_agile')
     ).html_safe
   end
 

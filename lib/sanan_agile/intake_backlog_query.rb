@@ -108,7 +108,6 @@ module SananAgile
         scope = Issue.visible
                      .where(project_id: @project.id)
                      .joins(:priority)
-                     .eager_load(:agile_data)
                      .includes(:tracker, :status, :priority, :assigned_to, :fixed_version)
                      .order(Arel.sql(priority_order_sql))
 
@@ -207,7 +206,7 @@ module SananAgile
           WHEN 'lowest' THEN 9
           ELSE 10
         END ASC,
-        COALESCE(agile_data.position, 0) DESC,
+        COALESCE((SELECT agile_data.position FROM agile_data WHERE agile_data.issue_id = issues.id LIMIT 1), 0) DESC,
         issues.id ASC
       SQL
     end

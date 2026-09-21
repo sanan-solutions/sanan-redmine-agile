@@ -1,0 +1,6 @@
+<% Array(issues).each_with_index do |issue, i| %>
+  <%= render partial: 'issue_row', locals: { issue: issue, row_index: row_offset.to_i + i } %>
+<% end %>
+<% if local_assigns[:has_more] %>
+  <%= render partial: 'load_more_row', locals: { next_offset: local_assigns[:next_offset], loaded: local_assigns[:loaded], total: local_assigns[:total] } %>
+<% end %>

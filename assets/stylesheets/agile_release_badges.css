@@ -36,19 +36,37 @@
 }
 
 /* Toolbar filter trên Agile board header */
-#sa-release-filterbar {
+.sa-board-filterbar,
+#sa-release-filterbar,
+#sa-intake-filterbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   flex-wrap: wrap;
-  padding: 8px;
+  padding: 8px 10px;
   margin: 8px 0;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
-#sa-release-filter {
-  min-width: 240px;
+
+.sa-board-filterbar__fields {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+}
+
+.sa-board-filterbar__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#sa-release-filter,
+#sa-intake-filter {
+  min-width: 180px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: #fff;
@@ -60,7 +78,9 @@
 }
 
 /* Base style cho nút Clear trong filter toolbar */
+#sa-board-filter-clear,
 #sa-release-clear {
+  margin-left: auto;
   height: 32px;                      /* cùng chiều cao với select */
   padding: 0 12px;
   border: 1px solid #dcdfe6;
@@ -80,12 +100,14 @@
 }
 
 /* Hover effect */
+#sa-board-filter-clear:hover,
 #sa-release-clear:hover {
   background-color: #f6f7fb;
   border-color: #cfd4dc;
 }
 
 /* Active (click) effect */
+#sa-board-filter-clear:active,
 #sa-release-clear:active {
   background-color: #e9ebf2;
   border-color: #c5c9d3;
@@ -93,12 +115,14 @@
 }
 
 /* Focus outline (accessibility) */
+#sa-board-filter-clear:focus,
 #sa-release-clear:focus {
   outline: none;
   /* box-shadow: 0 0 0 3px rgba(64, 112, 244, 0.25); */
 }
 
 /* Disabled state */
+#sa-board-filter-clear:disabled,
 #sa-release-clear:disabled {
   opacity: 0.6;
   cursor: not-allowed;

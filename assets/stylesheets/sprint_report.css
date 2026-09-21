@@ -1,126 +1,306 @@
-.sanan-sprint-report .sprint-report-meta {
-  margin-bottom: 1rem;
+.sanan-sprint-report {
+  --sr-surface: #ffffff;
+  --sr-surface-muted: #f7f8f9;
+  --sr-border: #e6e8ec;
+  --sr-border-strong: #dfe1e6;
+  --sr-text: #172b4d;
+  --sr-text-subtle: #626f86;
+  --sr-accent: #0c66e4;
+  --sr-accent-soft: #e9f2ff;
+  --sr-radius: 14px;
+  --sr-shadow: 0 1px 2px rgba(9, 30, 66, 0.06), 0 8px 24px rgba(9, 30, 66, 0.04);
+  color: var(--sr-text);
 }
 
-.sanan-sprint-report .sprint-report-meta .badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: #eee;
-  margin-right: 0.5rem;
-  text-transform: capitalize;
-}
-
-.sanan-sprint-report .sprint-report-meta .badge-closed {
-  background: #dff0d8;
-  color: #3c763d;
-}
-
-.sanan-sprint-report .sprint-report-meta .badge-open {
-  background: #d9edf7;
-  color: #31708f;
-}
-
-.sanan-sprint-report .sprint-report-dates {
-  margin-right: 0.75rem;
-}
-
-.sanan-sprint-report .sprint-report-participants {
-  margin: 0.5rem 0 0;
-}
-
-.sanan-sprint-report .sprint-participant-list {
-  display: inline;
-  margin-left: 0.35rem;
-}
-
-.sanan-sprint-report .sprint-report-metrics {
+.sanan-sprint-report .sr-page-head {
   display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
 }
 
-.sanan-sprint-report .sprint-metric-card {
-  flex: 1 1 280px;
+.sanan-sprint-report .sr-page-head h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--sr-text);
+}
+
+.sanan-sprint-report .sr-page-head__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.sanan-sprint-report .sr-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid var(--sr-border-strong);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--sr-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1.3;
+}
+
+.sanan-sprint-report .sr-action:hover {
+  background: var(--sr-accent-soft);
+  border-color: #cfe0ff;
+  color: var(--sr-accent);
+}
+
+.sanan-sprint-report .sr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 13px;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: capitalize;
+  background: #f1f2f4;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-badge--closed {
+  background: #dcfff1;
+  color: #216e4e;
+}
+
+.sanan-sprint-report .sr-badge--open {
+  background: var(--sr-accent-soft);
+  color: var(--sr-accent);
+}
+
+.sanan-sprint-report .sr-badge--locked {
+  background: #fff7d6;
+  color: #974f0c;
+}
+
+.sanan-sprint-report .sr-participants {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--sr-text);
+}
+
+.sanan-sprint-report .sr-participants em {
+  color: var(--sr-text-subtle);
+  font-style: normal;
+}
+
+.sanan-sprint-report .sr-description {
+  margin-top: 10px;
+}
+
+.sanan-sprint-report .sr-card {
+  background: var(--sr-surface);
+  border: 1px solid var(--sr-border);
+  border-radius: var(--sr-radius);
+  box-shadow: var(--sr-shadow);
+  padding: 0 16px 16px;
+  margin: 0 0 16px;
+  overflow: hidden;
+}
+
+.sanan-sprint-report .sr-card > h3 {
+  margin: 0 -16px 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f2f4;
+  background: var(--sr-surface-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 0 0;
+}
+
+.sanan-sprint-report .sr-kpi {
+  min-width: 110px;
+  flex: 1 1 110px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--sr-surface-muted);
+}
+
+.sanan-sprint-report .sr-kpi--total {
+  background: var(--sr-accent-soft);
+}
+
+.sanan-sprint-report .sr-kpi__label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sr-text-subtle);
+  line-height: 1.3;
+}
+
+.sanan-sprint-report .sr-kpi__value {
+  display: block;
+  margin-top: 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--sr-text);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.sanan-sprint-report .sr-kpi--total .sr-kpi__value {
+  color: var(--sr-accent);
+}
+
+.sanan-sprint-report .sr-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.sanan-sprint-report .sr-metrics .sr-card {
+  margin-bottom: 16px;
+}
+
+.sanan-sprint-report .sr-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 12px 0 4px;
+}
+
+.sanan-sprint-report .sr-subhead {
+  margin: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-split .sr-subhead {
+  margin: 0 0 8px;
+}
+
+.sanan-sprint-report .sr-charts .sr-subhead {
+  margin: 0 0 8px;
+}
+
+.sanan-sprint-report .sr-table-wrap {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.sanan-sprint-report .sr-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
   margin: 0;
 }
 
-.sanan-sprint-report .sprint-metric-table th {
-  width: 60%;
+.sanan-sprint-report .sr-split .sr-table {
+  margin-bottom: 0;
+}
+
+.sanan-sprint-report .sr-table th,
+.sanan-sprint-report .sr-table td {
+  padding: 9px 12px;
   text-align: left;
+  border-bottom: 1px solid #f1f2f4;
+  vertical-align: middle;
+  color: var(--sr-text);
 }
 
-.sanan-sprint-report .sprint-metric-table td {
+.sanan-sprint-report .sr-table thead th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sr-text-subtle);
+  background: transparent;
+  border-bottom: 1px solid var(--sr-border);
+}
+
+.sanan-sprint-report .sr-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.sanan-sprint-report .sr-table tbody tr.is-current td {
+  background: var(--sr-accent-soft);
+}
+
+.sanan-sprint-report .sr-table th.num,
+.sanan-sprint-report .sr-table td.num,
+.sanan-sprint-report .sr-table tfoot th.num {
   text-align: right;
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
-.sanan-sprint-report .sprint-history-table td.num,
-.sanan-sprint-report .sprint-history-table th.num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.sanan-sprint-report .sr-table tfoot th,
+.sanan-sprint-report .sr-table tfoot td {
+  padding: 10px 12px;
+  border-top: 1px solid var(--sr-border);
+  background: var(--sr-surface-muted);
+  font-size: 12px;
 }
 
-.sanan-sprint-report .sprint-history-current td {
-  background: #f5f9fc;
+.sanan-sprint-report .sr-table td.subject {
+  max-width: 420px;
 }
 
-.sanan-sprint-report .sprint-report-charts {
+.sanan-sprint-report .sr-charts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1rem;
-  margin-top: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 4px 0 0;
 }
 
-.sanan-sprint-report .sprint-chart-card {
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  padding: 0.75rem 1rem 1rem;
-  background: #fff;
+.sanan-sprint-report .sr-chart {
+  background: var(--sr-surface-muted);
+  border: 1px solid #f1f2f4;
+  border-radius: 10px;
+  padding: 12px;
 }
 
-.sanan-sprint-report .sprint-chart-card h4 {
-  margin: 0 0 0.5rem;
-  font-size: 13px;
-}
-
-.sanan-sprint-report .sprint-chart-wrap {
+.sanan-sprint-report .sr-chart__canvas {
   position: relative;
-  height: 260px;
+  height: 240px;
 }
 
-.sanan-sprint-report .sprint-report-intake {
-  margin-bottom: 1rem;
-}
-
-.sanan-sprint-report .sprint-intake-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.sanan-sprint-report .sprint-intake-grid h4,
-.sanan-sprint-report .sprint-report-intake > h4 {
-  margin: 0 0 0.5rem;
+.sanan-sprint-report .sr-empty {
+  margin: 0;
+  padding: 16px 0 20px;
+  color: var(--sr-text-subtle);
   font-size: 13px;
-  color: #44546f;
-}
-
-.sanan-sprint-report .sprint-intake-quota-table {
-  max-width: 720px;
 }
 
 .sanan-sprint-report .sprint-intake-badge {
   display: inline-flex;
   align-items: center;
   padding: 1px 7px;
-  border-radius: 4px;
+  border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  line-height: 1.5;
 }
 
 .sanan-sprint-report .sprint-intake-badge--cs {
@@ -131,4 +311,97 @@
 .sanan-sprint-report .sprint-intake-badge--sale {
   background: #ecfdf5;
   color: #047857;
+}
+
+.sanan-sprint-report .sprint-intake-badge--product {
+  background: #f1f2f4;
+  color: #44546f;
+}
+
+.sanan-sprint-report .sr-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-code-flag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.sanan-sprint-report .sr-code-flag--done {
+  background: #dcfff1;
+  color: #216e4e;
+}
+
+.sanan-sprint-report .sr-code-flag--skip {
+  background: #f1f2f4;
+  color: var(--sr-text-subtle);
+  font-weight: 600;
+}
+
+.sanan-sprint-report .sr-goal {
+  margin: 12px 0 0;
+}
+
+.sanan-sprint-report .sr-goal h3 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-badge--goal-met {
+  background: #dcfff1;
+  color: #216e4e;
+}
+
+.sanan-sprint-report .sr-badge--goal-partial {
+  background: #fff7d6;
+  color: #7f5f01;
+}
+
+.sanan-sprint-report .sr-badge--goal-missed {
+  background: #ffeceb;
+  color: #ae2e24;
+}
+
+.sanan-sprint-report .sr-badge--goal-unreviewed {
+  background: #f1f2f4;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-outcome {
+  font-size: 12px;
+  color: var(--sr-text-subtle);
+}
+
+.sanan-sprint-report .sr-outcome--done {
+  color: #216e4e;
+  font-weight: 600;
+}
+
+.sanan-sprint-report .sr-outcome--carried_over,
+.sanan-sprint-report .sr-outcome--unplanned,
+.sanan-sprint-report .sr-outcome--closed_without_dod {
+  color: #974f0c;
+}
+
+@media (max-width: 960px) {
+  .sanan-sprint-report .sr-metrics,
+  .sanan-sprint-report .sr-split,
+  .sanan-sprint-report .sr-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .sanan-sprint-report .sr-page-head {
+    flex-direction: column;
+  }
 }

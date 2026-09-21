@@ -58,7 +58,11 @@ module SananAgile
 
         issue.init_journal(@user, "[backlog intake by PO] from #{@lane} → #{destination_label}")
         ensure_intake_source!(issue)
-        issue.fixed_version = @to_version # nil => Product backlog
+        if @to_version
+          issue.fixed_version = @to_version
+        else
+          SananAgile::ProductBacklog.assign!(issue, @project, @cfg)
+        end
         if issue.save
           add_watchers!(issue)
           pulled += 1
@@ -73,7 +77,10 @@ module SananAgile
     private
 
     def destination_label
-      @to_version ? "sprint #{@to_version.name}" : 'product backlog'
+      return "sprint #{@to_version.name}" if @to_version
+
+      v = SananAgile::ProductBacklog.version(@project, @cfg)
+      v ? "product backlog (#{v.name})" : 'product backlog'
     end
 
     def ready_status_ids
@@ -140,7 +147,7 @@ module SananAgile
                  .where('LOWER(custom_values.value) IN (?)', aliases)
                  .distinct
                  .pluck(:id)
-      Issue.where(id: ids).includes(:agile_data).sum { |i| story_point_for(i) }
+      Issue.where(id: ids).sum { |i| story_point_for(i) }
     end
 
     def ensure_intake_source!(issue)

@@ -1,0 +1,49 @@
+<% velocity = local_assigns[:velocity] || @velocity %>
+<% if velocity %>
+<% cfg = @settings || {} %>
+<div class="backlog-velocity" id="backlog-velocity">
+  <div class="backlog-velocity__head">
+    <strong class="backlog-velocity__title"><%= l(:label_backlog_velocity) %></strong>
+    <span class="backlog-velocity__window">
+      <% if velocity.sample_size.to_i.positive? %>
+        <%= l(:label_backlog_velocity_window, count: velocity.sample_size) %>
+      <% else %>
+        <%= l(:label_backlog_velocity_empty) %>
+      <% end %>
+    </span>
+    <span class="backlog-velocity__hint"><%= l(:text_backlog_velocity_hint) %></span>
+  </div>
+  <div class="backlog-velocity__metrics">
+    <% if cfg['story_point_cfid'].to_i.positive? %>
+      <div class="backlog-velocity__cell backlog-velocity__cell--total" title="<%= h backlog_velocity_metric_title(:sp) %>">
+        <span class="backlog-velocity__label"><%= l(:label_backlog_velocity_team) %></span>
+        <span class="backlog-velocity__value"><%= velocity.sp.nil? ? '—' : backlog_sp_number(velocity.sp) %></span>
+      </div>
+    <% end %>
+    <% if cfg['sp_be_cfid'].to_i.positive? %>
+      <div class="backlog-velocity__cell backlog-velocity__cell--be" title="<%= h backlog_velocity_metric_title(:be) %>">
+        <span class="backlog-velocity__label"><%= l(:label_sprint_report_sp_be) %></span>
+        <span class="backlog-velocity__value"><%= velocity.be.nil? ? '—' : backlog_sp_number(velocity.be) %></span>
+      </div>
+    <% end %>
+    <% if cfg['sp_fe_cfid'].to_i.positive? %>
+      <div class="backlog-velocity__cell backlog-velocity__cell--fe" title="<%= h backlog_velocity_metric_title(:fe) %>">
+        <span class="backlog-velocity__label"><%= l(:label_sprint_report_sp_fe) %></span>
+        <span class="backlog-velocity__value"><%= velocity.fe.nil? ? '—' : backlog_sp_number(velocity.fe) %></span>
+      </div>
+    <% end %>
+    <% if cfg['sp_qa_cfid'].to_i.positive? %>
+      <div class="backlog-velocity__cell backlog-velocity__cell--qa" title="<%= h backlog_velocity_metric_title(:qa) %>">
+        <span class="backlog-velocity__label"><%= l(:label_sprint_report_sp_qa) %></span>
+        <span class="backlog-velocity__value"><%= velocity.qa.nil? ? '—' : backlog_sp_number(velocity.qa) %></span>
+      </div>
+    <% end %>
+  </div>
+  <% last_sprint = velocity.sprints.last %>
+  <% if last_sprint && User.current.allowed_to?(:view_sprint_reports, @project) %>
+    <%= link_to l(:label_sprint_report),
+          project_sprint_report_path(@project, last_sprint.version),
+          class: 'backlog-velocity__link' %>
+  <% end %>
+</div>
+<% end %>

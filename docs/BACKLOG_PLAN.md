@@ -34,6 +34,8 @@ Releases (shipping) → gắn ReleaseVersion khi gần ship
 
 Plugin đã có: Releases, Epic/Standard/Subtask trackers, DoD, release badges, cột/filter Release version trên Issues.
 
+**SP theo sprint (lịch sử + reset team SP):** chưa làm — spec [ISSUE_SPRINT_SP_HISTORY.md](ISSUE_SPRINT_SP_HISTORY.md).
+
 ---
 
 ## 3. Quyết định thiết kế (đã chốt)
@@ -127,6 +129,7 @@ Tab project: **Backlog** (sau Agile, trước hoặc cạnh Releases).
 - Epic side panel đầy đủ
 - Bulk edit
 - Capacity / velocity trên backlog
+- Lịch sử SP theo sprint + reset team SP khi đổi Version — xem [ISSUE_SPRINT_SP_HISTORY.md](ISSUE_SPRINT_SP_HISTORY.md)
 
 **API gợi ý**
 
@@ -181,6 +184,7 @@ config/locales/en.yml, vi.yml
 - [x] View “issues in this sprint chưa vào release”
 - [x] Action: add selected → ReleaseVersion (tái sử dụng attach API)
 - [x] Sprint Close Report đầy đủ (Commit/Actual/Tickets/Members) — `docs/SPRINT_CLOSE_REPORT_PLAN.md`
+- [x] Sprint report: cột Committed live + **khóa N ngày trước due** + snapshot lúc close; Goal met — `docs/SPRINT_CLOSE_REPORT_PLAN.md` Q2d / §C2–C3 / Phase 4
 - [x] Hook nhẹ với Agile Metrics (link Backlog / Sprint Report → Metrics theo version)
 
 ---

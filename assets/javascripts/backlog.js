@@ -123,6 +123,15 @@
     return String($root.attr('data-can-manage')) === '1';
   }
 
+  function destroySortable() {
+    $('#sanan-backlog .backlog-section-list').each(function () {
+      var $el = $(this);
+      if ($el.data('ui-sortable')) {
+        $el.sortable('destroy');
+      }
+    });
+  }
+
   function initSortable() {
     var $root = $('#sanan-backlog');
     if (!$root.length || !canManage($root)) return;
@@ -132,6 +141,8 @@
       }
       return;
     }
+
+    destroySortable();
 
     var url = $root.attr('data-reorder-url');
     var $lists = $root.find('.backlog-section-list');
@@ -157,6 +168,8 @@
           '<td colspan="' + ui.item.children().length + '">&nbsp;</td>'
         );
         ui.placeholder.height(ui.item.outerHeight());
+        ui.item.data('fromLocked', ui.item.closest('.backlog-section-list').attr('data-commit-locked') === '1');
+        ui.item.data('fromVersionId', versionIdOf(ui.item.closest('.backlog-section-list')));
         removeEmptyPlaceholders(ui.item.closest('.backlog-section-list'));
         $root.addClass('is-dragging');
       },
@@ -169,6 +182,17 @@
         var $list = $item.closest('.backlog-section-list');
         var issueId = $item.attr('data-id') || $item.data('id');
         var toVersionId = versionIdOf($list);
+        var fromVersionId = ui.item.data('fromVersionId');
+        var fromLocked = ui.item.data('fromLocked');
+        var toLocked = $list.attr('data-commit-locked') === '1';
+        if (String(fromVersionId || '') !== String(toVersionId || '') && (fromLocked || toLocked)) {
+          $(this).sortable('cancel');
+          window.alert($root.attr('data-commit-locked-msg') || 'Commit locked');
+          $lists.each(function () {
+            ensureEmptyPlaceholder($(this));
+          });
+          return;
+        }
         var positions = buildPositions($list);
 
         $lists.each(function () {
@@ -204,9 +228,12 @@
     initSectionCollapse();
     initStickyFilters();
     initCreateSprintModal();
+    initSprintKebab();
     initInlineEdit();
     initPullIntakeModal();
     initQuotaEditModal();
+    initAjaxBoard();
+    initInfiniteBacklog();
   });
 
   function initPullIntakeModal() {
@@ -815,9 +842,62 @@
       renderIssueList();
     }
 
-    function openModal() {
-      selectedIssues = collectSelectedFromPage();
-      renderIssueList();
+    function setFormMode(mode, data) {
+      var $form = $('#backlog-create-sprint-form');
+      var $title = $('#backlog-create-sprint-title');
+      var $submit = $('#backlog-create-sprint-submit');
+      var $issues = $('#backlog-create-sprint-issues-wrap');
+      $form.find('input[name="_method"]').remove();
+      if (mode === 'edit') {
+        $form.attr('action', data.updateUrl);
+        $form.append($('<input>', { type: 'hidden', name: '_method', value: 'patch' }));
+        $title.text($modal.attr('data-edit-title') || 'Edit sprint');
+        $submit.val($modal.attr('data-edit-submit') || 'Save');
+        $issues.prop('hidden', true);
+        $('#backlog-create-sprint-name').val(data.name || '');
+        $('#backlog-create-sprint-goal').val(data.goal || '');
+        $('#backlog-create-sprint-start').val(data.startDate || '');
+        $('#backlog-create-sprint-date').val(data.effectiveDate || '');
+        if ($('#backlog-create-sprint-cs-quota').length) {
+          $('#backlog-create-sprint-cs-quota').val(data.csQuota == null ? '' : data.csQuota);
+        }
+        if ($('#backlog-create-sprint-sale-quota').length) {
+          $('#backlog-create-sprint-sale-quota').val(data.saleQuota == null ? '' : data.saleQuota);
+        }
+        $('#backlog-create-sprint-commit-sp').val(data.commitSp || '');
+        $('#backlog-create-sprint-commit-sp-be').val(data.commitSpBe || '');
+        $('#backlog-create-sprint-commit-sp-fe').val(data.commitSpFe || '');
+        $('#backlog-create-sprint-commit-sp-qa').val(data.commitSpQa || '');
+        selectedIssues = [];
+        renderIssueList();
+      } else {
+        $form.attr('action', $modal.attr('data-create-url') || $form.attr('action'));
+        $title.text($modal.attr('data-create-title') || 'Create sprint');
+        $submit.val($modal.attr('data-create-submit') || 'Create');
+        $issues.prop('hidden', false);
+        $('#backlog-create-sprint-name').val('');
+        $('#backlog-create-sprint-goal').val('');
+        $('#backlog-create-sprint-start').val('');
+        $('#backlog-create-sprint-date').val('');
+        if ($('#backlog-create-sprint-cs-quota').length) {
+          $('#backlog-create-sprint-cs-quota').val($modal.attr('data-default-cs-quota') || '');
+        }
+        if ($('#backlog-create-sprint-sale-quota').length) {
+          $('#backlog-create-sprint-sale-quota').val($modal.attr('data-default-sale-quota') || '');
+        }
+        $('#backlog-create-sprint-commit-sp').val('');
+        $('#backlog-create-sprint-commit-sp-be').val('');
+        $('#backlog-create-sprint-commit-sp-fe').val('');
+        $('#backlog-create-sprint-commit-sp-qa').val('');
+      }
+    }
+
+    function openModal(mode, data) {
+      setFormMode(mode || 'create', data || {});
+      if (mode !== 'edit') {
+        selectedIssues = collectSelectedFromPage();
+        renderIssueList();
+      }
       $modal.prop('hidden', false);
       $('body').addClass('backlog-modal-open');
       setTimeout(function () {
@@ -833,7 +913,26 @@
     $(document).on('click', '.backlog-create-sprint-open', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      openModal();
+      openModal('create');
+    });
+
+    $(document).on('click', '.backlog-edit-sprint-open', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var $btn = $(this);
+      openModal('edit', {
+        updateUrl: $btn.attr('data-update-url'),
+        name: $btn.attr('data-name') || '',
+        goal: $btn.attr('data-goal') || '',
+        startDate: $btn.attr('data-start-date') || '',
+        effectiveDate: $btn.attr('data-effective-date') || '',
+        csQuota: $btn.attr('data-cs-quota'),
+        saleQuota: $btn.attr('data-sale-quota'),
+        commitSp: $btn.attr('data-commit-sp') || '',
+        commitSpBe: $btn.attr('data-commit-sp-be') || '',
+        commitSpFe: $btn.attr('data-commit-sp-fe') || '',
+        commitSpQa: $btn.attr('data-commit-sp-qa') || ''
+      });
     });
 
     $modal.on('click', '[data-create-sprint-dismiss]', function (e) {
@@ -859,6 +958,54 @@
       if (e.key === 'Escape' && !$modal.prop('hidden')) {
         closeModal();
       }
+    });
+  }
+
+  function initSprintKebab() {
+    function closeAll() {
+      $('.backlog-kebab').removeClass('is-open');
+      $('.backlog-kebab__btn').attr('aria-expanded', 'false');
+      $('.backlog-kebab__menu').prop('hidden', true);
+      $('.backlog-section').removeClass('is-menu-open');
+    }
+
+    $(document).on('click', '.backlog-kebab__btn', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var $wrap = $(this).closest('.backlog-kebab');
+      var open = !$wrap.hasClass('is-open');
+      closeAll();
+      if (open) {
+        $wrap.addClass('is-open');
+        $wrap.find('.backlog-kebab__btn').attr('aria-expanded', 'true');
+        $wrap.find('.backlog-kebab__menu').prop('hidden', false);
+        $wrap.closest('.backlog-section').addClass('is-menu-open');
+      }
+    });
+
+    $(document).on('click', '.backlog-kebab__menu', function (e) {
+      e.stopPropagation();
+    });
+
+    $(document).on('click', '.backlog-kebab__item', function () {
+      closeAll();
+    });
+
+    $(document).on('click', function () {
+      closeAll();
+    });
+
+    $(document).on('keydown', function (e) {
+      if (e.key === 'Escape') closeAll();
+    });
+
+    $(document).on('toggle', '.backlog-sp-summary', function () {
+      if (!this.open) return;
+      $('.backlog-sp-summary').not(this).removeAttr('open');
+    });
+
+    $(document).on('click', '.backlog-sp-summary', function (e) {
+      e.stopPropagation();
     });
   }
 
@@ -927,23 +1074,28 @@
       } catch (err) { /* ignore */ }
     }
 
-    $('.backlog-section').each(function () {
-      var $section = $(this);
-      var key = $section.attr('data-section-key') || 'unknown';
-      var stored = null;
-      try {
-        stored = localStorage.getItem(storageKey(key));
-      } catch (err) {
-        stored = null;
-      }
+    function applySavedCollapse() {
+      $('.backlog-section').each(function () {
+        var $section = $(this);
+        var key = $section.attr('data-section-key') || 'unknown';
+        var stored = null;
+        try {
+          stored = localStorage.getItem(storageKey(key));
+        } catch (err) {
+          stored = null;
+        }
 
-      var collapsed;
-      if (stored === '1') collapsed = true;
-      else if (stored === '0') collapsed = false;
-      else collapsed = $section.attr('data-collapse-default') === '1';
+        var collapsed;
+        if (stored === '1') collapsed = true;
+        else if (stored === '0') collapsed = false;
+        else collapsed = $section.attr('data-collapse-default') === '1';
 
-      setCollapsed($section, collapsed);
-    });
+        setCollapsed($section, collapsed);
+      });
+    }
+
+    applySavedCollapse();
+    $root.data('backlogApplyCollapse', applySavedCollapse);
 
     $(document).on('click', '.backlog-section-header[data-section-toggle]', function (e) {
       if ($(e.target).closest('[data-no-toggle]').length) return;
@@ -1021,10 +1173,95 @@
     var $moveWrap = $('#backlog-complete-move-wrap');
     var $title = $('#backlog-complete-title');
     var $summary = $('#backlog-complete-summary');
+    var $dodWrap = $('#backlog-complete-dod-wrap');
+    var $dodList = $('#backlog-complete-dod-list');
+    var $dodConfirmed = $('#backlog-complete-dod-confirmed');
+    var dodCandidates = [];
 
     function closeModal() {
       $modal.prop('hidden', true);
       $('body').removeClass('backlog-complete-modal-open');
+    }
+
+    function fmtSp(n) {
+      n = Number(n) || 0;
+      return (Math.round(n) === n) ? String(n) : String(Math.round(n * 100) / 100);
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function flagsHtml(issue) {
+      var bits = [];
+      if (issue.closed) bits.push('<span class="backlog-complete-flag">Closed</span>');
+      if (issue.be) bits.push('<span class="backlog-complete-flag">BE</span>');
+      if (issue.fe) bits.push('<span class="backlog-complete-flag">FE</span>');
+      if (issue.qa) bits.push('<span class="backlog-complete-flag">QA</span>');
+      return bits.join('');
+    }
+
+    function syncDodToggleLabel() {
+      var $btn = $('#backlog-complete-dod-all');
+      var $boxes = $dodList.find('.backlog-complete-dod-check');
+      var allOn = $boxes.length > 0 && $boxes.filter(':checked').length === $boxes.length;
+      $btn.text(allOn ? ($btn.attr('data-label-none') || 'Unselect all')
+                      : ($btn.attr('data-label-all') || 'Select all'));
+    }
+
+    function syncDodActual() {
+      var total = 0;
+      var be = 0;
+      var fe = 0;
+      var qa = 0;
+      dodCandidates.forEach(function (issue) {
+        if (issue.be) be += Number(issue.sp_be) || 0;
+        if (issue.fe) fe += Number(issue.sp_fe) || 0;
+        if (issue.qa) qa += Number(issue.sp_qa) || 0;
+      });
+      $dodList.find('.backlog-complete-dod-check:checked').each(function () {
+        total += Number($(this).attr('data-sp')) || 0;
+      });
+      $('#backlog-complete-actual-sp').text(fmtSp(total));
+      $('#backlog-complete-actual-be').text(fmtSp(be));
+      $('#backlog-complete-actual-fe').text(fmtSp(fe));
+      $('#backlog-complete-actual-qa').text(fmtSp(qa));
+      syncDodToggleLabel();
+    }
+
+    function renderDod(candidates) {
+      dodCandidates = Array.isArray(candidates) ? candidates : [];
+      $dodList.empty();
+      if (!dodCandidates.length) {
+        $dodWrap.prop('hidden', true);
+        $dodConfirmed.prop('disabled', true);
+        return;
+      }
+      $dodWrap.prop('hidden', false);
+      $dodConfirmed.prop('disabled', false);
+      dodCandidates.forEach(function (issue) {
+        var checked = issue.dod ? ' checked' : '';
+        var $li = $(
+          '<li class="backlog-complete-modal__dod-item">' +
+            '<label>' +
+              '<input type="checkbox" class="backlog-complete-dod-check" name="dod_issue_ids[]" value="' +
+                escapeHtml(issue.id) + '" data-sp="' + escapeHtml(issue.sp) + '"' + checked + '>' +
+              '<span class="backlog-complete-dod-id">#' + escapeHtml(issue.id) + '</span>' +
+              '<span class="backlog-complete-dod-meta">' +
+                escapeHtml(issue.tracker) + ' · ' + escapeHtml(issue.subject) +
+              '</span>' +
+              '<span class="backlog-complete-dod-flags">' + flagsHtml(issue) + '</span>' +
+              '<span class="backlog-complete-dod-sp">' + fmtSp(issue.sp) + ' SP</span>' +
+            '</label>' +
+          '</li>'
+        );
+        $dodList.append($li);
+      });
+      syncDodActual();
     }
 
     function openModal($btn) {
@@ -1037,6 +1274,12 @@
         moveOptions = JSON.parse($btn.attr('data-move-options') || '[]');
       } catch (err) {
         moveOptions = [];
+      }
+      var dod = [];
+      try {
+        dod = JSON.parse($btn.attr('data-dod-candidates') || '[]');
+      } catch (err) {
+        dod = [];
       }
 
       var titleTpl = $modal.attr('data-title-template') || 'Complete __NAME__';
@@ -1059,7 +1302,6 @@
       });
       if (openCount > 0) {
         $moveWrap.show();
-        // Prefer backlog when available
         if ($select.find('option[value="backlog"]').length) {
           $select.val('backlog');
         }
@@ -1068,6 +1310,7 @@
         $select.val('');
       }
 
+      renderDod(dod);
       $form.attr('action', url);
       $modal.prop('hidden', false);
       $('body').addClass('backlog-complete-modal-open');
@@ -1083,10 +1326,228 @@
       closeModal();
     });
 
+    $dodList.on('change', '.backlog-complete-dod-check', syncDodActual);
+
+    $('#backlog-complete-dod-all').on('click', function (e) {
+      e.preventDefault();
+      var $boxes = $dodList.find('.backlog-complete-dod-check');
+      var allOn = $boxes.length && $boxes.filter(':checked').length === $boxes.length;
+      $boxes.prop('checked', !allOn);
+      syncDodActual();
+    });
+
     $(document).on('keydown', function (e) {
       if (e.key === 'Escape' && !$modal.prop('hidden')) {
         closeModal();
       }
     });
+  }
+
+  function currentBoardFilters() {
+    var $root = $('#sanan-backlog');
+    var $form = $('#backlog-filters-form');
+    var data = {};
+    if (!$form.length) return data;
+    var tracker = $form.find('[name=tracker_id]').val();
+    var assigned = $form.find('[name=assigned_to_id]').val();
+    var q = $.trim($form.find('[name=q]').val() || '');
+    var without = $form.find('[name=without_release]').prop('checked') ? '1' : '';
+    var epic = $root.attr('data-epic-id') || $form.find('[name=epic_id]').val() || '';
+    if (tracker) data.tracker_id = tracker;
+    if (assigned) data.assigned_to_id = assigned;
+    if (q) data.q = q;
+    if (without) data.without_release = without;
+    if (epic) data.epic_id = epic;
+    return data;
+  }
+
+  function syncEpicSelection(epicId) {
+    epicId = epicId == null ? '' : String(epicId);
+    $('#backlog-epic-panel .backlog-epic-list li').removeClass('selected');
+    $('#backlog-epic-panel .backlog-epic-link').each(function () {
+      var id = String($(this).attr('data-epic-id') || '');
+      if (id === epicId) $(this).closest('li').addClass('selected');
+    });
+  }
+
+  function applyFiltersToForm(filters) {
+    var $form = $('#backlog-filters-form');
+    var $root = $('#sanan-backlog');
+    filters = filters || {};
+    $form.find('[name=tracker_id]').val(filters.tracker_id || '');
+    $form.find('[name=assigned_to_id]').val(filters.assigned_to_id || '');
+    $form.find('[name=q]').val(filters.q || '');
+    $form.find('[name=without_release]').prop('checked', String(filters.without_release) === '1');
+    $form.find('[name=epic_id]').val(filters.epic_id || '');
+    $root.attr('data-epic-id', filters.epic_id || '');
+    syncEpicSelection(filters.epic_id || '');
+  }
+
+  function afterSectionsReplaced() {
+    var $root = $('#sanan-backlog');
+    var apply = $root.data('backlogApplyCollapse');
+    if (typeof apply === 'function') apply();
+    initSortable();
+    clearBulkSelection();
+    bindInfiniteBacklog();
+  }
+
+  var sectionsReq = null;
+
+  function loadSections(opts) {
+    opts = opts || {};
+    var $root = $('#sanan-backlog');
+    var url = $root.attr('data-sections-url');
+    var $box = $('#backlog-sections');
+    if (!url || !$box.length) return;
+    var filters = currentBoardFilters();
+    $box.addClass('is-loading');
+    if (sectionsReq && sectionsReq.abort) sectionsReq.abort();
+    sectionsReq = $.ajax({
+      url: url,
+      type: 'GET',
+      data: filters,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    }).done(function (html) {
+      $box.html(html);
+      afterSectionsReplaced();
+      if (opts.push !== false) {
+        var pageUrl = $root.attr('data-backlog-url') || window.location.pathname;
+        var qs = $.param(filters);
+        var next = qs ? (pageUrl + '?' + qs) : pageUrl;
+        history.pushState(filters, '', next);
+      }
+    }).fail(function (xhr) {
+      if (xhr.statusText === 'abort') return;
+      window.location.reload();
+    }).always(function () {
+      $box.removeClass('is-loading');
+      sectionsReq = null;
+    });
+  }
+
+  window.SANAN_reloadBacklog = function (opts) {
+    loadSections(opts || { push: false });
+  };
+
+  function initAjaxBoard() {
+    var $root = $('#sanan-backlog');
+    if (!$root.length || !$root.attr('data-sections-url')) return;
+
+    try {
+      history.replaceState(currentBoardFilters(), '', window.location.href);
+    } catch (err) { /* ignore */ }
+
+    var searchTimer = null;
+
+    $(document).on('submit', '#backlog-filters-form', function (e) {
+      e.preventDefault();
+      loadSections();
+    });
+
+    $(document).on('change', '#backlog-filters-form select, #backlog-filters-form [name=without_release]', function () {
+      loadSections();
+    });
+
+    $(document).on('input', '#backlog-filters-form [name=q]', function () {
+      window.clearTimeout(searchTimer);
+      searchTimer = window.setTimeout(function () {
+        loadSections();
+      }, 350);
+    });
+
+    $(document).on('click', '#backlog-filters-clear', function (e) {
+      e.preventDefault();
+      applyFiltersToForm({});
+      loadSections();
+    });
+
+    $(document).on('click', '.backlog-epic-link', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.which === 2) return;
+      e.preventDefault();
+      var epicId = $(this).attr('data-epic-id') || '';
+      $root.attr('data-epic-id', epicId);
+      $('#backlog-filter-epic-id').val(epicId);
+      syncEpicSelection(epicId);
+      loadSections();
+    });
+
+    $(document).on('click', 'a.backlog-without-release-hint[data-backlog-ajax-filter]', function (e) {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.which === 2) return;
+      e.preventDefault();
+      $('#backlog-filters-form [name=without_release]').prop('checked', true);
+      loadSections();
+    });
+
+    window.addEventListener('popstate', function (e) {
+      if (!$root.length) return;
+      applyFiltersToForm(e.state || {});
+      loadSections({ push: false });
+    });
+  }
+
+  var backlogMoreObserver = null;
+  var backlogMoreReq = null;
+
+  function bindInfiniteBacklog() {
+    if (backlogMoreObserver) {
+      backlogMoreObserver.disconnect();
+      backlogMoreObserver = null;
+    }
+    var row = document.querySelector('#backlog-sections tr.backlog-load-more');
+    if (!row || !('IntersectionObserver' in window)) return;
+
+    backlogMoreObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) loadMoreBacklog();
+      });
+    }, { root: null, rootMargin: '200px', threshold: 0 });
+
+    backlogMoreObserver.observe(row);
+  }
+
+  function loadMoreBacklog() {
+    var $root = $('#sanan-backlog');
+    var $row = $('#backlog-sections tr.backlog-load-more');
+    var url = $root.attr('data-issues-url');
+    if (!$row.length || !url || $row.hasClass('is-loading')) return;
+    if (backlogMoreReq) return;
+
+    var offset = $row.attr('data-offset');
+    $row.addClass('is-loading');
+    $row.find('.backlog-load-more__btn').prop('disabled', true).text($root.attr('data-loading-label') || 'Loading…');
+
+    var data = currentBoardFilters();
+    data.offset = offset;
+
+    backlogMoreReq = $.ajax({
+      url: url,
+      type: 'GET',
+      dataType: 'json',
+      data: data,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    }).done(function (res) {
+      var $list = $row.closest('tbody');
+      $row.remove();
+      if (res && res.html) {
+        $list.append(res.html);
+      }
+      initSortable();
+      bindInfiniteBacklog();
+    }).fail(function (xhr) {
+      if (xhr.statusText === 'abort') return;
+      $row.removeClass('is-loading');
+      $row.find('.backlog-load-more__btn').prop('disabled', false).text('Load more');
+    }).always(function () {
+      backlogMoreReq = null;
+    });
+  }
+
+  function initInfiniteBacklog() {
+    $(document).on('click', '.backlog-load-more__btn', function (e) {
+      e.preventDefault();
+      loadMoreBacklog();
+    });
+    bindInfiniteBacklog();
   }
 })(window.jQuery);

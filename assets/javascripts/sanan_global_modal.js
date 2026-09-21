@@ -524,8 +524,7 @@ function bootSananGlobalModal() {
       historyContent.style.display = "block"
     }
 
-    // Chỉ lấy #main/#content để tránh nhét layout + modal lồng vào content body
-    // (modal lồng làm getElementById trúng list ẩn → active không đổi trên sidebar thật)
+    // Keep #main (sidebar + content) so attributes use the full two-column layout.
     const mainEl = tempDiv.querySelector('#main');
     const contentEl = tempDiv.querySelector('#content');
     if (mainEl) {
@@ -543,6 +542,9 @@ function bootSananGlobalModal() {
 
     requestAnimationFrame(() => {
       modalBody.scrollTop = 0;
+      if (typeof window.SANAN_initIssueSpForm === 'function') {
+        window.SANAN_initIssueSpForm(modal);
+      }
     });
 
     modalBody.querySelectorAll('input[type=submit][data-disable-with]').forEach(btn => {
@@ -610,23 +612,52 @@ function bootSananGlobalModal() {
   function handleViewIssueModal(issueId) {
     action = Action.VIEW
     const seq = ++viewRequestSeq;
-    setActiveTicketNav(issueId);
     return fetch(`/issues/${issueId}`)
       .then((res) => res.text())
       .then((html) => {
         if (seq !== viewRequestSeq) return;
         openModal("View Issue", html)
         syncIssueSurfaces(issueId, parseIssueFieldsFromHtml(html));
-        setActiveTicketNav(issueId);
       });
   }
 
-  function handleCreateIssueModal() {
+  function wrapIssueFormHtml(html) {
+    if (!html) return '';
+    if (html.indexOf('id="content"') >= 0 || html.indexOf("id='content'") >= 0) return html;
+    return '<div id="content">' + html + '</div>';
+  }
+
+  function applyBacklogCreateDefaults() {
+    if (!document.getElementById('sanan-backlog')) return;
+    const btn = document.getElementById('new-agile-issue-btn');
+    const form = modal.querySelector('#issue-form') || modal;
+    if (!btn || !form) return;
+
+    const versionSel = form.querySelector('#issue_fixed_version_id');
+    if (versionSel) {
+      versionSel.value = btn.getAttribute('data-backlog-version-id') || '';
+    }
+
+    const parentId = btn.getAttribute('data-parent-issue-id');
+    const parentInput = form.querySelector('#issue_parent_issue_id');
+    if (parentId && parentInput) parentInput.value = parentId;
+
+    const trackerId = btn.getAttribute('data-tracker-id');
+    const trackerSel = form.querySelector('#issue_tracker_id');
+    if (trackerId && trackerSel && trackerSel.value !== trackerId) {
+      trackerSel.value = trackerId;
+      if (window.jQuery) window.jQuery(trackerSel).trigger('change');
+    }
+  }
+
+  function handleCreateIssueModal(url) {
     action = Action.CREATE
-    fetch(`/projects/${getProjectId()}/issues/new`)
+    const path = url || (`/projects/${getProjectId()}/issues/new`)
+    fetch(path)
       .then((res) => res.text())
       .then((html) => {
         openModal("Create Issue", html)
+        applyBacklogCreateDefaults()
       });
   }
 
@@ -784,6 +815,7 @@ function bootSananGlobalModal() {
 
       isWasSubmitted = false
 
+      hideBacklogTicketNav();
       handleViewIssueModal(getIssueId())
       return;
     }
@@ -873,6 +905,7 @@ function bootSananGlobalModal() {
 
       isWasSubmitted = false
 
+      hideBacklogTicketNav();
       handleViewIssueModal(getIssueId())
       return;
     }
@@ -888,8 +921,7 @@ function bootSananGlobalModal() {
 
       e.preventDefault();
       isWasSubmitted = false
-      const row = isBacklogIssueLink.closest('.backlog-row')
-      showBacklogTicketNav(row, issueId)
+      showBacklogTicketNav(isBacklogIssueLink.closest('.backlog-row'), issueId);
       handleViewIssueModal(issueId)
       return;
     }
@@ -936,8 +968,17 @@ function bootSananGlobalModal() {
           'X-Requested-With': 'XMLHttpRequest'
         }
       }).then(async response => {
-        if (response.ok) {
-          if (isCreate) {
+        if (!response.ok) {
+          if (response.status === 422) {
+            const html = await response.text();
+            openModal(action === Action.CREATE ? "Create Issue" : "Edit Issue", wrapIssueFormHtml(html));
+            if (action === Action.CREATE) applyBacklogCreateDefaults();
+            return;
+          }
+          throw new Error("response status not ok")
+        }
+
+        if (isCreate) {
             const arrUrl = response.url.split('/')
             issueId = arrUrl[arrUrl.length - 1]
           } else {
@@ -953,6 +994,10 @@ function bootSananGlobalModal() {
           const formPatch = extractIssuePatchFromForm(form);
           if (issueId) syncIssueSurfaces(issueId, formPatch);
 
+          if (window.location.pathname.includes('/backlog') && typeof window.SANAN_reloadBacklog === 'function') {
+            window.SANAN_reloadBacklog({ push: false });
+          }
+
           if (window.SANAN_refreshIssueCard && issueId) {
             await window.SANAN_refreshIssueCard(issueId, {
               projectId,
@@ -965,9 +1010,6 @@ function bootSananGlobalModal() {
           }
 
           handleViewAfterSubmit(issueId)
-        } else {
-          throw new Error("response status not ok")
-        }
       }).catch(error => {
         console.error(error);
         setErrorModal();

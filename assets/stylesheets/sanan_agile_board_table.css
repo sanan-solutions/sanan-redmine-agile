@@ -1,0 +1,83 @@
+/* Board cards: redmine_agile.css is also tagged media=print on this page,
+   so screen layout must live here. Beat PurpleMine table.list { text-align:center }. */
+
+.agile-board table.list.issues-board tbody td,
+.agile-board table.list.issues-board tbody tr.issue:hover td,
+.agile-board table.list.issues-board td.issue-status-col {
+  text-align: left;
+  vertical-align: top;
+  border: 0;
+}
+
+.agile-board table.list.issues-board th .hours {
+  margin-left: 0.4em;
+  font-weight: 500;
+}
+
+.agile-board .issue-card {
+  position: relative !important;
+  text-align: left !important;
+  word-wrap: break-word;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.agile-board .issue-card .checkbox,
+.agile-board .issue-card input.checkbox {
+  display: none !important;
+}
+
+/* Native SP/hours sit in this leftover row; Sanan badge replaces them. */
+.agile-board .issue-card p.issue-id {
+  margin: 0 !important;
+  line-height: 0 !important;
+  height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.agile-board .issue-card div.quick-edit-card {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 2;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  height: auto;
+  padding: 1px 3px;
+  margin: 0;
+  display: none;
+  line-height: 1;
+}
+
+.agile-board .issue-card div.quick-edit-card a {
+  float: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+.agile-board .issue-card div.quick-edit-card .icon,
+.agile-board .issue-card div.quick-edit-card svg {
+  width: 14px;
+  height: 14px;
+}
+
+.agile-board .issue-card:hover div.quick-edit-card.hidden {
+  display: none;
+}
+
+.agile-board .issue-card:hover div.quick-edit-card {
+  display: block;
+  cursor: default;
+  opacity: 0.55;
+}
+
+.agile-board .issue-card:hover div.quick-edit-card:hover {
+  opacity: 1;
+}
+
+.agile-board .issue-card p.name,
+.agile-board .issue-card .issue-name {
+  text-align: left;
+  font-weight: 600;
+}

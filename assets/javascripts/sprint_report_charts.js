@@ -1,9 +1,17 @@
-# Chart rendering for sprint report (Chart.js).
-# Expects window.SANAN_SPRINT_CHARTS = { commitActual, roles, members, completion }
+// Chart rendering for sprint report (Chart.js).
+// Expects window.SANAN_SPRINT_CHARTS = { commitActual, roles, members, completion }
 (function () {
   function ready(fn) {
     if (document.readyState !== 'loading') fn();
     else document.addEventListener('DOMContentLoaded', fn);
+  }
+
+  function paint() {
+    if (window.__sananSprintChartsPainted) return;
+    if (!window.SANAN_SPRINT_CHARTS || typeof Chart === 'undefined') return;
+    if (!document.getElementById('sanan-chart-commit-actual')) return;
+    window.__sananSprintChartsPainted = true;
+    render(window.SANAN_SPRINT_CHARTS);
   }
 
   var COLORS = {
@@ -49,9 +57,7 @@
     return new Chart(el.getContext('2d'), config);
   }
 
-  ready(function () {
-    var data = window.SANAN_SPRINT_CHARTS;
-    if (!data || typeof Chart === 'undefined') return;
+  function render(data) {
 
     if (data.commitActual && data.commitActual.labels && data.commitActual.labels.length) {
       makeChart('sanan-chart-commit-actual', {
@@ -156,5 +162,8 @@
         }
       });
     }
-  });
+  }
+
+  window.renderSananSprintCharts = paint;
+  ready(paint);
 })();
