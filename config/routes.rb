@@ -15,6 +15,10 @@ Rails.application.routes.draw do
       to: 'intake_badges#source_map',
       as: :intake_source_map
 
+    get 'epic_badges/epic_map',
+      to: 'epic_badges#epic_map',
+      as: :epic_map
+
 
     resources :releases, controller: 'releases' do
       collection do
@@ -26,6 +30,7 @@ Rails.application.routes.draw do
         delete :detach_item        # remove one issue
         patch  :reorder            # drag/drop ordering
         patch  :update_issue_status
+        patch  :update_code_picked
         patch  :change_state       # unreleased/released/archived
         get    :issue_panel        # right panel (HTML)
         get    :edit          # modal edit

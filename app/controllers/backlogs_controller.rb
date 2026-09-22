@@ -309,6 +309,7 @@ class BacklogsController < ApplicationController
     end
 
     count = 0
+    blocked = 0
     Issue.where(project_id: @project.id, id: ids).find_each do |issue|
       next unless User.current.allowed_to?(:edit_issues, @project)
 
@@ -318,8 +319,13 @@ class BacklogsController < ApplicationController
       else
         SananAgile::ProductBacklog.assign!(issue, @project, @settings)
       end
-      count += 1 if issue.save
+      if issue.save
+        count += 1
+      elsif issue.errors[:base].any?
+        blocked += 1
+      end
     end
+    flash[:error] = l(:error_sanan_commit_locked) if blocked.positive?
     flash[:notice] = l(:notice_backlog_bulk_moved, count: count)
     redirect_to project_backlog_path(@project, filter_redirect_params)
   end

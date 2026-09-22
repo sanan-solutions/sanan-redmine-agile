@@ -537,6 +537,8 @@ function bootSananGlobalModal() {
       modalBody.innerHTML = tempDiv.innerHTML;
     }
 
+    normalizeModalSidebar();
+
     modal.style.display = "flex";
     scrollBtn.classList.remove('show');
 
@@ -625,6 +627,26 @@ function bootSananGlobalModal() {
     if (!html) return '';
     if (html.indexOf('id="content"') >= 0 || html.indexOf("id='content'") >= 0) return html;
     return '<div id="content">' + html + '</div>';
+  }
+
+  function normalizeModalSidebar() {
+    const main = modal.querySelector('#main');
+    const sidebar = modal.querySelector('#sidebar');
+    if (!sidebar) {
+      if (main) main.classList.add('nosidebar');
+      return;
+    }
+    if (main && main.classList.contains('nosidebar')) return;
+
+    const probe = sidebar.cloneNode(true);
+    probe.querySelectorAll('script, style, noscript').forEach(function (el) { el.remove(); });
+    const meaningful = probe.querySelector('h3, ul, ol, form, a, p, fieldset, label, input, select, textarea, table, button, img, .box, .contextual, .wiki');
+    const text = (probe.textContent || '').replace(/\s+/g, '');
+    if (!meaningful && text.length < 2) {
+      sidebar.classList.add('is-empty');
+      sidebar.hidden = true;
+      if (main) main.classList.add('nosidebar');
+    }
   }
 
   function applyBacklogCreateDefaults() {

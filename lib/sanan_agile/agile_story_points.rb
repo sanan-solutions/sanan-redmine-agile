@@ -9,6 +9,7 @@ module SananAgile
     def install!
       install_on_issue!
       install_on_helper!
+      install_controller!
     end
 
     def install_on_issue!
@@ -109,21 +110,13 @@ module SananAgile
 
     def install_controller!
       return unless defined?(AgileBoardsController)
-      return if AgileBoardsController.ancestors.include?(SananAgile::AgileBoardsControllerPatch)
 
-      AgileBoardsController.prepend(SananAgile::AgileBoardsControllerPatch)
-    end
-  end
-
-  module AgileBoardsControllerPatch
-    def index
-      SananAgile::AgileStoryPoints.install!
-      super
-    end
-
-    def update
-      SananAgile::AgileStoryPoints.install!
-      super
+      unless AgileBoardsController.ancestors.include?(SananAgile::AgileBoardsControllerPatch)
+        AgileBoardsController.prepend(SananAgile::AgileBoardsControllerPatch)
+      end
+      unless AgileBoardsController._helpers.included_modules.include?(BacklogsHelper)
+        AgileBoardsController.helper :backlogs
+      end
     end
   end
 end

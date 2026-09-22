@@ -6,6 +6,8 @@ require_dependency File.expand_path('lib/sanan_agile/issue_query_patch', __dir__
 require_dependency File.expand_path('lib/sanan_agile/queries_helper_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/project_settings', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/commit_lock', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/sprint_commit', __dir__)
+require_dependency File.expand_path('lib/sanan_agile/dod_sprint', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/projects_helper_patch.rb', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/version_patch', __dir__)
 require_dependency File.expand_path('lib/sanan_agile/versions_controller_patch', __dir__)
@@ -22,6 +24,7 @@ require_dependency File.expand_path('lib/sanan_agile/global_modal_hook', __dir__
 
 Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/agile_data_association', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/board_default_filters', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/agile_story_points', __dir__)
   SananAgile::AgileDataAssociation.ensure!
 
@@ -57,6 +60,8 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/sp_total_formula', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/issue_sp_hook', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/commit_lock', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/sprint_commit', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/dod_sprint', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/calculator', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
@@ -74,6 +79,7 @@ Rails.application.config.to_prepare do
   end
   begin
     require_dependency 'agile_boards_controller'
+    require_dependency File.expand_path('lib/sanan_agile/agile_boards_controller_patch', __dir__)
     SananAgile::AgileStoryPoints.install!
     SananAgile::AgileStoryPoints.install_controller!
   rescue LoadError
@@ -136,7 +142,7 @@ Redmine::Plugin.register :sanan_redmine_agile do
     # Quyền thao tác quản trị: tạo, gắn/ tháo issues, đổi trạng thái, reorder, quick status
     permission :manage_releases,
                { releases: [:new, :create, :attach_issues, :detach_item,
-                            :reorder, :update_issue_status, :change_state, :update, :edit, :destroy] }
+                            :reorder, :update_issue_status, :update_code_picked, :change_state, :update, :edit, :destroy] }
   end
 
     # === Menu ở Project ===

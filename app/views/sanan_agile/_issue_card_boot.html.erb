@@ -1,6 +1,229 @@
-<%= render partial: 'sanan_agile/issue_header', locals: local_assigns %>
+<%= render partial: 'sanan_agile/agile_sprint_actions', locals: local_assigns %>
+<%= render partial: 'sanan_agile/issue_header', locals: local_assigns %> %>
 <%= render partial: 'sanan_agile/issue_sp_badge', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_footer', locals: local_assigns %>
+
+<%
+  sa_board_cfg = project && SananAgile::ProjectSettings.load(project.id)
+  sa_commit_mode = sa_board_cfg && SananAgile::SprintCommit.enabled?(sa_board_cfg)
+  sa_dev_status_ids = sa_commit_mode ? SananAgile::SprintCommit.status_ids(sa_board_cfg) : []
+  sa_std_trackers = sa_commit_mode ? Array(sa_board_cfg['standard_tracker']).map(&:to_i).reject(&:zero?) : []
+  sa_issue_trackers = if sa_commit_mode && local_assigns[:issues]
+                        Array(issues).each_with_object({}) { |i, h| h[i.id] = i.tracker_id }
+                      else
+                        {}
+                      end
+  sa_dod_cfid = sa_board_cfg ? sa_board_cfg['dod_cfid'].to_i : 0
+  sa_issue_sprints = if sa_dod_cfid.positive? && local_assigns[:issues]
+                       SananAgile::DodSprint.issue_map(issues, sa_board_cfg)
+                     else
+                       {}
+                     end
+  sa_board_versions = local_assigns[:issues] ? Array(issues).map(&:fixed_version).compact.uniq : []
+  sa_current_version = sa_board_versions.size == 1 ? sa_board_versions.first : project&.default_version
+  sa_source_filter = sa_commit_mode || sa_dod_cfid.positive?
+%>
+<% if sa_commit_mode || sa_source_filter %>
+<style>
+  .sa-commit-flag { display:inline-block; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-left:4px; padding:1px 6px; border-radius:8px; font-size:10px; font-weight:700; letter-spacing:.02em; vertical-align:middle; }
+  .sa-commit-flag--yes { background:#dcfce7; color:#166534; }
+  .sa-commit-flag--uat { background:#ffedd5; color:#9a3412; }
+  .sa-hidden-by-source,
+  .sa-hidden-by-view { display:none !important; }
+</style>
+<script>
+(function (U) {
+  if (window.__saCommitFlagBound) return;
+  window.__saCommitFlagBound = true;
+  var COMMIT_MODE = <%= sa_commit_mode ? 'true' : 'false' %>;
+  var SOURCE_FILTER = <%= sa_source_filter ? 'true' : 'false' %>;
+  var DEV = <%= raw sa_dev_status_ids.to_json %>;
+  var TRACKERS = <%= raw sa_std_trackers.to_json %>;
+  var ISSUE_TRACKER = <%= raw sa_issue_trackers.to_json %>;
+  var ISSUE_SPRINT = <%= raw sa_issue_sprints.to_json %>;
+  var CURRENT_ID = <%= raw (sa_current_version&.id.to_s).to_json %>;
+  var CURRENT_NAME = <%= raw (sa_current_version&.name.to_s).to_json %>;
+  var L_COMMIT = <%= raw l(:label_sanan_card_commit).to_json %>;
+  var L_FROM = <%= raw l(:label_sanan_card_from_sprint, name: '__NAME__').to_json %>;
+  var L_SRC = <%= raw l(:label_sanan_board_ticket_source).to_json %>;
+  var L_SRC_ALL = <%= raw l(:label_sanan_board_ticket_source_all).to_json %>;
+  var L_SRC_CURRENT = <%= raw l(:label_sanan_board_ticket_source_current).to_json %>;
+  var L_VIEW = <%= raw l(:label_sanan_board_view).to_json %>;
+  var L_VIEW_ALL = <%= raw l(:label_sanan_board_view_all).to_json %>;
+  var L_VIEW_DEV = <%= raw l(:label_sanan_board_view_development).to_json %>;
+  var L_VIEW_UAT = <%= raw l(:label_sanan_board_view_uat).to_json %>;
+  var VIEW_KEY = 'sa-board-view:' + (location.pathname || '');
+  function relevant(iid) {
+    if (!TRACKERS.length) return true;
+    var tid = ISSUE_TRACKER[iid] || ISSUE_TRACKER[String(iid)];
+    return TRACKERS.indexOf(tid) !== -1;
+  }
+  function sprintEntry(iid) {
+    var e = ISSUE_SPRINT[iid] || ISSUE_SPRINT[String(iid)];
+    if (!e) return { id: '', name: '' };
+    if (typeof e === 'string') return { id: e, name: e };
+    return { id: String(e.id || ''), name: e.name || '' };
+  }
+  function fromTitle(name) {
+    return L_FROM.replace('__NAME__', name || '');
+  }
+  function flag(card) {
+    if (!U || !U.findIssueId) return;
+    var iid = U.findIssueId(card);
+    var existing = Array.prototype.slice.call(card.querySelectorAll('.sa-commit-flag'));
+    var entry = sprintEntry(iid);
+    var sid = U.statusIdFromDOM ? U.statusIdFromDOM(card) : null;
+    var on = COMMIT_MODE && iid && relevant(iid) && sid != null && DEV.indexOf(sid) !== -1;
+    if (iid) {
+      card.dataset.ticketSource = on ? '__current__' : (entry.id || '');
+    }
+    if (!COMMIT_MODE || !iid || !relevant(iid)) {
+      existing.forEach(function (n) { n.remove(); });
+      return;
+    }
+    var extra = card.querySelector('.sa-card-extra') || card;
+    var el = existing[0];
+    existing.slice(1).forEach(function (n) { n.remove(); });
+    var label = on ? L_COMMIT : entry.name;
+    if (!label) {
+      existing.forEach(function (n) { n.remove(); });
+      return;
+    }
+    if (!el) {
+      el = document.createElement('span');
+      extra.appendChild(el);
+    } else if (el.parentNode !== extra) {
+      extra.appendChild(el);
+    }
+    el.className = 'sa-commit-flag ' + (on ? 'sa-commit-flag--yes' : 'sa-commit-flag--uat');
+    el.textContent = label;
+    el.title = on ? L_COMMIT : fromTitle(entry.name);
+  }
+  function uniqueFromSprints() {
+    var seen = {};
+    var list = [];
+    Object.keys(ISSUE_SPRINT).forEach(function (k) {
+      var e = sprintEntry(k);
+      if (!e.id || seen[e.id]) return;
+      if (CURRENT_ID && e.id === String(CURRENT_ID)) return;
+      seen[e.id] = true;
+      list.push(e);
+    });
+    list.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
+    return list;
+  }
+  function collectCards() {
+    return Array.prototype.slice.call(document.querySelectorAll(
+      '.agile-board .issue-card, .agile-board .agile-card, .agile-board .agile__issue'
+    ));
+  }
+  function applyBoardView() {
+    var sel = document.getElementById('sa-board-view');
+    var view = sel && sel.value ? sel.value : 'all';
+    document.querySelectorAll(
+      'table.issues-board th[data-column-id], table.issues-board td.issue-status-col[data-id]'
+    ).forEach(function (el) {
+      var id = parseInt(el.getAttribute('data-column-id') || el.getAttribute('data-id'), 10);
+      if (isNaN(id)) return;
+      var inA = DEV.indexOf(id) !== -1;
+      var show = view === 'all' || (view === 'development' && inA) || (view === 'uat' && !inA);
+      if (show) el.classList.remove('sa-hidden-by-view');
+      else el.classList.add('sa-hidden-by-view');
+    });
+    try { window.dispatchEvent(new Event('resize')); } catch (e) {}
+    if (U.syncBoardColumnCounts) U.syncBoardColumnCounts();
+  }
+  function ensureViewFilter() {
+    if (!COMMIT_MODE || !U.ensureBoardFilterField || !DEV.length) return;
+    var html = '<label for="sa-board-view"><strong>' + L_VIEW + ':</strong></label>' +
+      '<select id="sa-board-view">' +
+        '<option value="all">' + L_VIEW_ALL + '</option>' +
+        '<option value="development">' + L_VIEW_DEV + '</option>' +
+        '<option value="uat">' + L_VIEW_UAT + '</option>' +
+      '</select>';
+    var sel = U.ensureBoardFilterField('sa-board-view', html, 0);
+    if (!sel) return;
+    var saved = '';
+    try { saved = localStorage.getItem(VIEW_KEY) || ''; } catch (e) {}
+    sel.value = (saved === 'development' || saved === 'uat') ? saved : 'all';
+    if (!sel._saBound) {
+      sel._saBound = true;
+      sel.addEventListener('change', function () {
+        var v = sel.value || 'all';
+        try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+        applyBoardView();
+      });
+    }
+  }
+  function applySourceFilter() {
+    var sel = document.getElementById('sa-source-filter');
+    if (!sel) return;
+    var value = sel.value;
+    collectCards().forEach(function (el) {
+      var src = el.dataset.ticketSource || '';
+      var match = !value || src === value;
+      if (match) el.classList.remove('sa-hidden-by-source');
+      else el.classList.add('sa-hidden-by-source');
+    });
+    if (U.syncBoardColumnCounts) U.syncBoardColumnCounts();
+  }
+  function escapeAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  }
+  function ensureFilterBar() {
+    if (!SOURCE_FILTER || !U.ensureBoardFilterField) return;
+    var html = '<label for="sa-source-filter"><strong>' + L_SRC + ':</strong></label>' +
+      '<select id="sa-source-filter"><option value="">' + L_SRC_ALL + '</option></select>';
+    var sel = U.ensureBoardFilterField('sa-source-filter', html, 15);
+    if (!sel) return;
+    var current = sel.value;
+    var opts = '<option value="">' + L_SRC_ALL + '</option>' +
+      '<option value="__current__">' + L_SRC_CURRENT +
+        (CURRENT_NAME ? ' (' + escapeAttr(CURRENT_NAME) + ')' : '') + '</option>';
+    uniqueFromSprints().forEach(function (s) {
+      opts += '<option value="' + escapeAttr(s.id) + '">' + escapeAttr(s.name) + '</option>';
+    });
+    sel.innerHTML = opts;
+    if (current && Array.prototype.some.call(sel.options, function (o) { return o.value === current; })) {
+      sel.value = current;
+    }
+    if (!sel._saBound) {
+      sel._saBound = true;
+      sel.addEventListener('change', applySourceFilter);
+    }
+  }
+  if (U && U.register) {
+    U.register(flag);
+    if (U.boot) U.boot();
+  } else {
+    document.querySelectorAll('.issue-card, .agile__issue').forEach(flag);
+  }
+  ensureViewFilter();
+  ensureFilterBar();
+  applyBoardView();
+  applySourceFilter();
+})(window.SananAgileUtil);
+</script>
+<% end %>
+
+<% if project && project.default_version %>
+<script>
+(function () {
+  var VID = <%= raw project.default_version.id.to_s.to_json %>;
+  function ensureTargetVersionFilter() {
+    if (typeof addFilter !== 'function') return;
+    if (typeof availableFilters === 'undefined' || !availableFilters.fixed_version_id) return;
+    if (document.getElementById('tr_fixed_version_id')) return;
+    addFilter('fixed_version_id', '=', [VID]);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureTargetVersionFilter);
+  } else {
+    ensureTargetVersionFilter();
+  }
+})();
+</script>
+<% end %>
 
 <script>
   $(document).ajaxError(function(e, xhr, opt) {

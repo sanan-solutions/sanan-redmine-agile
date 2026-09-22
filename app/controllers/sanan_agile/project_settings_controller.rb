@@ -55,6 +55,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :backlog_version_id,
                   :velocity_window,
                   :commit_lock_days_before_end,
+                  {commit_dev_status_ids: []},
                   {agile_board_hidden_tracker_ids: []},
                   :cs_backlog_enabled,
                   :sale_backlog_enabled,

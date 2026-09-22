@@ -85,12 +85,15 @@ module SananAgile
 
     def sprint_section(key, version, active, issues)
       ids = issues.map(&:id)
+      if version && SananAgile::SprintCommit.enabled?(@cfg)
+        ids = SananAgile::SprintCommit.issue_ids(version, @cfg)
+      end
       Section.new(
         key: key,
         version: version,
         active: active,
         issues: issues,
-        sp_total: sum_sp(issues),
+        sp_total: sum_sp_ids(ids),
         issue_count: issues.size,
         has_more: false,
         next_offset: issues.size,

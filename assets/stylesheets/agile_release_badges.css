@@ -39,49 +39,77 @@
 .sa-board-filterbar,
 #sa-release-filterbar,
 #sa-intake-filterbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px 12px;
+  padding: 10px 12px;
   margin: 8px 0;
-  background: #f9fafb;
+  background: #f8fafc;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .sa-board-filterbar__fields {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 220px));
+  gap: 8px 12px;
+  min-width: 0;
 }
 
 .sa-board-filterbar__field {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sa-board-filterbar__field label {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sa-board-filterbar__field label strong {
+  font-weight: 600;
 }
 
 #sa-release-filter,
-#sa-intake-filter {
-  min-width: 180px;
+#sa-intake-filter,
+#sa-source-filter,
+#sa-board-view,
+#sa-epic-filter {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 8px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   background: #fff;
+  font-size: 13px;
+  line-height: 30px;
 }
 
 /* Ẩn card khi không match */
-.sa-hidden-by-release {
+.sa-hidden-by-release,
+.sa-hidden-by-source,
+.sa-hidden-by-view,
+.sa-hidden-by-epic {
   display: none !important;
 }
 
 /* Base style cho nút Clear trong filter toolbar */
 #sa-board-filter-clear,
 #sa-release-clear {
-  margin-left: auto;
-  height: 32px;                      /* cùng chiều cao với select */
+  margin: 0;
+  height: 32px;
   padding: 0 12px;
   border: 1px solid #dcdfe6;
   border-radius: 8px;

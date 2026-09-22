@@ -108,6 +108,106 @@
     </section>
   </div>
 
+  <section class="sr-card" id="sr-commit-tickets">
+    <% commit_rows = @report.coded_issues.select(&:committed) %>
+    <h3><%= l(:label_sprint_report_commit_tickets) %> (<%= commit_rows.size %>)</h3>
+    <% if commit_rows.empty? %>
+      <p class="sr-empty"><%= l(:label_no_data) %></p>
+    <% else %>
+      <p class="sr-hint">
+        <%= l(:label_sprint_report_dod_count, count: commit_rows.count(&:dod)) %>
+        ·
+        <%= l(:label_sprint_report_coded_be_count, count: commit_rows.count(&:be_done)) %>
+        ·
+        <%= l(:label_sprint_report_coded_fe_count, count: commit_rows.count(&:fe_done)) %>
+        ·
+        <%= l(:label_sprint_report_coded_qa_count, count: commit_rows.count(&:qa_done)) %>
+      </p>
+      <div class="sr-table-wrap">
+        <table class="sr-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th><%= l(:field_tracker) %></th>
+              <th><%= l(:field_subject) %></th>
+              <th><%= l(:label_sprint_report_intake_source) %></th>
+              <th><%= l(:label_sprint_report_dod) %></th>
+              <th class="num"><%= l(:label_sprint_report_sp) %></th>
+              <th><%= l(:label_sprint_report_sp_be) %></th>
+              <th><%= l(:label_sprint_report_sp_fe) %></th>
+              <th><%= l(:label_sprint_report_sp_qa) %></th>
+              <th><%= l(:label_sprint_report_outcome) %></th>
+              <th><%= l(:field_status) %></th>
+              <th><%= l(:field_assigned_to) %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% commit_rows.each do |row| %>
+              <% issue = row.issue %>
+              <tr>
+                <td class="id"><%= link_to issue.id, issue_path(issue) %></td>
+                <td><%= h issue.tracker %></td>
+                <td class="subject"><%= link_to_issue(issue, subject: false) %> <%= h issue.subject %></td>
+                <td><%= sprint_report_intake_badge(issue, @settings) %></td>
+                <td><%= sprint_report_dod_cell(row.dod) %></td>
+                <td class="num"><%= sprint_report_number(row.sp) %></td>
+                <td><%= sprint_report_code_cell(row.be_done, row.be_sp) %></td>
+                <td><%= sprint_report_code_cell(row.fe_done, row.fe_sp) %></td>
+                <td><%= sprint_report_code_cell(row.qa_done, row.qa_sp) %></td>
+                <td><%= sprint_report_outcome_cell(row.outcome) %></td>
+                <td><%= h issue.status %></td>
+                <td><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="5"><%= l(:label_total) %></th>
+              <th class="num"><%= sprint_report_number(commit_rows.sum(&:sp)) %></th>
+              <th><%= sprint_report_number(commit_rows.sum(&:be_sp)) %> SP</th>
+              <th><%= sprint_report_number(commit_rows.sum(&:fe_sp)) %> SP</th>
+              <th><%= sprint_report_number(commit_rows.sum(&:qa_sp)) %> SP</th>
+              <th colspan="3"></th>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    <% end %>
+  </section>
+
+  <section class="sr-card">
+    <h3><%= l(:label_sprint_report_members) %></h3>
+    <% if @report.members.empty? %>
+      <p class="sr-empty"><%= l(:label_no_data) %></p>
+    <% else %>
+      <table class="sr-table">
+        <thead>
+          <tr>
+            <th><%= l(:field_user) %></th>
+            <th class="num"><%= l(:label_sprint_report_issue_count) %></th>
+            <th class="num"><%= l(:label_sprint_report_sp) %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @report.members.each do |row| %>
+            <tr>
+              <td><%= sprint_report_member_name(row) %></td>
+              <td class="num"><%= row.issue_count %></td>
+              <td class="num"><%= sprint_report_number(row.sp) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th><%= l(:label_total) %></th>
+            <th class="num"><%= @report.members.sum(&:issue_count) %></th>
+            <th class="num"><%= sprint_report_number(@report.members.sum(&:sp)) %></th>
+          </tr>
+        </tfoot>
+      </table>
+    <% end %>
+  </section>
+
   <% intake = @report.intake %>
   <% if intake && intake[:enabled] %>
     <section class="sr-card">
@@ -250,104 +350,4 @@
       </script>
     </section>
   <% end %>
-
-  <section class="sr-card">
-    <h3><%= l(:label_sprint_report_completed_tickets) %> (<%= @report.coded_issues.size %>)</h3>
-    <% if @report.coded_issues.empty? %>
-      <p class="sr-empty"><%= l(:label_no_data) %></p>
-    <% else %>
-      <p class="sr-hint">
-        <%= l(:label_sprint_report_committed_count, count: @report.coded_issues.count(&:committed)) %>
-        ·
-        <%= l(:label_sprint_report_dod_count, count: @report.coded_issues.count(&:dod)) %>
-        ·
-        <%= l(:label_sprint_report_coded_be_count, count: @report.coded_issues.count(&:be_done)) %>
-        ·
-        <%= l(:label_sprint_report_coded_fe_count, count: @report.coded_issues.count(&:fe_done)) %>
-        ·
-        <%= l(:label_sprint_report_coded_qa_count, count: @report.coded_issues.count(&:qa_done)) %>
-      </p>
-      <div class="sr-table-wrap">
-        <table class="sr-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th><%= l(:field_tracker) %></th>
-              <th><%= l(:field_subject) %></th>
-              <th><%= l(:label_sprint_report_intake_source) %></th>
-              <th><%= l(:label_sprint_report_committed) %></th>
-              <th><%= l(:label_sprint_report_dod) %></th>
-              <th><%= l(:label_sprint_report_sp_be) %></th>
-              <th><%= l(:label_sprint_report_sp_fe) %></th>
-              <th><%= l(:label_sprint_report_sp_qa) %></th>
-              <th><%= l(:label_sprint_report_outcome) %></th>
-              <th><%= l(:field_status) %></th>
-              <th><%= l(:field_assigned_to) %></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @report.coded_issues.each do |row| %>
-              <% issue = row.issue %>
-              <tr>
-                <td class="id"><%= link_to issue.id, issue_path(issue) %></td>
-                <td><%= h issue.tracker %></td>
-                <td class="subject"><%= link_to_issue(issue, subject: false) %> <%= h issue.subject %></td>
-                <td><%= sprint_report_intake_badge(issue, @settings) %></td>
-                <td><%= sprint_report_yes_no_cell(row.committed) %></td>
-                <td><%= sprint_report_dod_cell(row.dod) %></td>
-                <td><%= sprint_report_code_cell(row.be_done, row.be_sp) %></td>
-                <td><%= sprint_report_code_cell(row.fe_done, row.fe_sp) %></td>
-                <td><%= sprint_report_code_cell(row.qa_done, row.qa_sp) %></td>
-                <td><%= sprint_report_outcome_cell(row.outcome) %></td>
-                <td><%= h issue.status %></td>
-                <td><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></td>
-              </tr>
-            <% end %>
-          </tbody>
-          <tfoot>
-            <tr>
-              <th colspan="6"><%= l(:label_total) %></th>
-              <th><%= sprint_report_number(@report.coded_issues.sum(&:be_sp)) %> SP</th>
-              <th><%= sprint_report_number(@report.coded_issues.sum(&:fe_sp)) %> SP</th>
-              <th><%= sprint_report_number(@report.coded_issues.sum(&:qa_sp)) %> SP</th>
-              <th colspan="3"></th>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    <% end %>
-  </section>
-
-  <section class="sr-card">
-    <h3><%= l(:label_sprint_report_members) %></h3>
-    <% if @report.members.empty? %>
-      <p class="sr-empty"><%= l(:label_no_data) %></p>
-    <% else %>
-      <table class="sr-table">
-        <thead>
-          <tr>
-            <th><%= l(:field_user) %></th>
-            <th class="num"><%= l(:label_sprint_report_issue_count) %></th>
-            <th class="num"><%= l(:label_sprint_report_sp) %></th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @report.members.each do |row| %>
-            <tr>
-              <td><%= sprint_report_member_name(row) %></td>
-              <td class="num"><%= row.issue_count %></td>
-              <td class="num"><%= sprint_report_number(row.sp) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-        <tfoot>
-          <tr>
-            <th><%= l(:label_total) %></th>
-            <th class="num"><%= @report.members.sum(&:issue_count) %></th>
-            <th class="num"><%= sprint_report_number(@report.members.sum(&:sp)) %></th>
-          </tr>
-        </tfoot>
-      </table>
-    <% end %>
-  </section>
 </div>

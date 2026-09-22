@@ -7,27 +7,55 @@
   <div class="release-layout">
     <!-- Main content -->
     <div class="release-main">
-      <div class="release-header box" style="margin-bottom:16px;">
+      <div class="release-header box">
         <div class="release-title-wrap">
           <div class="release-title"><%= h @release.name %></div>
           <span class="badge <%= @release.state == 'released' ? 'badge--released' : @release.state == 'archived' ? 'badge--archived' : 'badge--unreleased' %>">
             <%= @release.state.upcase %>
           </span>
+          <div class="release-header-actions">
+            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>" <%= !can_manage && "disabled" %>>
+              <option value="unreleased" <%= 'selected' if @release.state=='unreleased' %>>Unreleased</option>
+              <option value="released"   <%= 'selected' if @release.state=='released' %>>Released</option>
+            </select>
+            <% if can_action %>
+              <button id="btn-edit-release" class="button-secondary" type="button">Edit</button>
+            <% end %>
+          </div>
         </div>
-        <div class="release-header-related-works">
-          <div class="related-works-title">Related work</div>
-          
+
+        <div class="release-meta">
+          <div class="release-meta__item">
+            <span class="release-meta__label">Start</span>
+            <span class="release-meta__value"><%= @release.start_on || '—' %></span>
+          </div>
+          <div class="release-meta__item">
+            <span class="release-meta__label">Release</span>
+            <span class="release-meta__value"><%= @release.release_on || '—' %></span>
+          </div>
+          <div class="release-meta__item release-meta__item--progress">
+            <span class="release-meta__label">Progress</span>
+            <div class="bar" style="--w:<%= @progress %>%"><span></span></div>
+            <span class="release-meta__pct"><%= @progress.to_i %>%</span>
+          </div>
           <% if @release.release_notes_url.present? %>
-            <a class="related-work-item-wrap" href="<%= @release.release_notes_url %>" target="_blank" rel="noopener" class="link-note">
-              <div class="related-work-item related-release-note">
-                <img src="https://jira-frontend-bifrost.prod-east.frontend.public.atl-paas.net/assets/documents-illustration.37d481a2.svg" width="40" height="38" alt="">
-                <div>
-                  <div>Release Notes - <%= @project&.name %> - <%= @release&.name %></div>
-                  <div>Notion</div>
-                </div>
-              </div>  
-            </a>
+            <div class="release-meta__item">
+              <span class="release-meta__label">Notes</span>
+              <a class="release-notes-link" href="<%= @release.release_notes_url %>" target="_blank" rel="noopener">Release notes</a>
+            </div>
           <% end %>
+          <div class="release-meta__item release-meta__item--drivers">
+            <span class="release-meta__label">Drivers</span>
+            <% if @release.drivers.any? %>
+              <div class="release-driver-chips">
+                <% @release.drivers.each do |u| %>
+                  <span class="release-driver-chip" title="<%= h u.name %>"><%= h u.name %></span>
+                <% end %>
+              </div>
+            <% else %>
+              <span class="release-meta__value">—</span>
+            <% end %>
+          </div>
         </div>
       </div>
 
@@ -72,17 +100,22 @@
           </div>
         </div>
 
-        <table id="wi-table" class="wi-table <%= 'no-manage' unless can_manage %>">
+        <div class="wi-table-wrap">
+        <table id="wi-table" class="wi-table <%= 'no-manage' unless can_manage %>"
+               data-unpick-title="<%= h l(:label_release_unpick_confirm_title) %>"
+               data-unpick-desc="<%= h l(:text_release_unpick_confirm, part: '%{part}') %>">
           <thead>
             <tr>
               <th class="col-key sortable" data-sort-key="id">Key</th>
-              <th class="col-tracker sortable" data-sort-key="tracker">Tracker</th>   <!-- NEW -->
+              <th class="col-tracker sortable" data-sort-key="tracker">Tracker</th>
               <th class="col-summary sortable" data-sort-key="summary">Summary</th>
-              <th class="col-epic sortable" data-sort-key="epic">Epic</th> 
-              <th class="col-from-sprint sortable" data-sort-key="fromSprint">From Sprint</th> 
-              <th class="col-priority sortable" data-sort-key="priorityPos">Priority</th>  <!-- NEW -->
+              <th class="col-epic sortable" data-sort-key="epic">Epic</th>
+              <th class="col-from-sprint sortable" data-sort-key="fromSprint">From Sprint</th>
+              <th class="col-priority sortable" data-sort-key="priorityPos">Priority</th>
               <th class="col-status sortable" data-sort-key="status">Status</th>
               <th class="col-assignee sortable" data-sort-key="assignee">Assignee</th>
+              <th class="col-added sortable" data-sort-key="added"><%= l(:label_release_added_on) %></th>
+              <th class="col-code-pick" title="<%= h l(:label_release_code_pick) %>"><%= l(:label_release_code_pick) %></th>
               <th class="col-action"></th>
             </tr>
           </thead>
@@ -111,27 +144,28 @@
                   data-sort-priority="<%= iss.priority&.name.to_s %>"
                   data-sort-status="<%= iss.status&.name.to_s %>"
                   data-sort-assignee="<%= iss.assigned_to&.name.to_s %>"
+                  data-sort-added="<%= @release_item_by_issue[iss.id]&.added_at.to_i %>"
                   data-epic="<%= epic_label.to_s %>"
                   data-from-sprint="<%= sprint_name %>"
                   data-epic-label="<%= h epic_label %>"   >     
-                <td>
+                <td class="col-key">
                   <span class="tree-toggle"></span>
-                  <span class="wi-key">#<%= iss.id %></span>
+                  <%= link_to "##{iss.id}", issue_path(iss), class: 'wi-key' %>
                 </td>
-                <td><%= h iss.tracker&.name %></td>
-                <td class="wi-summary"><%= h iss.subject %></td>
+                <td class="col-tracker"><%= h iss.tracker&.name %></td>
+                <td class="wi-summary"><%= link_to h(iss.subject), issue_path(iss), class: 'wi-summary-link' %></td>
                 <td class="wi-epic">
                   <% if epic_label.present? %>
                     <span class="badge badge-epic sa-ellipsis" title="<%= h epic_label %>"><%= h epic_label %></span>
                   <% else %>
-                    -
+                    <span class="wi-empty" aria-hidden="true"></span>
                   <% end %>
                 </td>
-                <td>
+                <td class="col-from-sprint">
                   <% if sprint_id && sprint_name %>
                     <span class="badge badge-devdone sa-ellipsis"><%= h sprint_name %></span>
                   <% else %>
-                    -
+                    <span class="wi-empty" aria-hidden="true"></span>
                   <% end %>
                 </td>
                 <td class="sanan-agile-priority">
@@ -156,15 +190,18 @@
                   <% end %>    
                   <%= h iss.priority&.name %>
                 </td>
-                <td>
+                <td class="col-status">
                   <select class="wi-status ui-select" <%= !can_action && "disabled" %>>
                     <% @statuses.each do |st| %>
                       <option value="<%= st.id %>" <%= 'selected' if st.id == iss.status_id %>><%= h st.name %></option>
                     <% end %>
                   </select>
                 </td>
-                <td class="wi-assignee"><%= h(iss.assigned_to&.name || '-') %></td>
-                <td>
+                <td class="wi-assignee"><%= h(iss.assigned_to&.name) %></td>
+                <% ri = @release_item_by_issue[iss.id] %>
+                <td class="col-added"><%= release_item_added_cell(ri) %></td>
+                <td class="col-code-pick"><%= release_code_pick_group(iss, ri, can_action) %></td>
+                <td class="col-action">
                   <% if can_action %>
                     <button class="wi-remove" title="Remove from release">×</button>
                   <% end %>
@@ -189,13 +226,13 @@
                     data-sort-status="<%= ch.status&.name.to_s %>"
                     data-sort-assignee="<%= ch.assigned_to&.name.to_s %>">
 
-                  <td>
-                    <span class="wi-key">#<%= ch.id %></span>
+                  <td class="col-key">
+                    <%= link_to "##{ch.id}", issue_path(ch), class: 'wi-key' %>
                   </td>
-                  <td><%= h ch.tracker&.name %></td>
-                  <td class="wi-summary"><%= h ch.subject %></td>
-                  <td class="wi-epic">-</td>
-                  <td>-</td>
+                  <td class="col-tracker"><%= h ch.tracker&.name %></td>
+                  <td class="wi-summary"><%= link_to h(ch.subject), issue_path(ch), class: 'wi-summary-link' %></td>
+                  <td class="wi-epic"><span class="wi-empty" aria-hidden="true"></span></td>
+                  <td class="col-from-sprint"><span class="wi-empty" aria-hidden="true"></span></td>
                   <td class="sanan-agile-priority">
                     <% if ch.priority.name == 'Low' %>
                       <div class="priority priority-lowest" title="Priority: Low"></div>
@@ -218,67 +255,27 @@
                     <% end %>    
                     <%= h ch.priority&.name %>
                   </td>
-                  <td>
+                  <td class="col-status">
                     <select class="wi-status ui-select" <%= !can_action && "disabled" %>>
                       <% @statuses.each do |st| %>
                         <option value="<%= st.id %>" <%= 'selected' if st.id == ch.status_id %>><%= h st.name %></option>
                       <% end %>
                     </select>
                   </td>
-                  <td class="wi-assignee"><%= h(ch.assigned_to&.name || '-') %></td>
-                  <td></td>
+                  <td class="wi-assignee"><%= h(ch.assigned_to&.name) %></td>
+                  <td class="col-added"><span class="wi-empty" aria-hidden="true"></span></td>
+                  <td class="col-code-pick"><span class="wi-empty" aria-hidden="true"></span></td>
+                  <td class="col-action"></td>
                 </tr>
               <% end %>
             <% end %>
           </tbody>
 
         </table>
+        </div>
       </section>
-    </div>
-
-    <!-- Sidebar -->
-    <aside class="release-side">
-      <div class="side-card">
-        <div class="side-card-header">
-          <% if can_action %>
-          <button id="btn-edit-release" class="button-primary" style="width:100%;">✏️ Edit release</button>
-          <% end %>
-        </div>
-
-        <div class="side-section">
-          <div class="kv">
-            <span>Status</span>
-            <select id="release-state-select" class="ui-select" data-current="<%= @release.state %>" <%= !can_manage && "disabled" %>>
-              <option value="unreleased" <%= 'selected' if @release.state=='unreleased' %>>Unreleased</option>
-              <option value="released"   <%= 'selected' if @release.state=='released' %>>Released</option>
-            </select>
-          </div>
-
-          <div class="kv"><span>Start date</span><span><%= @release.start_on || '-' %></span></div>
-          <div class="kv"><span>Release date</span><span><%= @release.release_on || '-' %></span></div>
-
-          <div class="kv" style="display:block;">
-            <span>Drivers</span>
-            <div class="drivers-list">
-              <% if @release.drivers.any? %>
-                <% @release.drivers.each do |u| %>
-                  <div class="driver-item">👤 <%= h u.name %></div>
-                <% end %>
-              <% else %>
-                <div class="driver-item text-muted">-</div>
-              <% end %>
-            </div>
-          </div>
-
-          <div class="kv">
-            <span>Progress</span>
-            <div class="bar" style="--w:<%= @progress %>%"><span></span></div>
-          </div>
-        </div>
-      </div>
-
       <div id="issue-panel" class="issue-panel hidden"></div>
-    </aside>
+    </div>
   </div>
 
   <!-- Edit release modal -->
@@ -364,4 +361,4 @@
 </div>
 
 <%= javascript_include_tag 'release_show', plugin: 'sanan_redmine_agile' %>
-<link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/releases.css">
+<link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/releases.css?v=20260922j">

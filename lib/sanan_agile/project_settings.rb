@@ -74,6 +74,9 @@ module SananAgile
       'velocity_window' => '3',
       # Last day to add/remove committed tickets = due - N. 0 = no calendar lock.
       'commit_lock_days_before_end' => '0',
+      # Statuses still in development (set A). On this sprint version + status ∈ A = commit.
+      # Blank = every ticket on the sprint version is committed (legacy).
+      'commit_dev_status_ids' => [],
 
       # Agile board: hide these trackers from cards/column counts (e.g. Epic)
       'agile_board_hidden_tracker_ids' => [],

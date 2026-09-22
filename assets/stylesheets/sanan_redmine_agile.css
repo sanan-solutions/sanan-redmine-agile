@@ -187,17 +187,85 @@ table.list.issues-board th {
   padding-right: 16px;
 }
 
+#global-modal #main.nosidebar,
+#global-modal #main.no-sidebar {
+  display: block;
+}
+
+#global-modal #main.nosidebar #sidebar,
+#global-modal #main.no-sidebar #sidebar,
+#global-modal #sidebar.is-empty,
+#global-modal #sidebar[hidden] {
+  display: none !important;
+  flex: 0 0 0 !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+#global-modal #main.nosidebar #content,
+#global-modal #main.no-sidebar #content {
+  width: 100%;
+  max-width: none;
+}
+
 #global-modal .splitcontent {
   display: flex;
   flex-wrap: nowrap;
   width: 100%;
 }
 
-#global-modal .splitcontentleft,
-#global-modal .splitcontentright {
+#global-modal .splitcontent > .splitcontentleft,
+#global-modal .splitcontent > .splitcontentright {
   flex: 1 1 50%;
   min-width: 0;
   margin: 0;
+}
+
+#global-modal #issue-form .splitcontentleft:has(#issue_tags) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  float: none;
+  clear: both;
+  flex: none;
+  overflow: visible;
+}
+
+#global-modal #issue-form #issue_tags,
+#issue-form #issue_tags {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  float: none;
+  clear: both;
+  overflow: visible;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 12px;
+  padding: 0;
+  min-height: 0;
+}
+
+#global-modal #issue-form #issue_tags > label,
+#issue-form #issue_tags > label {
+  float: none;
+  display: block;
+  width: auto;
+  margin: 0 0 4px;
+  padding: 0;
+  text-align: left;
+}
+
+#global-modal #issue_tags .select2-container,
+#issue-form #issue_tags .select2-container {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100%;
 }
 
 #global-modal .sanan-sp-forms {
@@ -220,7 +288,44 @@ table.list.issues-board th {
 
 #global-modal #issue-form fieldset.sanan-sp-form:last-child p,
 #global-modal #issue-form fieldset.sanan-sp-form .sanan-sp-form__grid p {
-  margin-bottom: 8px;
+  margin-bottom: 0;
+}
+
+#global-modal #issue-form .sanan-sp-form__grid p,
+#global-modal .tabular .sanan-sp-form__grid p {
+  position: static;
+  float: none;
+  clear: none;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+#global-modal #issue-form .sanan-sp-form__grid label,
+#global-modal .tabular .sanan-sp-form__grid label {
+  position: static;
+  float: none;
+  display: block;
+  width: auto;
+  margin: 0 0 4px;
+  padding: 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+#global-modal #issue-form .sanan-sp-form__grid select.sanan-sp-input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  height: 32px;
+  box-sizing: border-box;
 }
 
 #global-modal .attributes {

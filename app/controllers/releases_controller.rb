@@ -6,10 +6,10 @@ class ReleasesController < ApplicationController
   before_action :ensure_sanan_agile_enabled
   before_action :authorize
   before_action :find_release, only: [:show, :attach_issues, :detach_item, :reorder,
-                                      :update_issue_status, :change_state, :issue_panel, :edit, :update, :destroy]
+                                      :update_issue_status, :update_code_picked, :change_state, :issue_panel, :edit, :update, :destroy]
   before_action :authorize_view,  only: [:index, :show, :issues_search, :issue_panel]
   before_action :authorize_manage, only: [:attach_issues, :detach_item, :reorder,
-                                          :update_issue_status, :change_state, :create, :update, :edit, :new, :destroy]
+                                          :update_issue_status, :update_code_picked, :change_state, :create, :update, :edit, :new, :destroy]
   # GET /projects/:project_id/releases
   def index
     scope = ::ReleaseVersion.where(project_id: @project.id)
@@ -120,6 +120,13 @@ class ReleasesController < ApplicationController
     end
 
     @progress = @release.progress
+    issue_ids = parent_ids + Array(@child_issues).map(&:id)
+    @sp_size_by_issue = if issue_ids.any? && defined?(SananIssueSpSize)
+                          SananIssueSpSize.where(issue_id: issue_ids).index_by(&:issue_id)
+                        else
+                          {}
+                        end
+    @release_item_by_issue = @release.items.includes(:added_by).index_by(&:issue_id)
   end
 
   def edit
@@ -319,6 +326,28 @@ class ReleasesController < ApplicationController
     else
       render json: { ok: false, errors: issue.errors.full_messages }, status: 422
     end
+  end
+
+  def update_code_picked
+    part = params[:part].to_s
+    unless %w[be fe].include?(part)
+      return render json: { ok: false, error: 'Invalid part' }, status: 422
+    end
+    if @release.state == 'released'
+      return render json: { ok: false, error: 'Release is closed' }, status: 422
+    end
+
+    item = @release.items.find_by!(issue_id: params[:issue_id])
+    issue = Issue.visible(User.current).find(item.issue_id)
+    @sp_size_by_issue = SananIssueSpSize.where(issue_id: issue.id).index_by(&:issue_id) if defined?(SananIssueSpSize)
+    @sp_size_by_issue ||= {}
+    unless helpers.release_team_estimated?(issue, part)
+      return render json: { ok: false, error: 'Ticket is not estimated for this part' }, status: 422
+    end
+
+    checked = ActiveModel::Type::Boolean.new.cast(params[:checked])
+    item.update!(part == 'fe' ? { code_picked_fe: checked } : { code_picked_be: checked })
+    render json: { ok: true, checked: item.reload.public_send("code_picked_#{part}") }
   end
 
   def change_state

@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require_dependency File.expand_path('../../lib/sanan_agile/sprint_report/calculator', __dir__)
+require_dependency File.expand_path('../../lib/sanan_agile/sprint_report/history', __dir__)
 
 class SprintReportsController < ApplicationController
   unloadable

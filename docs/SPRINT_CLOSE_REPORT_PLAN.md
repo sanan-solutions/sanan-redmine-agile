@@ -21,7 +21,7 @@ Báo cáo xem lại được sau khi đóng (không chỉ tính one-shot rồi m
 | # | Câu hỏi | Quyết định |
 |---|---|---|
 | Q1 | Tester Done In Sprint? | **Done QA In Sprint** → setting `done_qa_cfid` (CF Version trên issue) |
-| Q2 | SP Commit có freeze lúc Start? | **Không.** Commit **thay đổi trong sprint** — luôn = Σ SP standard đang `fixed_version_id = sprint` (tính live khi sprint còn open; **ghi snapshot lúc close**) |
+| Q2 | SP Commit có freeze lúc Start? | **Không.** Commit **live**: standard + `fixed_version_id = sprint`. Nếu setting `commit_dev_status_ids` (tập A) có giá trị → chỉ ticket **status ∈ A**. Trống = mọi ticket trên version (legacy). Snapshot ID lúc close. |
 | Q2b | Ticket chuyển sprint thì SP team? | **Snapshot sprint cũ + reset CF team.** Size (`story_point_cfid`) không reset. Spec: [ISSUE_SPRINT_SP_HISTORY.md](ISSUE_SPRINT_SP_HISTORY.md) |
 | Q2c | Danh sách ticket commit freeze lúc Start? | **Không.** Commit **live** sau Start: kéo vào/ra → bảng + SP đổi ngay. Snapshot ID **chỉ lúc close**. |
 | Q2d | Deadline hết được sửa commit? | **Có, config.** Setting `commit_lock_days_before_end` (integer ≥ 0). **N = 0** (default): không khóa theo ngày, live đến Complete. **N > 0**: ngày cuối được **thêm/gỡ ticket khỏi sprint** = `effective_date − N`. Từ ngày hôm sau → khóa commit set. Không `effective_date` → không khóa theo ngày. Khóa **tập ticket** (đổi Target version vào/ra sprint này); vẫn sửa status / DoD / SP trên ticket đã commit. Complete sprint vẫn move unfinished. |
@@ -61,7 +61,7 @@ Báo cáo xem lại được sau khi đóng (không chỉ tính one-shot rồi m
 
 #### A) SP Commit (cam kết — **live, có thể đổi trong sprint**)
 
-Tập issue commit = Standard issues có **`fixed_version_id = sprint`** (tại thời điểm tính).
+Tập issue commit = Standard issues có **`fixed_version_id = sprint`**. Nếu `commit_dev_status_ids` được cấu hình → lọc thêm **`status_id ∈ tập A`** (đang phát triển). Status khác trên cùng board (UAT) không tính commit. Setting trống → như legacy (cả version).
 
 | Metric | Công thức |
 |---|---|

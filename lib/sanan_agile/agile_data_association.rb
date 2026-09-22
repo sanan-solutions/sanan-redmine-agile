@@ -25,8 +25,19 @@ module SananAgile
   end
 
   module AgileQueryAssociationPatch
+    def valid?
+      SananAgile::BoardDefaultFilters.apply!(self)
+      super
+    end
+
     def issues(options = {})
       SananAgile::AgileDataAssociation.ensure!
+      SananAgile::BoardDefaultFilters.apply!(self)
+      super
+    end
+
+    def issue_board
+      SananAgile::BoardDefaultFilters.apply!(self)
       super
     end
   end
@@ -50,6 +61,8 @@ module SananAgile
 
     def ensure_agile_query_patch!
       return unless defined?(AgileQuery)
+
+      require_dependency File.expand_path('board_default_filters', __dir__)
       return if AgileQuery.ancestors.include?(SananAgile::AgileQueryAssociationPatch)
 
       AgileQuery.prepend(SananAgile::AgileQueryAssociationPatch)

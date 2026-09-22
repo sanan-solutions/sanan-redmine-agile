@@ -22,13 +22,13 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
     enable = sanan_truthy?(cfg['sanan_agile_enabled'])
 
     modal_js = if enable
-      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js?v=20260921k'
+      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js?v=20260922a'
     else
       '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal_mini.js'
     end
 
     modal_css = if enable
-      '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile.css?v=20260921u'
+      '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile.css?v=20260922d'
     else
       '/plugin_assets/sanan_redmine_agile/stylesheets/sanan_redmine_agile_mini.css'
     end
@@ -62,7 +62,7 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
       <script src="/plugin_assets/sanan_redmine_agile/javascripts/issue_sp_form.js?v=20260921q"></script>
       <script src="/plugin_assets/sanan_redmine_agile/javascripts/helper.js"></script>
       <link rel="stylesheet" href="#{modal_css}" />
-      <link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/issue_sprint_done_group.css?v=20260921u" />
+      <link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/issue_sprint_done_group.css?v=20260922c" />
       <link rel="stylesheet" href="/plugin_assets/sanan_redmine_agile/stylesheets/helper.css" />
     HTML
     modal_html.html_safe

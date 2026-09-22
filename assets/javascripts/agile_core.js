@@ -317,7 +317,9 @@
 
   function cardHiddenByBoardFilter(el) {
     return el.classList.contains('sa-hidden-by-intake')
-      || el.classList.contains('sa-hidden-by-release');
+      || el.classList.contains('sa-hidden-by-release')
+      || el.classList.contains('sa-hidden-by-source')
+      || el.classList.contains('sa-hidden-by-epic');
   }
 
   function formatColumnHoursSp(hours, sp) {

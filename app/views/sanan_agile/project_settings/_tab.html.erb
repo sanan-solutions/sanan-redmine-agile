@@ -155,6 +155,16 @@
             <em><%= l(:text_sanan_commit_lock_days_hint) %></em>
           </span>
         </p>
+        <p>
+          <label><%= l(:label_sanan_commit_dev_statuses) %></label>
+          <span>
+            <%= hidden_field_tag 'settings[commit_dev_status_ids][]', '' %>
+            <%= select_tag 'settings[commit_dev_status_ids][]',
+                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['commit_dev_status_ids']).map(&:to_i)),
+                  multiple: true %>
+            <em><%= l(:text_sanan_commit_dev_statuses_hint) %></em>
+          </span>
+        </p>
       </div>
     </section>
 

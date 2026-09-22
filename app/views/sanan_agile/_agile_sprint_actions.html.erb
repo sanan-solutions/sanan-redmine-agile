@@ -1,0 +1,54 @@
+<%
+  sa_project = local_assigns[:project] || @project
+  sa_cfg = sa_project && SananAgile::ProjectSettings.load(sa_project.id)
+  sa_enabled = sa_cfg && %w[1 true yes on].include?(sa_cfg['sanan_agile_enabled'].to_s.strip.downcase)
+  sa_version = sa_enabled && sa_project&.default_version
+  sa_version = nil unless sa_version && sa_version.status.to_s == 'open'
+  sa_can_view = sa_version && User.current.allowed_to?(:view_sprint_reports, sa_project)
+  sa_can_complete = sa_version &&
+                    User.current.allowed_to?(:manage_backlog, sa_project) &&
+                    User.current.allowed_to?(:manage_versions, sa_project)
+%>
+<% if sa_version && (sa_can_view || sa_can_complete) %>
+  <%
+    singleton_class.include BacklogsHelper unless respond_to?(:backlog_section_completion_counts)
+    @project ||= sa_project
+    @settings ||= sa_cfg
+    sa_section = Struct.new(:version, :issues).new(
+      sa_version,
+      sa_version.fixed_issues.visible.preload(:status, :tracker, :custom_values).to_a
+    )
+    sa_counts = backlog_section_completion_counts(sa_section)
+    sa_move_opts = backlog_complete_move_options(sa_version, sa_project.shared_versions.open)
+    sa_dod = backlog_complete_dod_candidates(sa_section)
+    sa_detail_label = l(:label_sprint_report)
+    sa_complete_label = l(:button_backlog_complete_sprint)
+  %>
+  <div id="sa-agile-sprint-actions" hidden>
+    <% if sa_can_view %>
+      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon('document', sa_detail_label) : sa_detail_label),
+            project_sprint_report_path(sa_project, sa_version),
+            class: 'icon icon-document sa-agile-sprint-action',
+            title: sa_detail_label %>
+    <% end %>
+    <% if sa_can_complete %>
+      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon('checked', sa_complete_label) : sa_complete_label),
+            '#',
+            class: 'icon icon-ok sa-agile-sprint-action backlog-complete-trigger sa-complete-sprint-btn',
+            title: sa_complete_label,
+            data: {
+              url: project_backlog_complete_sprint_path(sa_project, sa_version),
+              name: sa_version.name,
+              completed: sa_counts[:completed],
+              open: sa_counts[:open],
+              move_options: sa_move_opts.map { |label, value| { label: label, value: value } },
+              dod_candidates: sa_dod
+            } %>
+    <% end %>
+  </div>
+  <% if sa_can_complete %>
+    <div class="sanan-backlog sa-complete-sprint-host">
+      <%= render partial: 'backlogs/complete_sprint_modal' %>
+    </div>
+  <% end %>
+<% end %>

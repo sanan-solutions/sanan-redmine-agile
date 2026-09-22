@@ -151,6 +151,57 @@
     }).catch(() => alert('Network error'));
   });
 
+  table.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.wi-code-pick');
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    const tr = btn.closest('.wi-row');
+    const part = btn.dataset.part;
+    const issueId = btn.dataset.issueId || tr?.dataset.id;
+    const want = btn.getAttribute('aria-pressed') !== 'true';
+    if (!want) {
+      const partLabel = (btn.querySelector('.wi-code-pick__lbl')?.textContent || part || '').trim().toUpperCase();
+      const title = table.dataset.unpickTitle || 'Unmark code pick?';
+      const descTpl = table.dataset.unpickDesc || 'Unmark <strong>%{part}</strong> code pick?';
+      const desc = descTpl.replace(/%\{part\}/g, partLabel);
+      let ok = false;
+      if (window.SA && typeof SA.confirm === 'function') {
+        ok = await SA.confirm({
+          title: title,
+          desc: desc,
+          confirmText: 'Confirm',
+          cancelText: 'Cancel'
+        });
+      } else {
+        ok = window.confirm(desc.replace(/<[^>]+>/g, ''));
+      }
+      if (!ok) return;
+    }
+    btn.disabled = true;
+    fetch(base + '/update_code_picked', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token, 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ issue_id: issueId, part: part, checked: want })
+    }).then(r => r.json().then(j => ({ ok: r.ok, j }))).then(({ ok, j }) => {
+      btn.disabled = false;
+      if (!ok || !j.ok) {
+        alert(j.error || (j.errors && j.errors.join('\n')) || 'Update failed');
+        return;
+      }
+      const on = !!j.checked;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const title = on ? (btn.dataset.titleOn || '') : (btn.dataset.titleOff || '');
+      if (title) {
+        btn.title = title;
+        btn.setAttribute('aria-label', title);
+      }
+    }).catch(() => {
+      btn.disabled = false;
+      alert('Network error');
+    });
+  });
+
   // --- FILTERS (only parents) ---
   const qInput = document.getElementById('wi-search');
   const stSel = document.getElementById('wi-status-filter');
@@ -268,7 +319,8 @@
     fromSprint: { prop: 'fromSprint', type: 'string' },
     priorityPos: { prop: 'sortPriorityPos', type: 'number' },
     status: { prop: 'sortStatus', type: 'string' },
-    assignee: { prop: 'sortAssignee', type: 'string' }
+    assignee: { prop: 'sortAssignee', type: 'string' },
+    added: { prop: 'sortAdded', type: 'number' }
   };
 
   sortHeaders.forEach(th => {

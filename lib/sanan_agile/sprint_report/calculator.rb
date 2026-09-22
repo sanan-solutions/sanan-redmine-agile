@@ -14,7 +14,7 @@ module SananAgile
       MemberRow = Struct.new(:user, :user_id, :issue_count, :sp, keyword_init: true)
       CodedIssueRow = Struct.new(
         :issue, :committed, :dod, :be_done, :fe_done, :qa_done,
-        :be_sp, :fe_sp, :qa_sp, :outcome,
+        :sp, :be_sp, :fe_sp, :qa_sp, :outcome,
         keyword_init: true
       )
       IntakeBucket = Struct.new(:source, :count, :sp, keyword_init: true)
@@ -258,9 +258,7 @@ module SananAgile
       end
 
       def live_committed_issue_ids
-        return [] if standard_ids.blank?
-
-        Issue.where(project_id: @project.id, tracker_id: standard_ids, fixed_version_id: @sid).pluck(:id)
+        SananAgile::SprintCommit.issue_ids(@version, @cfg)
       end
 
       def fallback_committed_ids
@@ -330,6 +328,7 @@ module SananAgile
         qa_set = qa_ids.to_set
         dod_set = dod_ids.to_set
         committed_set = committed_ids.to_set
+        size_sp = sum_cf_by_issue(ids, cfid('story_point_cfid'))
         be_sp = issue_team_sp_map(be_ids, 'sp_be_cfid', :sp_be)
         fe_sp = issue_team_sp_map(fe_ids, 'sp_fe_cfid', :sp_fe)
         qa_sp = issue_team_sp_map(qa_ids, 'sp_qa_cfid', :sp_qa)
@@ -353,6 +352,7 @@ module SananAgile
             be_done: be_set.include?(iid),
             fe_done: fe_set.include?(iid),
             qa_done: qa_set.include?(iid),
+            sp: size_sp[iid].to_f,
             be_sp: be_sp[iid].to_f,
             fe_sp: fe_sp[iid].to_f,
             qa_sp: qa_sp[iid].to_f,
