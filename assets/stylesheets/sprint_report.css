@@ -405,3 +405,5 @@
     flex-direction: column;
   }
 }
+
+.sanan-sprint-report .sr-kpi__pct { display: block; margin-top: 2px; font-size: 11px; color: #626f86; }

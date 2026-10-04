@@ -15,12 +15,16 @@
   <% history = history.reject { |row| sanan_issue_on_sprint?(issue, cfg) && row.version_id == issue.fixed_version_id } if history.respond_to?(:reject) %>
 
   <% size_total_val = sanan_cf_value_object_for(issue, total_cf)&.value.presence || issue.custom_field_value(total_cf) %>
+  <%# Sub-task: only the personal SP is shown. %>
+  <% personal_only = defined?(SananAgile::SpTotalFormula) && SananAgile::SpTotalFormula.subtask?(issue, cfg) %>
+  <% be_on = fe_on = qa_on = false if personal_only %>
+  <% history = [] if personal_only %>
   <% on_sprint = (be_on || fe_on || qa_on) && sanan_issue_on_sprint?(issue, cfg) %>
 
   <div class="sanan-sp-show<%= ' sanan-sp-show--pair' if on_sprint %>">
     <div class="sanan-sp-block sanan-sp-block--compact">
       <div class="sanan-sp-block__head">
-        <strong class="sanan-sp-block__title"><%= l(:label_sanan_sp_size_group) %></strong>
+        <strong class="sanan-sp-block__title"><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_size_group) %></strong>
       </div>
       <div class="sanan-sp-kpis">
         <% if be_on %>
@@ -43,7 +47,7 @@
         <% end %>
         <% if total_cf.positive? %>
           <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= l(:label_sanan_sp_total) %></span>
+            <span class="sanan-sp-kpi__label"><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_total) %></span>
             <span class="sanan-sp-kpi__value"><%= sanan_format_sp(size_total_val) %></span>
           </div>
         <% end %>

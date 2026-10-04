@@ -3,6 +3,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
   def view_layouts_base_html_head(ctx = {})
     c = ctx[:controller]
     return '' unless c
+    return roadmap_assets if c.controller_name == 'portfolio_roadmaps'
 
     project = ctx[:project] ||
               c.instance_variable_get(:@project) ||
@@ -24,6 +25,8 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
       %w[show new create edit update].include?(c.action_name.to_s) ? issue_show_assets : ''
     when 'backlogs', 'cs_backlogs', 'sale_backlogs'
       backlog_assets
+    when 'roadmaps'
+      roadmap_assets
     else
       ''
     end
@@ -36,6 +39,15 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
       stylesheet_link_tag('backlog', plugin: 'sanan_redmine_agile') +
       javascript_include_tag('complete_sprint_modal', plugin: 'sanan_redmine_agile') +
       javascript_include_tag('backlog', plugin: 'sanan_redmine_agile')
+    ).html_safe
+  end
+
+  def roadmap_assets
+    (
+      # media all: the stylesheet also carries the print / PDF layout.
+      stylesheet_link_tag('roadmap', plugin: 'sanan_redmine_agile', media: 'all') +
+      javascript_include_tag('roadmap_core', 'roadmap_board', 'roadmap_team', 'roadmap_detail',
+                             'roadmap_actions', 'roadmap', plugin: 'sanan_redmine_agile')
     ).html_safe
   end
 

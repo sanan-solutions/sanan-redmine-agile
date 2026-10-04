@@ -382,13 +382,21 @@
             <% if commit_sp_fields.any? %>
               <div class="backlog-modal__dates backlog-modal__commit-sp">
                 <% commit_sp_fields.each do |field| %>
+                  <% default = field[:default].nil? ? '' : backlog_sp_number(field[:default]) %>
                   <div class="backlog-modal__field">
                     <label for="<%= field[:input_id] %>"><%= field[:label] %></label>
-                    <%= number_field_tag field[:param], '',
-                          id: field[:input_id], min: 0, step: 0.5 %>
+                    <%= number_field_tag field[:param], default,
+                          id: field[:input_id], min: 0, step: 0.5, data: { default: default } %>
                   </div>
                 <% end %>
               </div>
+              <% if commit_sp_fields.any? { |f| f.key?(:default) } %>
+                <p class="backlog-modal__hint">
+                  <%= @velocity && @velocity.sample_size.to_i.positive? ?
+                        l(:text_backlog_commit_sp_default_hint, count: @velocity.sample_size) :
+                        l(:text_backlog_commit_sp_default_none) %>
+                </p>
+              <% end %>
             <% end %>
             <% if @intake && (@intake[:cs_enabled] || @intake[:sale_enabled]) %>
               <div class="backlog-modal__dates">

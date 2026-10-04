@@ -66,6 +66,11 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/closer', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_report/history', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/velocity', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/roadmap_dependencies', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/roadmap_query', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/roadmap_capacity', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/roadmap_baseline', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/roadmap_product', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/product_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
@@ -116,6 +121,14 @@ Redmine::Plugin.register :sanan_redmine_agile do
                             :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota] },
                require: :member
 
+    permission :view_roadmap,
+               { roadmaps: [:show, :data] },
+               require: :member
+
+    permission :manage_roadmap,
+               { roadmaps: [:move, :update_health, :update_span, :create_baseline, :destroy_baseline] },
+               require: :member
+
     permission :view_cs_backlog,
                { cs_backlogs: [:show] },
                require: :member
@@ -160,11 +173,31 @@ Redmine::Plugin.register :sanan_redmine_agile do
            cfg['backlog_enabled'].to_s == '1'
        }
 
+  menu :top_menu,
+       :sanan_portfolio_roadmap,
+       { controller: 'portfolio_roadmaps', action: 'show' },
+       caption: :label_sanan_roadmap,
+       after: :projects,
+       if: Proc.new { User.current.logged? && User.current.allowed_to?(:view_roadmap, nil, global: true) }
+
+  menu :project_menu,
+       :sanan_roadmap,
+       { controller: 'roadmaps', action: 'show' },
+       caption: :label_sanan_roadmap,
+       after: :backlog,
+       param: :project_id,
+       if: Proc.new { |project|
+         cfg = SananAgile::ProjectSettings.load(project.id)
+         User.current.allowed_to?(:view_roadmap, project) &&
+           cfg['sanan_agile_enabled'].to_s == '1' &&
+           cfg['roadmap_enabled'].to_s == '1'
+       }
+
   menu :project_menu,
        :cs_backlog,
        { controller: 'cs_backlogs', action: 'show' },
        caption: :label_cs_backlog,
-       after: :backlog,
+       after: :sanan_roadmap,
        param: :project_id,
        if: Proc.new { |project|
          cfg = SananAgile::ProjectSettings.load(project.id)
@@ -199,3 +232,9 @@ Redmine::Plugin.register :sanan_redmine_agile do
   # Tạo plugin settings key hợp lệ: Setting.plugin_sanan_redmine_agile (Hash)
   settings default: {}, partial: nil
 end
+
+# Project menu order (see SananAgile::ProjectMenuOrder): Gantt, Calendar, Roadmap, Product Roadmap, Backlog,
+# CS Backlog, Sale Backlog, Issues, Agile board, Releases.
+# (redmine_agile is loaded before this plugin, so its :agile item already exists here.)
+require_dependency File.expand_path('lib/sanan_agile/project_menu_order', __dir__)
+SananAgile::ProjectMenuOrder.apply!

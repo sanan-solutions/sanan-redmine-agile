@@ -65,6 +65,15 @@ Rails.application.routes.draw do
     post 'backlog/pull_intake', to: 'backlogs#pull_intake', as: :backlog_pull_intake
     patch 'backlog/sprint_quota', to: 'backlogs#update_sprint_quota', as: :backlog_sprint_quota
 
+    # Product roadmap (quarterly Epic plan). Path avoids core /projects/:id/roadmap.
+    get 'product_roadmap', to: 'roadmaps#show', as: :product_roadmap
+    patch 'product_roadmap/move', to: 'roadmaps#move', as: :product_roadmap_move
+    patch 'product_roadmap/health', to: 'roadmaps#update_health', as: :product_roadmap_health
+    patch 'product_roadmap/span', to: 'roadmaps#update_span', as: :product_roadmap_span
+    get 'product_roadmap/data', to: 'roadmaps#data', as: :product_roadmap_data
+    post 'product_roadmap/baseline', to: 'roadmaps#create_baseline', as: :product_roadmap_baseline
+    delete 'product_roadmap/baseline', to: 'roadmaps#destroy_baseline'
+
     # CS / Sale intake backlogs
     get 'cs_backlog', to: 'cs_backlogs#show', as: :cs_backlog
     post 'cs_backlog/issues', to: 'cs_backlogs#create_issue', as: :cs_backlog_create_issue
@@ -74,6 +83,10 @@ Rails.application.routes.draw do
     post 'sale_backlog/issues', to: 'sale_backlogs#create_issue', as: :sale_backlog_create_issue
     post 'sale_backlog/quick_update', to: 'sale_backlogs#quick_update', as: :sale_backlog_quick_update
   end
+
+  # Cross-product roadmap (one row per product).
+  get 'product_roadmap', to: 'portfolio_roadmaps#show', as: :portfolio_roadmap
+  get 'product_roadmap/data', to: 'portfolio_roadmaps#data', as: :portfolio_roadmap_data
 
   namespace :sanan_agile do
     post 'set_dod', to: 'dod#set_dod', as: :set_dod

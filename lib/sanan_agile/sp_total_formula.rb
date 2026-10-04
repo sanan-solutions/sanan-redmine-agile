@@ -20,8 +20,26 @@ module SananAgile
       formula(cfg) != 'manual'
     end
 
+    # Team sizes (BE/FE/QA) and the derived Total apply to standard tickets only. Sub-tasks — and any other
+    # non-standard tracker except the Epic tracker — carry only a personal SP (story_point_cfid, used for
+    # per-member effort). Without Standard Trackers configured, only Sub-task Trackers are personal.
+    def subtask?(issue, cfg)
+      return false unless issue && cfg
+
+      tid = issue.tracker_id.to_i
+      return true if tracker_ids(cfg, 'subtask_tracker').include?(tid)
+
+      standard = tracker_ids(cfg, 'standard_tracker')
+      standard.any? && !standard.include?(tid) && tid != cfg['epic_tracker'].to_i
+    end
+
+    def tracker_ids(cfg, key)
+      Array(cfg[key]).map(&:to_i).reject(&:zero?)
+    end
+
     def apply_issue!(issue, cfg)
       return unless issue && cfg
+      return if subtask?(issue, cfg) # never derive / clear the personal SP of a sub-task
 
       apply_size_total!(issue, cfg)
       apply_sprint_total!(issue, cfg)

@@ -1,0 +1,38 @@
+<% html_title l(:label_sanan_roadmap) %>
+<% selected_ids = @selected.map(&:id) %>
+<% picker = capture do %>
+  <details class="rm-picker" id="rm-picker">
+    <summary class="rm-btn"><%= l(:label_sanan_roadmap_products) %> (<%= @selected.size %>/<%= @available.size %>)</summary>
+    <%= form_tag(portfolio_roadmap_path, method: :get, class: 'rm-picker__panel') do %>
+      <%= hidden_field_tag :year, @year %>
+      <%= hidden_field_tag :apply, 1 %>
+      <div class="rm-picker__tools">
+        <button type="button" class="rm-linkbtn" data-rm-pick="all"><%= l(:label_sanan_roadmap_pick_all) %></button>
+        <button type="button" class="rm-linkbtn" data-rm-pick="none"><%= l(:label_sanan_roadmap_pick_none) %></button>
+      </div>
+      <div class="rm-picker__list">
+        <% @available.each do |p| %>
+          <label class="rm-picker__item" style="padding-left: <%= 8 + 14 * p.ancestors.count { |a| @available.include?(a) } %>px">
+            <%= check_box_tag 'project_ids[]', p.id, selected_ids.include?(p.id), id: "rm-pick-#{p.id}" %>
+            <span><%= p.name %></span>
+          </label>
+        <% end %>
+        <% if @available.empty? %>
+          <div class="rm-small"><%= l(:text_sanan_roadmap_no_available_products) %></div>
+        <% end %>
+      </div>
+      <div class="rm-picker__foot">
+        <button type="submit" class="rm-btn rm-btn--primary rm-btn--sm"><%= l(:button_apply) %></button>
+      </div>
+    <% end %>
+  </details>
+<% end %>
+<%= render partial: 'roadmaps/board', locals: {
+      data: @data,
+      year: @year,
+      portfolio: true,
+      eyebrow: l(:label_sanan_portfolio_roadmap),
+      extra_actions: picker,
+      year_path: ->(y) { portfolio_roadmap_path(year: y) },
+      data_url: portfolio_roadmap_data_path(year: @year)
+    } %>

@@ -12,7 +12,13 @@ module SananAgile
         before_save :sanan_snapshot_sprint_sp_on_version_change
         # chạy sau khi issue lưu (insert/update)
         after_save :sanan_agile_after_save
+        after_destroy :sanan_remove_roadmap_item
       end
+    end
+
+    def sanan_remove_roadmap_item
+      SananRoadmapItem.where(issue_id: id).delete_all if defined?(SananRoadmapItem)
+      SananRoadmapMove.where(issue_id: id).delete_all if defined?(SananRoadmapMove)
     end
 
     # Used by IssueQuery column `:sanan_release_version`

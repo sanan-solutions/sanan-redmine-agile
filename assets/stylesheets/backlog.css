@@ -2545,3 +2545,5 @@ body.backlog-complete-modal-open {
 .sanan-backlog .intake-alert-banner {
   margin-bottom: 0.75rem;
 }
+
+.sanan-backlog .backlog-modal__hint { margin: 4px 0 12px; font-size: 12px; color: var(--bl-text-subtle); }

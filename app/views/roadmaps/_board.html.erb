@@ -1,0 +1,187 @@
+<%# Shared roadmap board. locals: data, year, eyebrow, year_path (->(y)), data_url, extra_actions %>
+<% today = Date.today %>
+
+<div class="sanan-roadmap is-compact<%= ' is-portfolio' if local_assigns[:portfolio] %>"
+     id="sanan-roadmap"
+     data-year="<%= year %>"
+     data-data-url="<%= data_url %>"
+     data-issue-url="<%= issues_path %>">
+
+  <script type="application/json" id="roadmap-data"><%= raw json_escape(data.to_json) %></script>
+  <script type="application/json" id="roadmap-i18n"><%= raw json_escape({
+    health: {
+      on_track: l(:label_sanan_roadmap_health_on_track),
+      at_risk: l(:label_sanan_roadmap_health_at_risk),
+      off_track: l(:label_sanan_roadmap_health_off_track)
+    },
+    epics: l(:label_sanan_roadmap_epics),
+    stories: l(:label_sanan_roadmap_stories),
+    owner: l(:label_sanan_roadmap_owner),
+    unassigned: l(:label_sanan_roadmap_unassigned),
+    no_stories: l(:label_sanan_roadmap_no_stories),
+    no_epics: l(:label_sanan_roadmap_no_epics),
+    sp: l(:label_sanan_roadmap_sp),
+    kpi_epics: l(:label_sanan_roadmap_kpi_epics),
+    kpi_stories: l(:label_sanan_roadmap_kpi_stories),
+    kpi_done: l(:label_sanan_roadmap_kpi_done),
+    kpi_sp: l(:label_sanan_roadmap_kpi_sp),
+    kpi_risk: l(:label_sanan_roadmap_kpi_risk),
+    drilldown: l(:label_sanan_roadmap_drilldown),
+    epic_execution: l(:label_sanan_roadmap_epic_execution),
+    plan: l(:label_sanan_roadmap_plan),
+    unplanned: l(:label_sanan_roadmap_unplanned),
+    new_story: l(:label_sanan_roadmap_new_story),
+    close: l(:button_close),
+    cap_remaining: l(:label_sanan_roadmap_cap_remaining),
+    cap_capacity: l(:label_sanan_roadmap_cap_capacity),
+    cap_past: l(:label_sanan_roadmap_cap_past),
+    cap_no_velocity: l(:label_sanan_roadmap_cap_no_velocity),
+    cap_over: l(:label_sanan_roadmap_cap_over),
+    cap_no_sp: l(:label_sanan_roadmap_cap_no_sp),
+    cap_sprints: l(:label_sanan_roadmap_cap_sprints),
+    team_title: l(:label_sanan_roadmap_team),
+    team_window: l(:label_sanan_roadmap_team_window),
+    team_velocity: l(:label_sanan_roadmap_team_velocity),
+    team_member_total: l(:label_sanan_roadmap_team_member_total),
+    team_sprint_days: l(:label_sanan_roadmap_team_sprint_days),
+    team_per_sprint: l(:label_sanan_roadmap_team_per_sprint),
+    team_active: l(:label_sanan_roadmap_team_active),
+    team_no_data: l(:label_sanan_roadmap_team_no_data),
+    team_no_role: l(:label_sanan_roadmap_team_no_role),
+    team_empty: l(:label_sanan_roadmap_team_empty),
+    team_hint: l(:text_sanan_roadmap_team_hint),
+    team_shared: l(:label_sanan_roadmap_team_shared),
+    team_shared_tip: l(:label_sanan_roadmap_team_shared_tip),
+    team_shared_count: l(:label_sanan_roadmap_team_shared_count),
+    team_shared_hint: l(:text_sanan_roadmap_team_shared_hint),
+    workstream: l(:label_sanan_roadmap_workstream),
+    epic_count_one: l(:label_sanan_roadmap_epic_count_one),
+    epic_count_other: l(:label_sanan_roadmap_epic_count_other),
+    cap_sprints_short: l(:label_sanan_roadmap_cap_sprints_short),
+    plan_quarter: l(:label_sanan_roadmap_plan_quarter),
+    plan_health: l(:label_sanan_roadmap_plan_health),
+    back_to_backlog: l(:label_sanan_roadmap_back_to_backlog),
+    portfolio_progress: l(:label_sanan_roadmap_portfolio_progress),
+    add_epic: l(:label_sanan_roadmap_add_epic),
+    unplanned_hint: l(:text_sanan_roadmap_unplanned_hint),
+    no_epic_tracker: l(:text_sanan_roadmap_no_epic_tracker),
+    no_products: l(:text_sanan_roadmap_no_products),
+    products: l(:label_sanan_roadmap_products),
+    open_product: l(:label_sanan_roadmap_open_product),
+    choose_products: l(:label_sanan_roadmap_choose_products),
+    hint: l(:label_sanan_roadmap_hint),
+    hint_apply: l(:label_sanan_roadmap_hint_apply),
+    deps_title: l(:label_sanan_roadmap_deps),
+    deps_on: l(:label_sanan_roadmap_deps_on),
+    deps_blocking: l(:label_sanan_roadmap_deps_blocking),
+    deps_late: l(:label_sanan_roadmap_deps_late),
+    deps_short: l(:label_sanan_roadmap_deps_short),
+    deps_late_short: l(:label_sanan_roadmap_deps_late_short),
+    rel_types: { 'blocks' => l(:label_blocks), 'precedes' => l(:label_precedes) },
+    span: l(:label_sanan_roadmap_span),
+    span_n: l(:label_sanan_roadmap_span_n),
+    continues_from: l(:label_sanan_roadmap_continues_from),
+    releases: l(:label_sanan_roadmap_releases),
+    rel_state: { 'released' => l(:label_sanan_roadmap_rel_released), 'unreleased' => l(:label_sanan_roadmap_rel_unreleased), 'archived' => l(:label_sanan_roadmap_rel_archived) },
+    history: l(:label_sanan_roadmap_history),
+    slip_short: l(:label_sanan_roadmap_slip_short),
+    slip_tip: l(:label_sanan_roadmap_slip_tip),
+    added_after_baseline: l(:label_sanan_roadmap_added_after_baseline),
+    bl_title: l(:label_sanan_roadmap_bl_title),
+    bl_line: l(:label_sanan_roadmap_bl_line),
+    bl_open: l(:label_sanan_roadmap_bl_open),
+    bl_lock: l(:label_sanan_roadmap_bl_lock),
+    bl_lock_tip: l(:text_sanan_roadmap_bl_lock_tip),
+    bl_lock_confirm: l(:text_sanan_roadmap_bl_lock_confirm),
+    bl_relock: l(:label_sanan_roadmap_bl_relock),
+    bl_relock_confirm: l(:text_sanan_roadmap_bl_relock_confirm),
+    bl_delete: l(:label_sanan_roadmap_bl_delete),
+    bl_delete_confirm: l(:text_sanan_roadmap_bl_delete_confirm),
+    bl_captured: l(:label_sanan_roadmap_bl_captured),
+    bl_committed: l(:label_sanan_roadmap_bl_committed),
+    bl_sp_done: l(:label_sanan_roadmap_bl_sp_done),
+    bl_now_sp: l(:label_sanan_roadmap_bl_now_sp),
+    bl_done_short: l(:label_sanan_roadmap_bl_done_short),
+    bl_slipped_short: l(:label_sanan_roadmap_bl_slipped_short),
+    bl_added_short: l(:label_sanan_roadmap_bl_added_short),
+    bl_state: SananAgile::RoadmapBaseline::STATES.to_h { |st| [st, l(:"label_sanan_roadmap_bl_state_#{st}")] },
+    months: ::I18n.t('date.abbr_month_names'),
+    error: l(:error_sanan_roadmap_request_failed)
+  }.to_json) %></script>
+
+  <div class="rm-toolbar">
+    <div class="rm-heading">
+      <div class="rm-eyebrow"><%= eyebrow %></div>
+      <h2 class="rm-title">
+        <%= l(:label_sanan_roadmap_title, year: year) %>
+        <span class="rm-info" title="<%= l(:text_sanan_roadmap_sub) %>" aria-label="<%= l(:text_sanan_roadmap_sub) %>">ⓘ</span>
+      </h2>
+    </div>
+    <div class="rm-actions">
+      <%= local_assigns[:extra_actions] %>
+      <div class="rm-group rm-yearnav">
+        <%= link_to '‹', year_path.call(year - 1), class: 'rm-btn', title: (year - 1).to_s %>
+        <span class="rm-btn rm-btn--static"><%= year %></span>
+        <%= link_to '›', year_path.call(year + 1), class: 'rm-btn', title: (year + 1).to_s %>
+        <% if year != today.year %>
+          <%= link_to l(:label_sanan_roadmap_this_year), year_path.call(today.year), class: 'rm-btn' %>
+        <% end %>
+      </div>
+      <div class="rm-group rm-filters">
+        <input type="search" id="rm-search" class="rm-select rm-search" placeholder="<%= l(:label_sanan_roadmap_search) %>" aria-label="<%= l(:label_sanan_roadmap_search) %>">
+        <select id="rm-filter-owner" class="rm-select" aria-label="<%= l(:label_sanan_roadmap_owner) %>">
+          <option value=""><%= l(:label_sanan_roadmap_all_owners) %></option>
+        </select>
+        <select id="rm-filter-status" class="rm-select" aria-label="<%= l(:label_sanan_roadmap_filter_status) %>">
+          <option value=""><%= l(:label_sanan_roadmap_all_story_status) %></option>
+          <% data[:statuses].each do |st| %>
+            <option value="<%= st[:id] %>"><%= h st[:name] %></option>
+          <% end %>
+        </select>
+        <select id="rm-filter-health" class="rm-select" aria-label="<%= l(:label_sanan_roadmap_filter_health) %>">
+          <option value=""><%= l(:label_sanan_roadmap_all_health) %></option>
+          <% SananRoadmapItem::HEALTH_VALUES.each do |hv| %>
+            <option value="<%= hv %>"><%= l(:"label_sanan_roadmap_health_#{hv}") %></option>
+          <% end %>
+        </select>
+      </div>
+      <div class="rm-group rm-toggle" role="group">
+        <button type="button" class="rm-btn is-active" data-rm-view="compact"><%= l(:label_sanan_roadmap_compact) %></button>
+        <button type="button" class="rm-btn" data-rm-view="detailed"><%= l(:label_sanan_roadmap_detailed) %></button>
+      </div>
+      <div class="rm-group">
+        <button type="button" class="rm-btn rm-btn--backlog" data-rm-backlog hidden title="<%= l(:text_sanan_roadmap_unplanned_hint) %>">📥 <%= l(:label_sanan_roadmap_unplanned) %> <span class="rm-count" id="rm-unplanned-count">0</span></button>
+        <button type="button" class="rm-btn" data-rm-print title="<%= l(:text_sanan_roadmap_print_hint) %>">🖨 <%= l(:label_sanan_roadmap_print) %></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rm-kpis" id="rm-kpis"></div>
+
+  <details class="rm-team" id="rm-team">
+    <summary class="rm-team__summary" id="rm-team-summary"></summary>
+    <div class="rm-team__body" id="rm-team-body"></div>
+  </details>
+
+  <div class="rm-layout" id="rm-layout">
+    <div class="rm-main">
+      <div class="rm-board">
+        <div class="rm-scroll" id="rm-board"></div>
+      </div>
+      <div class="rm-legend" id="rm-legend"></div>
+    </div>
+
+    <%# Right drawer: Epic detail / baseline review, or the Unplanned backlog to drag Epics from. %>
+    <aside class="rm-detail" id="rm-detail" hidden aria-label="<%= l(:label_sanan_roadmap_drilldown) %>">
+      <div id="rm-detail-body"></div>
+      <div id="rm-backlog" hidden>
+        <div class="rm-detail__top">
+          <div class="rm-eyebrow">📥 <%= l(:label_sanan_roadmap_unplanned) %></div>
+          <button type="button" class="rm-icon-btn" data-rm-backlog-close title="<%= l(:button_close) %>" aria-label="<%= l(:button_close) %>">&times;</button>
+        </div>
+        <div class="rm-sub"><%= l(:text_sanan_roadmap_unplanned_hint) %></div>
+        <div id="rm-unplanned-body"></div>
+      </div>
+    </aside>
+  </div>
+</div>

@@ -81,6 +81,12 @@ module SananAgile
       # Agile board: hide these trackers from cards/column counts (e.g. Epic)
       'agile_board_hidden_tracker_ids' => [],
 
+      # Product roadmap (quarterly Epic plan)
+      'roadmap_enabled' => '0',
+      'roadmap_status_colors' => {},   # { status_id => '#RRGGBB' }
+      'roadmap_capacity_window' => '5', # closed sprints averaged for team effort/capacity (3 | 5)
+      'roadmap_blocked_status_ids' => [], # Story statuses counted as Blocked (empty = status name contains "block")
+
       # CS / Sale intake backlogs
       'cs_backlog_enabled' => '0',
       'sale_backlog_enabled' => '0',

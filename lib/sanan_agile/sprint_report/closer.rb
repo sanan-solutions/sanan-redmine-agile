@@ -16,7 +16,7 @@ module SananAgile
         return if @cfg.blank?
         return if @cfg['sanan_agile_enabled'].to_s != '1'
 
-        result = Calculator.call(@version, cfg: @cfg, prefer_snapshot: false)
+        result = Calculator.call(@version, cfg: @cfg, prefer_snapshot: false, live_commit: true)
         assign_totals!(result)
         snapshot_commit_ids!
         result
@@ -52,9 +52,9 @@ module SananAgile
       end
 
       def snapshot_commit_ids!
-        calc = Calculator.new(@version, cfg: @cfg, prefer_snapshot: false)
+        calc = Calculator.new(@version, cfg: @cfg, prefer_snapshot: false, live_commit: true)
         meta = @version.sanan_agile_version_meta || @version.build_sanan_agile_version_meta
-        meta.commit_issue_ids_list = calc.committed_issue_ids
+        meta.commit_issue_ids_list = calc.commit_snapshot_ids
         meta.version_id = @version.id
         meta.save
       end

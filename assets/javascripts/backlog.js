@@ -884,10 +884,11 @@
         if ($('#backlog-create-sprint-sale-quota').length) {
           $('#backlog-create-sprint-sale-quota').val($modal.attr('data-default-sale-quota') || '');
         }
-        $('#backlog-create-sprint-commit-sp').val('');
-        $('#backlog-create-sprint-commit-sp-be').val('');
-        $('#backlog-create-sprint-commit-sp-fe').val('');
-        $('#backlog-create-sprint-commit-sp-qa').val('');
+        // New sprint: commit fields start from the velocity (data-default): whole team, then BE / FE / QA.
+        ['', '-be', '-fe', '-qa'].forEach(function (suffix) {
+          var $f = $('#backlog-create-sprint-commit-sp' + suffix);
+          $f.val($f.attr('data-default') || '');
+        });
       }
     }
 

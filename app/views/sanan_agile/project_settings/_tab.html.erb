@@ -28,6 +28,7 @@
       <button type="button" class="sanan-settings__tab is-active" role="tab" aria-selected="true" data-sa-tab="sa-general"><%= l(:label_sanan_settings_general) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-trackers"><%= l(:label_sanan_settings_trackers) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-backlog"><%= l(:label_sanan_settings_backlog) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-roadmap"><%= l(:label_sanan_settings_roadmap) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-board"><%= l(:label_sanan_settings_board) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-intake"><%= l(:label_sanan_settings_intake) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-release"><%= l(:label_sanan_settings_release) %></button>
@@ -162,9 +163,65 @@
             <%= select_tag 'settings[commit_dev_status_ids][]',
                   options_from_collection_for_select(statuses, :id, :name, Array(cfg['commit_dev_status_ids']).map(&:to_i)),
                   multiple: true %>
-            <em><%= l(:text_sanan_commit_dev_statuses_hint) %></em>
+            <em><%= l(:text_sanan_commit_dev_statuses_hint_v2) %></em>
           </span>
         </p>
+      </div>
+    </section>
+
+    <section class="sanan-settings-section" id="sa-roadmap" data-sa-panel="sa-roadmap" role="tabpanel" hidden>
+      <div class="sanan-settings-section__head">
+        <h3 class="sanan-settings-section__title"><%= l(:label_sanan_settings_roadmap) %></h3>
+        <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_roadmap_hint) %></span>
+      </div>
+      <div class="sanan-settings-section__body">
+        <p>
+          <label><%= l(:label_sanan_roadmap_enabled) %></label>
+          <span class="sanan-settings__check">
+            <%= hidden_field_tag 'settings[roadmap_enabled]', '0' %>
+            <%= check_box_tag 'settings[roadmap_enabled]', '1', cfg['roadmap_enabled'].to_s == '1' %>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_roadmap_capacity_window) %></label>
+          <span>
+            <%= select_tag 'settings[roadmap_capacity_window]',
+                  options_for_select([['3', '3'], ['5', '5']], (cfg['roadmap_capacity_window'].presence || '5').to_s) %>
+            <em><%= l(:text_sanan_roadmap_capacity_window_hint) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_roadmap_blocked_statuses) %></label>
+          <span>
+            <%= hidden_field_tag 'settings[roadmap_blocked_status_ids][]', '' %>
+            <%= select_tag 'settings[roadmap_blocked_status_ids][]',
+                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['roadmap_blocked_status_ids']).map(&:to_i)),
+                  multiple: true %>
+            <em><%= l(:text_sanan_roadmap_blocked_statuses_hint) %></em>
+          </span>
+        </p>
+
+        <hr class="sanan-settings__divider">
+        <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_roadmap_status_colors) %></h4>
+        <% roadmap_colors = (cfg['roadmap_status_colors'] || {}).stringify_keys %>
+        <table class="list">
+          <thead>
+            <tr><th>Status</th><th><%= l(:label_sanan_roadmap_color) %></th></tr>
+          </thead>
+          <tbody>
+            <% statuses.each do |st| %>
+              <% val = roadmap_colors[st.id.to_s].presence %>
+              <tr>
+                <td><%= h st.name %><%= ' (closed)' if st.is_closed? %></td>
+                <td>
+                  <input type="color" value="<%= val || (st.is_closed? ? '#22c55e' : '#94a3b8') %>" oninput="this.nextElementSibling.value=this.value">
+                  <%= text_field_tag "settings[roadmap_status_colors][#{st.id}]", val, placeholder: '#RRGGBB', style: 'width:110px' %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+        <p class="info" style="display:block;margin-bottom:12px"><%= l(:text_sanan_roadmap_status_colors_hint) %></p>
       </div>
     </section>
 

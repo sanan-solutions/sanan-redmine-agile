@@ -1,12 +1,19 @@
 <%= render partial: 'sanan_agile/agile_sprint_actions', locals: local_assigns %>
-<%= render partial: 'sanan_agile/issue_header', locals: local_assigns %> %>
+<%= render partial: 'sanan_agile/issue_header', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_sp_badge', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_footer', locals: local_assigns %>
 
 <%
   sa_board_cfg = project && SananAgile::ProjectSettings.load(project.id)
   sa_commit_mode = sa_board_cfg && SananAgile::SprintCommit.enabled?(sa_board_cfg)
+  # Set A: Development / UAT board view. The "Commit" flag follows "This sprint" SP when team SP is configured.
   sa_dev_status_ids = sa_commit_mode ? SananAgile::SprintCommit.status_ids(sa_board_cfg) : []
+  sa_sp_based = sa_commit_mode && SananAgile::SprintCommit.sp_based?(sa_board_cfg)
+  sa_committed_ids = if sa_sp_based && local_assigns[:issues]
+                       SananAgile::SprintCommit.committed_ids_among(issues, sa_board_cfg)
+                     else
+                       []
+                     end
   sa_std_trackers = sa_commit_mode ? Array(sa_board_cfg['standard_tracker']).map(&:to_i).reject(&:zero?) : []
   sa_issue_trackers = if sa_commit_mode && local_assigns[:issues]
                         Array(issues).each_with_object({}) { |i, h| h[i.id] = i.tracker_id }
@@ -19,6 +26,7 @@
                      else
                        {}
                      end
+  sa_issue_versions = local_assigns[:issues] ? Array(issues).to_h { |i| [i.id, i.fixed_version_id.to_s] } : {}
   sa_board_versions = local_assigns[:issues] ? Array(issues).map(&:fixed_version).compact.uniq : []
   sa_current_version = sa_board_versions.size == 1 ? sa_board_versions.first : project&.default_version
   sa_source_filter = sa_commit_mode || sa_dod_cfid.positive?
@@ -32,15 +40,34 @@
   .sa-hidden-by-view { display:none !important; }
 </style>
 <script>
+// Commit state of the cards in this render; re-rendered cards (e.g. after an SP edit) refresh their entry.
+window.SA_COMMITTED = window.SA_COMMITTED || {};
+window.SA_DOD_SPRINT = window.SA_DOD_SPRINT || {};
+window.SA_ISSUE_SPRINT = Object.assign(window.SA_ISSUE_SPRINT || {}, <%= raw sa_issue_versions.to_json %>);
+(function (dod, ids, fresh) {
+  ids.forEach(function (id) { delete dod[id]; }); // DoD may have been cleared on a re-rendered card
+  Object.keys(fresh).forEach(function (id) { dod[id] = fresh[id]; });
+})(window.SA_DOD_SPRINT, <%= raw sa_issue_versions.keys.to_json %>, <%= raw sa_issue_sprints.to_json %>);
+<% if sa_sp_based && local_assigns[:issues] %>
+(function (state, ids) {
+  ids.forEach(function (id) { state[id] = false; });
+  <%= raw sa_committed_ids.to_json %>.forEach(function (id) { state[id] = true; });
+})(window.SA_COMMITTED, <%= raw Array(issues).map(&:id).to_json %>);
+<% end %>
 (function (U) {
   if (window.__saCommitFlagBound) return;
   window.__saCommitFlagBound = true;
   var COMMIT_MODE = <%= sa_commit_mode ? 'true' : 'false' %>;
   var SOURCE_FILTER = <%= sa_source_filter ? 'true' : 'false' %>;
   var DEV = <%= raw sa_dev_status_ids.to_json %>;
+  var SP_BASED = <%= sa_sp_based ? 'true' : 'false' %>;
+  function isCommitted(iid) {
+    var m = window.SA_COMMITTED || {};
+    return !!(m[iid] || m[String(iid)]);
+  }
   var TRACKERS = <%= raw sa_std_trackers.to_json %>;
   var ISSUE_TRACKER = <%= raw sa_issue_trackers.to_json %>;
-  var ISSUE_SPRINT = <%= raw sa_issue_sprints.to_json %>;
+  var ISSUE_SPRINT = window.SA_DOD_SPRINT; // issue id -> sprint where DoD was reached
   var CURRENT_ID = <%= raw (sa_current_version&.id.to_s).to_json %>;
   var CURRENT_NAME = <%= raw (sa_current_version&.name.to_s).to_json %>;
   var L_COMMIT = <%= raw l(:label_sanan_card_commit).to_json %>;
@@ -67,37 +94,37 @@
   function fromTitle(name) {
     return L_FROM.replace('__NAME__', name || '');
   }
-  function flag(card) {
-    if (!U || !U.findIssueId) return;
-    var iid = U.findIssueId(card);
-    var existing = Array.prototype.slice.call(card.querySelectorAll('.sa-commit-flag'));
-    var entry = sprintEntry(iid);
-    var sid = U.statusIdFromDOM ? U.statusIdFromDOM(card) : null;
-    var on = COMMIT_MODE && iid && relevant(iid) && sid != null && DEV.indexOf(sid) !== -1;
-    if (iid) {
-      card.dataset.ticketSource = on ? '__current__' : (entry.id || '');
-    }
-    if (!COMMIT_MODE || !iid || !relevant(iid)) {
-      existing.forEach(function (n) { n.remove(); });
-      return;
-    }
-    var extra = card.querySelector('.sa-card-extra') || card;
-    var el = existing[0];
-    existing.slice(1).forEach(function (n) { n.remove(); });
-    var label = on ? L_COMMIT : entry.name;
-    if (!label) {
-      existing.forEach(function (n) { n.remove(); });
-      return;
-    }
+  // One tag per card: "Commit" (has This-sprint SP), otherwise the name of the sprint where the ticket reached
+  // DoD when that is another sprint than its current one (UAT bugs become new tickets, so a carried-over
+  // DoD ticket is not expected to be committed again; if it is, "Commit" wins).
+  function setTag(card, extra, cls, text, title) {
+    var el = card.querySelector('.sa-commit-flag.' + cls);
+    if (!text) { if (el) el.remove(); return; }
     if (!el) {
       el = document.createElement('span');
+      el.className = 'sa-commit-flag ' + cls;
       extra.appendChild(el);
     } else if (el.parentNode !== extra) {
       extra.appendChild(el);
     }
-    el.className = 'sa-commit-flag ' + (on ? 'sa-commit-flag--yes' : 'sa-commit-flag--uat');
-    el.textContent = label;
-    el.title = on ? L_COMMIT : fromTitle(entry.name);
+    el.textContent = text;
+    el.title = title;
+  }
+  function flag(card) {
+    if (!U || !U.findIssueId) return;
+    var iid = U.findIssueId(card);
+    if (!iid) return;
+    var entry = sprintEntry(iid);
+    var sid = U.statusIdFromDOM ? U.statusIdFromDOM(card) : null;
+    var on = COMMIT_MODE && relevant(iid) && (SP_BASED
+      ? isCommitted(iid)
+      : (sid != null && DEV.indexOf(sid) !== -1));
+    card.dataset.ticketSource = on ? '__current__' : (entry.id || '');
+    var own = window.SA_ISSUE_SPRINT[iid] || window.SA_ISSUE_SPRINT[String(iid)] || String(CURRENT_ID || '');
+    var dodElsewhere = !on && !!entry.id && entry.id !== String(own);
+    var extra = card.querySelector('.sa-card-extra') || card;
+    setTag(card, extra, 'sa-commit-flag--yes', on ? L_COMMIT : '', L_COMMIT);
+    setTag(card, extra, 'sa-commit-flag--uat', dodElsewhere ? entry.name : '', fromTitle(entry.name));
   }
   function uniqueFromSprints() {
     var seen = {};
@@ -206,7 +233,11 @@
 </script>
 <% end %>
 
-<% if project && project.default_version %>
+<%# Show the active sprint as the default Target version filter row — only when the query has no
+    version filter at all. Never when the user picked one (e.g. a closed sprint): this script runs before
+    Redmine rebuilds the filters from the URL, and adding a row first would replace the chosen value. %>
+<% sa_query_filters = (@query.respond_to?(:filters) && @query.filters) || {} %>
+<% if project && project.default_version && !(sa_query_filters.key?('fixed_version_id') || sa_query_filters.key?(:fixed_version_id)) %>
 <script>
 (function () {
   var VID = <%= raw project.default_version.id.to_s.to_json %>;

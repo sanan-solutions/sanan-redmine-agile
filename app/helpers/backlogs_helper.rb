@@ -263,36 +263,44 @@ module BacklogsHelper
     end.join(' → ')
   end
 
+  # Commit SP fields of the create / edit sprint modal. On a new sprint each field defaults to the matching
+  # velocity (whole team for Commit SP, else that team): average Actual SP of the last N closed sprints
+  # (N = Velocity window setting).
   def backlog_sprint_commit_sp_fields
     cfg = @settings || {}
+    velocity = @velocity
     [
       {
         param: :commit_sp,
         input_id: 'backlog-create-sprint-commit-sp',
         issue_key: 'story_point_cfid',
         version_key: 'sp_commit_version_cfid',
-        label: "#{l(:label_sprint_report_commit)} SP"
+        label: "#{l(:label_sprint_report_commit)} SP",
+        default: velocity&.sp
       },
       {
         param: :commit_sp_be,
         input_id: 'backlog-create-sprint-commit-sp-be',
         issue_key: 'sp_be_cfid',
         version_key: 'sp_be_commit_version_cfid',
-        label: l(:label_sprint_report_sp_be)
+        label: l(:label_backlog_commit_be_sp),
+        default: velocity&.be
       },
       {
         param: :commit_sp_fe,
         input_id: 'backlog-create-sprint-commit-sp-fe',
         issue_key: 'sp_fe_cfid',
         version_key: 'sp_fe_commit_version_cfid',
-        label: l(:label_sprint_report_sp_fe)
+        label: l(:label_backlog_commit_fe_sp),
+        default: velocity&.fe
       },
       {
         param: :commit_sp_qa,
         input_id: 'backlog-create-sprint-commit-sp-qa',
         issue_key: 'sp_qa_cfid',
         version_key: 'sp_qa_commit_version_cfid',
-        label: l(:label_sprint_report_sp_qa)
+        label: l(:label_backlog_commit_qa_sp),
+        default: velocity&.qa
       }
     ].select do |row|
       cfg[row[:issue_key]].to_i.positive? || cfg[row[:version_key]].to_i.positive?

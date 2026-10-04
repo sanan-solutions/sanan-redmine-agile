@@ -45,6 +45,11 @@ module SananAgile
       self.class.window_from(@cfg)
     end
 
+    # Last N closed sprint versions (oldest first), without computing actuals.
+    def recent_closed_sprints
+      closed_sprints
+    end
+
     private
 
     def closed_sprints

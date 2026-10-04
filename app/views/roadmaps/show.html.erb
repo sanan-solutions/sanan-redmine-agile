@@ -1,0 +1,8 @@
+<% html_title l(:label_sanan_roadmap) %>
+<%= render partial: 'roadmaps/board', locals: {
+      data: @data,
+      year: @year,
+      eyebrow: "#{l(:label_sanan_roadmap)} · #{@project.name}",
+      year_path: ->(y) { project_product_roadmap_path(@project, year: y) },
+      data_url: project_product_roadmap_data_path(@project, year: @year)
+    } %>

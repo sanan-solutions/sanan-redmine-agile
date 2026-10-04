@@ -19,13 +19,15 @@ module SananAgile
       params = context[:params]
       return unless issue && params
 
+      cfg = SananAgile::ProjectSettings.load(issue.project_id) if issue.project_id
+      return if cfg && SananAgile::SpTotalFormula.subtask?(issue, cfg) # personal SP only
+
       size = params[:sanan_sp_size]
       issue.sanan_sp_size_attrs = size unless size.nil?
 
       sprint = params[:sanan_sp_sprint]
       issue.sanan_sp_sprint_attrs = sprint unless sprint.nil?
 
-      cfg = SananAgile::ProjectSettings.load(issue.project_id) if issue.project_id
       SananAgile::SpTotalFormula.apply_issue!(issue, cfg) if cfg
     end
   end

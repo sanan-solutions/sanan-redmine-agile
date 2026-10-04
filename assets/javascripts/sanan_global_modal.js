@@ -703,6 +703,27 @@ function bootSananGlobalModal() {
       });
   }
 
+  // Public API for pages that drive the modal themselves (e.g. Product Roadmap).
+  // Pair with the `sanan:issue-saved` event dispatched after a successful submit.
+  window.SANAN_globalModal = {
+    createIssue: function (url) {
+      isWasSubmitted = false;
+      hideBacklogTicketNav();
+      handleCreateIssueModal(url);
+    },
+    viewIssue: function (issueId) {
+      isWasSubmitted = false;
+      hideBacklogTicketNav();
+      return handleViewIssueModal(issueId);
+    }
+  };
+
+  function notifyIssueSaved(issueId, isCreate) {
+    document.dispatchEvent(new CustomEvent('sanan:issue-saved', {
+      detail: { issueId: issueId ? String(issueId) : null, isCreate: !!isCreate }
+    }));
+  }
+
   initPreviewToolbar()
   initBtnScrollTop()
   initCloseBtn()
@@ -1000,6 +1021,12 @@ function bootSananGlobalModal() {
           throw new Error("response status not ok")
         }
 
+        // "Create and continue": Redmine redirects back to a fresh new-issue form.
+        if (isCreate && /\/issues\/new$/.test(new URL(response.url, location.origin).pathname)) {
+          notifyIssueSaved(null, true);
+          return handleCreateIssueModal(response.url);
+        }
+
         if (isCreate) {
             const arrUrl = response.url.split('/')
             issueId = arrUrl[arrUrl.length - 1]
@@ -1031,6 +1058,7 @@ function bootSananGlobalModal() {
             });
           }
 
+          notifyIssueSaved(issueId, isCreate);
           handleViewAfterSubmit(issueId)
       }).catch(error => {
         console.error(error);

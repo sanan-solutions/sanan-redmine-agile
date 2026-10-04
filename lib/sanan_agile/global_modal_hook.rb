@@ -3,12 +3,15 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
     # cfg = get_project_setting(context)
     # return '' unless %w(1 true yes on).include?(cfg['sanan_agile_enabled'].to_s.strip.downcase)
 
+    # Wiki toolbar for issue forms opened in the global modal, through Redmine's own helper: it is added
+    # to :header_tags once per page (a no-op when the page already did it, e.g. New/Edit issue) and uses
+    # the text formatting configured in Settings. Including jstoolbar.js twice redeclares its top-level
+    # `let` and breaks the page script.
+    view = context[:hook_caller]
+    # (ApplicationHelper#wiki_helper is private, hence send.)
+    view.send(:wiki_helper).heads_for_wiki_formatter if view.respond_to?(:wiki_helper, true)
+
     tags = <<-HTML
-      <link rel="stylesheet" href="/stylesheets/jstoolbar.css" />
-      <script src="/javascripts/jstoolbar/jstoolbar.js"></script>
-      <script src="/javascripts/jstoolbar/common_mark.js"></script>
-      <script src="/javascripts/jstoolbar/textile.js"></script>
-      <script src="/javascripts/jstoolbar/lang/jstoolbar-en.js"></script>
       <script src="/javascripts/tribute-5.1.3.min.js"></script>
       <script src="/javascripts/context_menu.js"></script>
       <script src="/javascripts/attachments.js"></script>
@@ -22,7 +25,7 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
     enable = sanan_truthy?(cfg['sanan_agile_enabled'])
 
     modal_js = if enable
-      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js?v=20260922a'
+      '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal.js?v=20261002a'
     else
       '/plugin_assets/sanan_redmine_agile/javascripts/sanan_global_modal_mini.js'
     end
@@ -71,7 +74,9 @@ class SananAgile::GlobalModalHook < Redmine::Hook::ViewListener
   private
   def get_project_setting(ctx={})
     c = ctx[:controller]
-    return '' unless c && %w[agile_boards issues releases backlogs].include?(c.controller_name)
+    # Portfolio roadmap spans products: always use the full modal there.
+    return { 'sanan_agile_enabled' => '1' } if c && c.controller_name == 'portfolio_roadmaps'
+    return '' unless c && %w[agile_boards issues releases backlogs roadmaps].include?(c.controller_name)
 
     project = ctx[:project] ||
               c.instance_variable_get(:@project) ||

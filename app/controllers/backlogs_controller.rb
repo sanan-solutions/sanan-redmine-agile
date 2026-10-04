@@ -203,7 +203,7 @@ class BacklogsController < ApplicationController
       return render_403
     end
 
-    dod_ids = apply_complete_dod!(version)
+    apply_complete_dod!(version)
     apply_sprint_goal_met!(version)
 
     if @project.default_version_id == version.id
@@ -217,7 +217,7 @@ class BacklogsController < ApplicationController
       return redirect_to project_backlog_path(@project)
     end
 
-    move_unfinished_after_complete!(version, params[:move_unfinished_to].to_s, dod_ids)
+    move_unfinished_after_complete!(version, params[:move_unfinished_to].to_s)
     flash[:notice] = l(:notice_successful_update)
     if User.current.allowed_to?(:view_sprint_reports, @project)
       redirect_to project_sprint_report_path(@project, version)
@@ -861,9 +861,10 @@ class BacklogsController < ApplicationController
     meta.save
   end
 
-  def move_unfinished_after_complete!(version, move_to, keep_ids)
+  # Every open ticket moves on, DoD-reached ones included (e.g. waiting for UAT): the DoD field already
+  # records the sprint where DoD was reached. Moving snapshots this sprint's team SP and clears it.
+  def move_unfinished_after_complete!(version, move_to)
     unfinished = unfinished_issues_for(version)
-    unfinished = unfinished.where.not(id: keep_ids) if keep_ids.present?
 
     case move_to
     when 'backlog'

@@ -25,8 +25,33 @@
   <% sp_require_qa = defined?(SananAgile::SpTotalFormula) && SananAgile::SpTotalFormula.require_qa?(cfg) %>
   <% size_total_val = sanan_cf_value_object_for(issue, total_cf)&.value.presence || issue.custom_field_value(total_cf) %>
   <% sprint_total_val = sprint_row&.sp_total %>
+  <%# Sub-task: personal SP only (no team sizes, no derived Total). %>
+  <% personal_only = defined?(SananAgile::SpTotalFormula) && SananAgile::SpTotalFormula.subtask?(issue, cfg) %>
+  <% if personal_only %>
+    <% hide_ids = [total_cf, be_cf, fe_cf, qa_cf].select(&:positive?) %>
+    <% hide_ids += sanan_sprint_done_cf_ids_for(project) if respond_to?(:sanan_sprint_done_cf_ids_for) %>
+    <% sp_formula = 'manual' %>
+    <% sp_require_qa = false %>
+  <% end %>
 
-  <% if show_size || show_sprint %>
+  <% if personal_only && total_on %>
+    <div class="sanan-sp-forms">
+      <fieldset class="sanan-sp-form" id="sanan-sp-personal-form">
+        <legend><%= l(:label_sanan_sp_personal) %></legend>
+        <p class="sanan-sp-form__hint"><%= l(:text_sanan_sp_personal_hint) %></p>
+        <div class="sanan-sp-form__grid">
+          <p>
+            <label for="sanan_sp_cf_<%= total_cf %>"><%= l(:label_sanan_sp_personal) %></label>
+            <%= sanan_sp_fibo_select "issue[custom_field_values][#{total_cf}]",
+                  size_total_val,
+                  id: "sanan_sp_cf_#{total_cf}",
+                  class: 'sanan-sp-input',
+                  data: { sanan_sp_role: 'total', sanan_sp_group: 'personal' } %>
+          </p>
+        </div>
+      </fieldset>
+    </div>
+  <% elsif show_size || show_sprint %>
     <div class="sanan-sp-forms">
       <% if show_size %>
         <fieldset class="sanan-sp-form" id="sanan-sp-size-form">

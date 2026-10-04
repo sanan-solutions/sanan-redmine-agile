@@ -20,11 +20,14 @@ module SananAgile
       IntakeBucket = Struct.new(:source, :count, :sp, keyword_init: true)
       IntakeQuota = Struct.new(:source, :quota, :used, :remaining, :pct_of_commit, keyword_init: true)
 
-      def self.call(version, cfg: nil, prefer_snapshot: nil, metrics_only: false)
-        new(version, cfg: cfg, prefer_snapshot: prefer_snapshot, metrics_only: metrics_only).call
+      def self.call(version, cfg: nil, prefer_snapshot: nil, metrics_only: false, live_commit: false)
+        new(version, cfg: cfg, prefer_snapshot: prefer_snapshot, metrics_only: metrics_only,
+                     live_commit: live_commit).call
       end
 
-      def initialize(version, cfg: nil, prefer_snapshot: nil, metrics_only: false)
+      # live_commit: use the commit set as it stands now even for a closed version (Closer, at close time,
+      # before the commit snapshot is written).
+      def initialize(version, cfg: nil, prefer_snapshot: nil, metrics_only: false, live_commit: false)
         @version = version
         @project = version.project
         @cfg = cfg || SananAgile::ProjectSettings.load(@project.id)
@@ -32,6 +35,7 @@ module SananAgile
         @sid_str = version.id.to_s
         @prefer_snapshot = prefer_snapshot.nil? ? version.status.to_s == 'closed' : prefer_snapshot
         @metrics_only = metrics_only
+        @live_commit = live_commit
       end
 
       def call
@@ -78,6 +82,16 @@ module SananAgile
         end
       end
 
+      # Ticket ids committed in this sprint (Closer snapshots them at close).
+      def commit_snapshot_ids
+        committed_issue_ids
+      end
+
+      # Per-assignee SP of closed sub-tasks in this sprint, without the rest of the report.
+      def member_breakdown
+        member_rows
+      end
+
       def base_result_attrs
         meta = @version.sanan_agile_version_meta
         {
@@ -104,13 +118,19 @@ module SananAgile
         { sp: be + fe + qa, be: be, fe: fe, qa: qa }
       end
 
+      # Closed sprint: the commit set captured at close (else the set as it stands). Tickets removed during
+      # the sprint are no longer commit and are not counted. A ticket moved on at Complete had its sprint
+      # SP cleared, so its part SP comes from this sprint's history row; others use their live value.
       def closed_sprint_commit_totals
-        return live_sprint_commit_totals unless defined?(SananIssueSprintSp)
+        snap = @live_commit ? nil : @version.sanan_agile_version_meta&.commit_issue_ids_list
+        ids = snap.present? ? snap : committed_issue_ids
+        return { sp: 0.0, be: 0.0, fe: 0.0, qa: 0.0 } if ids.empty?
+        return live_sprint_commit_totals(ids) unless defined?(SananIssueSprintSp)
 
-        hist = SananIssueSprintSp.where(version_id: @sid)
-        hist_ids = hist.distinct.pluck(:issue_id)
-        remaining = committed_issue_ids - hist_ids
-        live = remaining.any? ? live_sprint_commit_totals(remaining) : { sp: 0.0, be: 0.0, fe: 0.0, qa: 0.0 }
+        still_here = Issue.where(id: ids, fixed_version_id: @sid).pluck(:id)
+        moved = ids - still_here
+        hist = SananIssueSprintSp.where(version_id: @sid, issue_id: moved)
+        live = still_here.any? ? live_sprint_commit_totals(still_here) : { be: 0.0, fe: 0.0, qa: 0.0 }
         be = hist.sum(:sp_be).to_f + live[:be].to_f
         fe = hist.sum(:sp_fe).to_f + live[:fe].to_f
         qa = hist.sum(:sp_qa).to_f + live[:qa].to_f
@@ -248,7 +268,7 @@ module SananAgile
 
       def resolved_committed_ids
         @resolved_committed_ids ||= begin
-          if @version.status.to_s == 'closed'
+          if @version.status.to_s == 'closed' && !@live_commit
             snap = @version.sanan_agile_version_meta&.commit_issue_ids_list
             snap.present? ? snap : fallback_committed_ids
           else

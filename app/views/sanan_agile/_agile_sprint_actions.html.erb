@@ -2,10 +2,17 @@
   sa_project = local_assigns[:project] || @project
   sa_cfg = sa_project && SananAgile::ProjectSettings.load(sa_project.id)
   sa_enabled = sa_cfg && %w[1 true yes on].include?(sa_cfg['sanan_agile_enabled'].to_s.strip.downcase)
-  sa_version = sa_enabled && sa_project&.default_version
-  sa_version = nil unless sa_version && sa_version.status.to_s == 'open'
+  # The sprint the board is showing: a single Target version picked in the filters, else the active sprint.
+  sa_filter = (@query.respond_to?(:filters) && @query.filters || {})['fixed_version_id'] || {}
+  sa_filter_values = Array(sa_filter[:values] || sa_filter['values'])
+  sa_filter_op = (sa_filter[:operator] || sa_filter['operator']).to_s
+  sa_version = if sa_enabled && sa_filter_op == '=' && sa_filter_values.size == 1 && sa_filter_values.first.to_s =~ /\A\d+\z/
+                 sa_project.shared_versions.find_by(id: sa_filter_values.first.to_i)
+               end
+  sa_version ||= sa_enabled && sa_project&.default_version
   sa_can_view = sa_version && User.current.allowed_to?(:view_sprint_reports, sa_project)
-  sa_can_complete = sa_version &&
+  # Only an open sprint can be completed (a closed one viewed on the board keeps "Sprint details" only).
+  sa_can_complete = sa_version && sa_version.status.to_s == 'open' &&
                     User.current.allowed_to?(:manage_backlog, sa_project) &&
                     User.current.allowed_to?(:manage_versions, sa_project)
 %>

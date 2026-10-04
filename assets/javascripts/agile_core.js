@@ -272,16 +272,20 @@
   function ensureBoardFilterBar() {
     var bar = document.getElementById('sa-board-filterbar');
     if (bar) return bar;
-    var anchor = document.querySelector('.agile-board-header, .agile-board .query-totals, .agile-board')
-      || document.querySelector('#content');
-    if (!anchor) return null;
+    var anchor = document.querySelector('.agile-board-header, .agile-board .query-totals, .agile-board');
+    // Empty board (no .agile-board, e.g. a sprint with no open ticket): sit where the board would be,
+    // right above the "No data" message — not at the top of #content, above the page title.
+    var emptyBoard = !anchor && document.querySelector('#query_form .nodata, #content .nodata');
+    if (!anchor && !emptyBoard) anchor = document.querySelector('#content');
+    if (!anchor && !emptyBoard) return null;
     bar = document.createElement('div');
     bar.id = 'sa-board-filterbar';
     bar.className = 'sa-board-filterbar';
     bar.innerHTML =
       '<div class="sa-board-filterbar__fields"></div>' +
       '<button type="button" id="sa-board-filter-clear">Clear</button>';
-    if (anchor.firstChild) anchor.insertBefore(bar, anchor.firstChild);
+    if (emptyBoard) emptyBoard.parentNode.insertBefore(bar, emptyBoard);
+    else if (anchor.firstChild) anchor.insertBefore(bar, anchor.firstChild);
     else anchor.appendChild(bar);
     bar.querySelector('#sa-board-filter-clear').addEventListener('click', function () {
       var ev = document.createEvent('HTMLEvents');

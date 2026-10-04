@@ -88,22 +88,23 @@
     <section class="sr-card">
       <h3><%= l(:label_sprint_report_actual) %></h3>
       <div class="sr-kpis">
-        <div class="sr-kpi sr-kpi--total">
-          <span class="sr-kpi__label"><%= l(:label_sprint_report_sp) %></span>
+        <%# Total = SP of tickets reaching DoD (delivered value) — not comparable with the commit total, which is
+            the sum of committed parts. Commit is compared part by part (BE / FE / QA). %>
+        <div class="sr-kpi sr-kpi--total" title="<%= l(:text_sprint_report_dod_sp_hint) %>">
+          <span class="sr-kpi__label"><%= l(:label_sprint_report_dod_sp) %></span>
           <span class="sr-kpi__value"><%= sprint_report_number(@report.actual_sp) %></span>
         </div>
-        <div class="sr-kpi">
-          <span class="sr-kpi__label"><%= l(:label_sprint_report_sp_be) %></span>
-          <span class="sr-kpi__value"><%= sprint_report_number(@report.actual_be) %></span>
-        </div>
-        <div class="sr-kpi">
-          <span class="sr-kpi__label"><%= l(:label_sprint_report_sp_fe) %></span>
-          <span class="sr-kpi__value"><%= sprint_report_number(@report.actual_fe) %></span>
-        </div>
-        <div class="sr-kpi">
-          <span class="sr-kpi__label"><%= l(:label_sprint_report_sp_qa) %></span>
-          <span class="sr-kpi__value"><%= sprint_report_number(@report.actual_qa) %></span>
-        </div>
+        <% [[:label_sprint_report_sp_be, @report.actual_be, @report.commit_be],
+            [:label_sprint_report_sp_fe, @report.actual_fe, @report.commit_fe],
+            [:label_sprint_report_sp_qa, @report.actual_qa, @report.commit_qa]].each do |label, actual, commit| %>
+          <div class="sr-kpi">
+            <span class="sr-kpi__label"><%= l(label) %></span>
+            <span class="sr-kpi__value"><%= sprint_report_number(actual) %></span>
+            <% if commit.to_f.positive? %>
+              <span class="sr-kpi__pct" title="<%= l(:text_sprint_report_part_pct_hint) %>"><%= l(:label_sprint_report_part_pct, pct: (actual.to_f * 100 / commit.to_f).round) %></span>
+            <% end %>
+          </div>
+        <% end %>
       </div>
     </section>
   </div>
