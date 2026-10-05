@@ -16,13 +16,9 @@ module SananAgile
 
       if want_checked
         # ---- SET: gán Version vào CF ----
-        assignable = @issue.assignable_versions
-        version = nil
-        if (vid = @issue.project.default_version_id)
-          version = assignable.find { |v| v.id == vid }
-        end
-        version ||= assignable.open.reorder(Arel.sql('effective_date IS NULL, effective_date ASC, id DESC')).first
-        return render json: { ok: false, error: 'No version found (not assignable)' }, status: 422 unless version
+        # The ticket's own sprint; default / nearest open version while it is not on a sprint.
+        version = SananAgile::DoneInSprint.version_for(@issue, cfg)
+        return render json: { ok: false, error: 'No version found' }, status: 422 unless version
 
         cf  = IssueCustomField.find_by(id: cfid)
         val = (cf && cf.field_format == 'version') ? version.id.to_s : version.name.to_s

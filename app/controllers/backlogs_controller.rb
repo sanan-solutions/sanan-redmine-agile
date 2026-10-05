@@ -812,20 +812,10 @@ class BacklogsController < ApplicationController
     scope
   end
 
-  def complete_dod_eligible_ids(version)
-    status_ids = Array(@settings['dod_checkbox_statuses']).map(&:to_i).reject(&:zero?)
-    return [] if status_ids.empty?
-
-    scope = Issue.where(project_id: @project.id, fixed_version_id: version.id, status_id: status_ids)
-    tracker_ids = Array(@settings['dod_checkbox_trackers']).map(&:to_i).reject(&:zero?)
-    scope = scope.where(tracker_id: tracker_ids) if tracker_ids.any?
-    scope.pluck(:id)
-  end
-
   def apply_complete_dod!(version)
     return [] unless params[:dod_confirmed].present?
 
-    eligible = complete_dod_eligible_ids(version)
+    eligible = SananAgile::DodSprint.complete_candidate_ids(version, @settings)
     selected = Array(params[:dod_issue_ids]).map(&:to_i) & eligible
     dod_cfid = @settings['dod_cfid'].to_i
     return selected if dod_cfid <= 0 || eligible.empty?

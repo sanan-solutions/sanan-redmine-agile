@@ -43,6 +43,11 @@ Rails.application.routes.draw do
         to: 'sprint_reports#show',
         as: :sprint_report
 
+    # Agile board backlog panel
+    get 'agile_board_backlog', to: 'sanan_agile/board_backlog#index', as: :sanan_board_backlog
+    post 'agile_board_backlog/pull', to: 'sanan_agile/board_backlog#pull', as: :sanan_board_backlog_pull
+    post 'agile_board_backlog/push', to: 'sanan_agile/board_backlog#push', as: :sanan_board_backlog_push
+
     # Backlog (Sprint = Version)
     get 'backlog', to: 'backlogs#show', as: :backlog
     get 'backlog/sections', to: 'backlogs#sections', as: :backlog_sections

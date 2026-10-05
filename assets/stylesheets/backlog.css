@@ -1070,6 +1070,22 @@ body.controller-sale_backlogs #content {
   border-bottom: 0;
 }
 
+/* Dragging a ticket: collapsed sections take drops on their header. */
+.sanan-backlog.is-dragging .backlog-section.is-collapsed .backlog-section-header {
+  outline: 2px dashed #b3c5ef;
+  outline-offset: -4px;
+}
+
+.sanan-backlog.is-dragging .backlog-section.is-collapsed .backlog-section-header.is-drop-hover {
+  outline-color: #0c66e4;
+  background: #e9f2ff;
+}
+
+.sanan-backlog .backlog-section.is-drop-done > .backlog-section-header {
+  background: #dcfff1;
+  transition: background 0.3s;
+}
+
 .sanan-backlog .backlog-section-active > .backlog-section-header {
   background: linear-gradient(180deg, #f5f9ff 0%, #ffffff 100%);
 }

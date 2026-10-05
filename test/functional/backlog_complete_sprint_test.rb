@@ -21,9 +21,10 @@ class BacklogCompleteSprintTest < Redmine::ControllerTest
     @request.session[:user_id] = 2
   end
 
-  def ticket(status_id, subject)
+  def ticket(status_id, subject, cf_values = {})
     Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: subject, status_id: status_id,
-                  fixed_version: @sprint, priority: IssuePriority.default || IssuePriority.first)
+                  fixed_version: @sprint, priority: IssuePriority.default || IssuePriority.first,
+                  custom_field_values: cf_values)
   end
 
   def test_dod_ticket_moves_to_next_sprint_and_keeps_dod_sprint
@@ -43,5 +44,33 @@ class BacklogCompleteSprintTest < Redmine::ControllerTest
     post :complete_sprint, params: { project_id: @project.identifier, version_id: @sprint.id,
                                      move_unfinished_to: @next.id }
     assert_equal @sprint.id, done.reload.fixed_version_id
+  end
+
+  def test_dod_candidates_skip_tickets_already_dod_in_another_sprint
+    @project.reload
+    earlier = ticket(2, 'DoD last sprint, UAT here', @dod_cf.id.to_s => 'Sprint 0')
+    fresh = ticket(2, 'Reached DoD here')
+
+    ids = SananAgile::DodSprint.complete_candidate_ids(@sprint, roadmap_cfg(@project))
+    assert_equal [fresh.id], ids
+
+    post :complete_sprint, params: { project_id: @project.identifier, version_id: @sprint.id,
+                                     dod_confirmed: '1', dod_issue_ids: [earlier.id, fresh.id],
+                                     move_unfinished_to: @next.id }
+    assert_equal 'Sprint 0', earlier.reload.custom_field_value(@dod_cf)
+    assert_equal 'Sprint A', fresh.reload.custom_field_value(@dod_cf)
+  end
+
+  def test_dod_candidates_are_only_committed_tickets
+    sp_be = IssueCustomField.create!(name: 'SP BE sprint', field_format: 'float', is_for_all: true, tracker_ids: [1])
+    enable_roadmap!(@project, 'backlog_enabled' => '1', 'dod_cfid' => @dod_cf.id.to_s, 'sp_be_cfid' => sp_be.id.to_s,
+                              'dod_checkbox_statuses' => ['2'], 'standard_tracker' => ['1'])
+    @project.reload
+    committed = Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'Committed', status_id: 2,
+                              fixed_version: @sprint, priority: IssuePriority.first,
+                              custom_field_values: { sp_be.id.to_s => '3' })
+    ticket(2, 'Not committed')
+
+    assert_equal [committed.id], SananAgile::DodSprint.complete_candidate_ids(@sprint, roadmap_cfg(@project))
   end
 end

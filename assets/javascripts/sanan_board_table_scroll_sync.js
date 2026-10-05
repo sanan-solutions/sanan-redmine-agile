@@ -18,16 +18,26 @@
     const scroller = findScrollParentX(body);
 
     // Căn độ rộng header theo nội dung body
+    // The fixed header is not clipped by the scroll wrapper: clip it to the wrapper's visible width, so the
+    // part scrolled out on the left does not cover what sits beside the board (sidebar, backlog panel).
+    const clip = () => {
+      const left = scroller.scrollLeft;
+      const right = Math.max(0, header.offsetWidth - left - scroller.clientWidth);
+      header.style.clipPath = 'inset(0 ' + right + 'px 0 ' + left + 'px)';
+    };
+
     const applyWidths = () => {
       const w = Math.max(body.scrollWidth, body.clientWidth);
       header.style.width = w + 'px';          // bề rộng toàn bảng header
       // Dịch trái theo scrollLeft để “đi theo” phần đang nhìn của body
       header.style.marginLeft = (-scroller.scrollLeft) + 'px';
+      clip();
     };
 
     // Đồng bộ khi kéo ngang
     const onScroll = () => {
       header.style.marginLeft = (-scroller.scrollLeft) + 'px';
+      clip();
     };
 
     // Gỡ listener cũ nếu có

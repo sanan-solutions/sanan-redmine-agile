@@ -103,7 +103,7 @@ class ReleasesController < ApplicationController
     # settings = SananAgile::ProjectSettings.load(@project.id)
 
     # ===== ONLY PARENTS =====
-    dev_done_cfid = @settings['development_done_cfid'].to_i
+    dev_done_cfid = @settings['done_qa_cfid'].to_i
     @from_sprint_by_issue = {}
     if dev_done_cfid.positive? && parent_ids.any?
       cv_pairs     = CustomValue.where(customized_type: 'Issue',
@@ -178,7 +178,7 @@ class ReleasesController < ApplicationController
     epic_tracker_id = @settings['epic_tracker'].presence.to_i if @settings['epic_tracker'].present?
     standard_ids    = Array(@settings['standard_tracker']).map(&:to_i).presence
     can_add_child_issue_standard   = @settings['release_add_child_issue_standard_tracker'].to_s == '1'
-    dev_done_cfid   = @settings['development_done_cfid'].to_i # <— CF id
+    dev_done_cfid   = @settings['done_qa_cfid'].to_i # <— CF id
 
     # 🚨 Kiểm tra cấu hình bắt buộc
     if epic_tracker_id.blank? || standard_ids.blank?

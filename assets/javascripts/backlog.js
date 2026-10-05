@@ -179,6 +179,15 @@
       stop: function (e, ui) {
         $root.removeClass('is-dragging');
         var $item = ui.item;
+        // Dropped on a collapsed section's header (e.g. a sprint not started yet): move the row into it.
+        var $dropSection = $item.data('dropSection');
+        $item.removeData('dropSection');
+        if ($dropSection && $dropSection.length) {
+          var $target = $dropSection.find('.backlog-section-list').first();
+          removeEmptyPlaceholders($target);
+          $target.append($item);
+          flashSection($dropSection);
+        }
         var $list = $item.closest('.backlog-section-list');
         var issueId = $item.attr('data-id') || $item.data('id');
         var toVersionId = versionIdOf($list);
@@ -218,6 +227,30 @@
         });
       }
     }).disableSelection();
+
+    // Collapsed sections (sprints not started are collapsed by default) hide their list, so their
+    // header is the drop target.
+    if ($.fn.droppable) {
+      $root.find('.backlog-section-header').each(function () {
+        var $header = $(this);
+        if ($header.data('ui-droppable')) $header.droppable('destroy');
+        $header.droppable({
+          accept: function () {
+            return $header.closest('.backlog-section').hasClass('is-collapsed');
+          },
+          tolerance: 'pointer',
+          hoverClass: 'is-drop-hover',
+          drop: function (e, ui) {
+            ui.draggable.data('dropSection', $header.closest('.backlog-section'));
+          }
+        });
+      });
+    }
+  }
+
+  function flashSection($section) {
+    $section.addClass('is-drop-done');
+    window.setTimeout(function () { $section.removeClass('is-drop-done'); }, 1200);
   }
 
   $(document).ready(function () {

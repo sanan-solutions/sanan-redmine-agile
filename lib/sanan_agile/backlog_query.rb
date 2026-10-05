@@ -62,6 +62,13 @@ module SananAgile
       }
     end
 
+
+    # Open tickets of the Product Backlog (version_id nil) or of a sprint, with the backlog filters applied.
+    def open_issues_scope(version_id = nil)
+      scope = version_id ? filtered_scope.where(fixed_version_id: version_id) : backlog_issues_scope
+      scope.where(status_id: IssueStatus.where(is_closed: false).select(:id))
+    end
+
     private
 
     def active_section

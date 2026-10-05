@@ -10,6 +10,7 @@ module SananAgile
                       :sanan_skip_commit_lock
         validate :sanan_protect_commit_lock, if: :sanan_check_commit_lock?
         before_save :sanan_snapshot_sprint_sp_on_version_change
+        before_save :sanan_stamp_done_in_sprint
         # chạy sau khi issue lưu (insert/update)
         after_save :sanan_agile_after_save
         after_destroy :sanan_remove_roadmap_item
@@ -71,17 +72,7 @@ module SananAgile
         maybe_close_parent_epic!(cfg)
         persist_sanan_sp_size
         persist_sanan_sp_sprint
-
-        # Lấy Version để ghi:
-        # - Ưu tiên Default Version của project
-        # - Nếu không có, fallback theo pick_version như Dev Done
-        picked_version = pick_version(cfg) || project.default_version
-        return unless picked_version
-
         sync_story_points_from_cf(cfg)
-        handle_dev_done(cfg, picked_version)
-        handle_uat_done(cfg, picked_version)
-        handle_code_done(cfg, picked_version)
       ensure
         self._sanan_agile_internal = false
       end
@@ -155,6 +146,18 @@ module SananAgile
       return if cfg.blank? || cfg['sanan_agile_enabled'] == '0'
 
       SananAgile::SprintSpHistory.on_version_change!(self, cfg)
+    end
+
+    # Done BE / FE / Code / QA, UAT Done: filled in the same save when the ticket enters their status.
+    def sanan_stamp_done_in_sprint
+      return if @_sanan_agile_internal
+      return unless project_id
+      return unless new_record? || will_save_change_to_status_id?
+
+      cfg = SananAgile::ProjectSettings.load(project_id)
+      return if cfg.blank? || cfg['sanan_agile_enabled'] == '0'
+
+      SananAgile::DoneInSprint.stamp!(self, cfg)
     end
 
     def persist_sanan_sp_size
@@ -231,56 +234,13 @@ module SananAgile
       Rails.logger.warn "[sanan_agile] #{msg} (issue=#{id})"
     end
 
-    # ===== Done code in version =====
-    def handle_code_done(cfg, picked_version)
-      handle_change_status(cfg, picked_version, 'code_done_status_name', 'code_done_cfid')
-    end
-
-    # ===== Development Done =====
-    def handle_dev_done(cfg, picked_version)
-      handle_change_status(cfg, picked_version, 'development_done_status_name', 'development_done_cfid')
-    end
-
-    # ===== UAT Done =====
-    def handle_uat_done(cfg, picked_version)
-      handle_change_status(cfg, picked_version, 'uat_done_status_name', 'uat_done_cfid')
-    end
-
-    def handle_change_status(cfg, picked_version, status_key, cf_key)
-      status_name  = cfg[status_key].to_s.strip
-      cfid_s = cfg[cf_key].to_s.strip
-      return if status_name.blank? || cfid_s.blank?
-      return unless status&.name.to_s == status_name
-      return unless saved_change_to_attribute?(:status_id)
-
-      cfid = cfid_s.to_i
-      val  = version_value_for_cf(cfid, picked_version)
-
-      # init_journal(User.current || User.anonymous,
-      #              "Auto set UAT Done → CF##{cfid}=#{val}")
-      self.safe_attributes = { 'custom_field_values' => { cfid.to_s => val } }
-      save(validate: false)
-    end
-
     # ===== Helpers =====
-    def version_value_for_cf(cfid, version)
-      cf = IssueCustomField.find_by(id: cfid)
-      return version.name.to_s unless cf && cf.field_format == 'version'
-      version.id.to_s
-    end
-
     def parse_float_or_nil(raw)
       return nil if raw.nil?
       s = raw.to_s.strip
       return nil if s.empty?
       s = s.tr(',', '.')
       Float(s) rescue nil
-    end
-
-    def pick_version(cfg)
-      # Chiến lược chọn version cho Dev Done: default trước, fallback open mới nhất
-      project.default_version ||
-        project.versions.open.reorder(Arel.sql('effective_date NULLS LAST, id DESC')).first
     end
 
     def sanan_check_commit_lock?

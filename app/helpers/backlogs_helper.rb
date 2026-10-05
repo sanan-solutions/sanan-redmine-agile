@@ -17,31 +17,7 @@ module BacklogsHelper
   end
 
   def backlog_priority_icon_key(priority)
-    return 'default' unless priority
-
-    name_key = priority.name.to_s
-    by_name = {
-      'Low' => 'lowest',
-      'Normal' => 'default',
-      'High' => 'high3',
-      'Urgent' => 'high2',
-      'Immediate' => 'highest'
-    }
-    return by_name[name_key] if by_name[name_key]
-
-    pn = priority.respond_to?(:position_name) ? priority.position_name.to_s : ''
-    case pn
-    when 'highest' then 'highest'
-    when 'high2' then 'high2'
-    when 'high3', 'high' then 'high3'
-    when 'high4' then 'high4'
-    when 'high5' then 'high5'
-    when 'default' then 'default'
-    when 'low3' then 'low3'
-    when 'low2' then 'low2'
-    when 'lowest' then 'lowest'
-    else 'default'
-    end
+    SananAgile::PriorityIcon.key(priority)
   end
 
   def backlog_epic_label(issue, epic_tracker_id)
@@ -367,12 +343,8 @@ module BacklogsHelper
     dod_id = cfg['dod_cfid'].to_i
     return [] if dod_id <= 0
 
-    status_ids = Array(cfg['dod_checkbox_statuses']).map(&:to_i).reject(&:zero?)
-    return [] if status_ids.empty?
-
-    issues = Array(section.issues).select { |i| status_ids.include?(i.status_id) }
-    tracker_ids = Array(cfg['dod_checkbox_trackers']).map(&:to_i).reject(&:zero?)
-    issues = issues.select { |i| tracker_ids.include?(i.tracker_id) } if tracker_ids.any?
+    candidate_ids = SananAgile::DodSprint.complete_candidate_ids(version, cfg).to_set
+    issues = Array(section.issues).select { |i| candidate_ids.include?(i.id) }
     issues.map do |issue|
       {
         id: issue.id,

@@ -40,6 +40,22 @@ module SananAgile
       SananAgile::BoardDefaultFilters.apply!(self)
       super
     end
+
+    # Trackers hidden on the board (Settings → Agile board): left out in SQL, so cards, column counts and
+    # SP / hour sums all agree.
+    def statement
+      clauses = super
+      hidden = SananAgile::AgileQueryPatch.hidden_tracker_ids_for(project)
+      return clauses if hidden.empty?
+
+      condition = "#{Issue.table_name}.tracker_id NOT IN (#{hidden.join(',')})"
+      clauses.present? ? "(#{clauses}) AND #{condition}" : condition
+    end
+
+    def initialize_available_filters
+      super
+      SananAgile::AgileQueryPatch.hide_closed_versions!(self, @available_filters)
+    end
   end
 
   module AgileDataAssociation
@@ -63,6 +79,7 @@ module SananAgile
       return unless defined?(AgileQuery)
 
       require_dependency File.expand_path('board_default_filters', __dir__)
+      require_dependency File.expand_path('agile_query_patch', __dir__)
       return if AgileQuery.ancestors.include?(SananAgile::AgileQueryAssociationPatch)
 
       AgileQuery.prepend(SananAgile::AgileQueryAssociationPatch)

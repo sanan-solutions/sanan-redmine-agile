@@ -1,0 +1,56 @@
+<%# Agile board backlog panel config (assets/javascripts/agile_board_backlog.js). %>
+<% bb_project = local_assigns[:project] || @project %>
+<% bb_cfg = bb_project && SananAgile::ProjectSettings.load(bb_project.id) %>
+<% if bb_cfg && bb_cfg['sanan_agile_enabled'].to_s == '1' && bb_cfg['agile_board_backlog_enabled'].to_s == '1' &&
+      User.current.allowed_to?(:view_backlog, bb_project) &&
+      User.current.allowed_to?(:manage_backlog, bb_project) &&
+      User.current.allowed_to?(:edit_issues, bb_project) %>
+  <% bb_target = SananAgile::BoardBacklog.target_version(bb_project, local_assigns[:query] || @query, bb_cfg) %>
+  <% bb_parts = SananAgile::BoardBacklog::TEAM_PARTS.select { |_part, key| bb_cfg[key].to_i.positive? }.keys %>
+  <% bb_trackers = Tracker.where(id: Array(bb_cfg['backlog_trackers']).map(&:to_i).reject(&:zero?).presence ||
+                                     Array(bb_cfg['standard_tracker']).map(&:to_i).reject(&:zero?)).sorted %>
+  <script>
+    window.SA_BOARD_BACKLOG = <%= raw({
+      listUrl: project_sanan_board_backlog_path(bb_project),
+      pullUrl: project_sanan_board_backlog_pull_path(bb_project),
+      pushUrl: project_sanan_board_backlog_push_path(bb_project),
+      cardUrl: (respond_to?(:update_agile_board_path) ? update_agile_board_path : nil),
+      target: bb_target && { id: bb_target.id, name: bb_target.name },
+      spParts: bb_parts,
+      spOptions: SananAgile::SP_FIBO.map { |v| v == v.to_i ? v.to_i.to_s : v.to_s },
+      trackers: bb_trackers.map { |t| { id: t.id, name: t.name } },
+      projectKey: bb_project.id,
+      labels: {
+        toggle: l(:label_sanan_board_backlog),
+        title: l(:label_sanan_board_backlog),
+        source: l(:label_sanan_board_backlog_source),
+        search: l(:label_sanan_board_backlog_search),
+        allTrackers: l(:label_sanan_board_backlog_all_trackers),
+        empty: l(:label_sanan_board_backlog_empty),
+        loading: l(:label_sanan_board_backlog_loading),
+        hint: l(:text_sanan_board_backlog_hint, name: '__NAME__'),
+        noTarget: l(:text_sanan_board_backlog_no_target),
+        modalTitle: l(:label_sanan_board_backlog_modal_title, id: '__ID__'),
+        modalInto: l(:text_sanan_board_backlog_modal_into, sprint: '__SPRINT__', status: '__STATUS__'),
+        modalSpHint: l(:text_sanan_board_backlog_modal_sp_hint),
+        qaNeedsDev: l(:error_sanan_board_pull_qa_needs_dev),
+        size: l(:label_sanan_board_backlog_size),
+        sizeGroup: l(:label_sanan_sp_size_group),
+        sprintGroup: l(:label_sanan_sp_sprint_group),
+        total: l(:label_total),
+        doneIn: l(:text_sanan_board_backlog_done_in, part: '__PART__', sprint: '__SPRINT__'),
+        subtasks: l(:label_sanan_board_backlog_subtasks),
+        subtaskCount: l(:label_sanan_board_backlog_subtask_count, done: '__DONE__', total: '__TOTAL__'),
+        submit: l(:button_sanan_board_backlog_pull),
+        cancel: l(:button_cancel),
+        failed: l(:error_sanan_board_pull_failed),
+        pushFailed: l(:error_sanan_board_push_failed),
+        dropHere: l(:text_sanan_board_backlog_drop_here, name: '__NAME__'),
+        be: l(:label_sprint_report_sp_be),
+        fe: l(:label_sprint_report_sp_fe),
+        qa: l(:label_sprint_report_sp_qa)
+      }
+    }.to_json) %>;
+    if (window.SananBoardBacklog) window.SananBoardBacklog.boot();
+  </script>
+<% end %>

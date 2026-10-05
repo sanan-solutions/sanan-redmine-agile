@@ -9,7 +9,7 @@ module SananAgile
   module IssuesHelperPatch
     SPRINT_DONE_SETTING_KEYS = %w[
       done_be_cfid done_fe_cfid done_qa_cfid
-      dod_cfid code_done_cfid development_done_cfid uat_done_cfid
+      dod_cfid code_done_cfid uat_done_cfid
     ].freeze
 
     STORY_POINT_SETTING_KEYS = %w[

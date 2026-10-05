@@ -241,6 +241,16 @@
             <em><%= l(:text_agile_board_hidden_trackers_hint) %></em>
           </span>
         </p>
+        <p>
+          <label><%= l(:label_sanan_board_backlog_enabled) %></label>
+          <span>
+            <span class="sanan-settings__check">
+              <%= hidden_field_tag 'settings[agile_board_backlog_enabled]', '0' %>
+              <%= check_box_tag 'settings[agile_board_backlog_enabled]', '1', cfg['agile_board_backlog_enabled'].to_s == '1' %>
+            </span>
+            <em><%= l(:text_sanan_board_backlog_enabled_hint) %></em>
+          </span>
+        </p>
 
         <hr class="sanan-settings__divider">
         <h4 class="sanan-settings__subtitle">Màu thẻ theo Tracker</h4>
@@ -547,20 +557,7 @@
         <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_befe_hint) %></span>
       </div>
       <div class="sanan-settings-section__body">
-        <div class="sanan-settings__subgrid">
-          <p>
-            <label>Done Backend In Sprint</label>
-            <%= select_tag 'settings[done_be_cfid]', options_for_select(issue_cf_opts, cfg['done_be_cfid']), include_blank: true %>
-          </p>
-          <p>
-            <label>Done Frontend In Sprint</label>
-            <%= select_tag 'settings[done_fe_cfid]', options_for_select(issue_cf_opts, cfg['done_fe_cfid']), include_blank: true %>
-          </p>
-          <p>
-            <label>Done QA In Sprint</label>
-            <%= select_tag 'settings[done_qa_cfid]', options_for_select(issue_cf_opts, cfg['done_qa_cfid']), include_blank: true %>
-          </p>
-        </div>
+        <p class="sanan-settings__note"><%= l(:text_sanan_done_fields_moved) %></p>
         <p>
           <label>Limit trackers</label>
           <span>
@@ -610,45 +607,36 @@
         <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_workflow_hint) %></span>
       </div>
       <div class="sanan-settings-section__body">
-        <h4 class="sanan-settings__subtitle">Code Done</h4>
-        <p>
-          <label><%= l(:label_trigger_status_name) %></label>
-          <span>
-            <%= select_tag 'settings[code_done_status_name]', options_for_select(status_name_opts, cfg['code_done_status_name']) %>
-            <em>Khi issue sang status này → ghi Default Version</em>
-          </span>
-        </p>
-        <p>
-          <label><%= l(:label_custom_field_to_fill) %></label>
-          <span>
-            <%= select_tag 'settings[code_done_cfid]',
-                  options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name}", cf.id] }, cfg['code_done_cfid']) %>
-            <em><%= l(:label_custom_field_help) %></em>
-          </span>
-        </p>
-
-        <hr class="sanan-settings__divider">
-        <h4 class="sanan-settings__subtitle">Development / QA Done</h4>
-        <p>
-          <label><%= l(:label_trigger_status_name) %></label>
-          <%= select_tag 'settings[development_done_status_name]', options_for_select(status_name_opts, cfg['development_done_status_name']) %>
-        </p>
-        <p>
-          <label><%= l(:label_custom_field_to_fill) %></label>
-          <%= select_tag 'settings[development_done_cfid]',
-                options_for_select([['— ' + l(:label_none) + ' (Target version)', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name}", cf.id] }, cfg['development_done_cfid']) %>
-        </p>
-
-        <hr class="sanan-settings__divider">
-        <h4 class="sanan-settings__subtitle">UAT Done</h4>
-        <p>
-          <label>Trigger status</label>
-          <%= select_tag 'settings[uat_done_status_name]', options_for_select(status_name_opts, cfg['uat_done_status_name']) %>
-        </p>
-        <p>
-          <label>Custom Field ghi version</label>
-          <%= select_tag 'settings[uat_done_cfid]', options_for_select(issue_cf_opts, cfg['uat_done_cfid']) %>
-        </p>
+        <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_done_in_sprint) %></h4>
+        <p class="sanan-settings__note"><%= l(:text_sanan_done_in_sprint_hint) %></p>
+        <div class="sanan-settings__table-wrap">
+          <table class="sanan-settings__done-table">
+            <thead>
+              <tr>
+                <th><%= l(:label_sanan_done_milestone) %></th>
+                <th><%= l(:label_custom_field_to_fill) %></th>
+                <th><%= l(:label_sanan_done_trigger_status) %></th>
+                <th><%= l(:label_sanan_done_manual) %></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% [
+                   ['Done BE', 'done_be_cfid', 'done_be_status_name', l(:text_sanan_done_by_card_checkbox, part: 'BE')],
+                   ['Done FE', 'done_fe_cfid', 'done_fe_status_name', l(:text_sanan_done_by_card_checkbox, part: 'FE')],
+                   ['Done Code', 'code_done_cfid', 'code_done_status_name', '—'],
+                   ['Done QA', 'done_qa_cfid', 'done_qa_status_name', '—'],
+                   ['UAT Done', 'uat_done_cfid', 'uat_done_status_name', '—']
+                 ].each do |label, cf_key, status_key, manual| %>
+                <tr>
+                  <th scope="row"><%= label %></th>
+                  <td><%= select_tag "settings[#{cf_key}]", options_for_select(issue_cf_opts, cfg[cf_key].to_s), id: "settings_#{cf_key}" %></td>
+                  <td><%= select_tag "settings[#{status_key}]", options_for_select(status_name_opts, cfg[status_key].to_s), id: "settings_#{status_key}" %></td>
+                  <td class="sanan-settings__done-manual"><%= manual %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
 
         <hr class="sanan-settings__divider">
         <h4 class="sanan-settings__subtitle">Definition of Done (DoD)</h4>

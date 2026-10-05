@@ -339,6 +339,12 @@
   color: #216e4e;
 }
 
+.sanan-sprint-report .sr-code-flag--plan {
+  background: #f1f2f4;
+  color: #44546f;
+  font-weight: 600;
+}
+
 .sanan-sprint-report .sr-code-flag--skip {
   background: #f1f2f4;
   color: var(--sr-text-subtle);

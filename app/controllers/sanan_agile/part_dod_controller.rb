@@ -18,11 +18,7 @@ class SananAgile::PartDodController < ApplicationController
 
     return render json: { ok: false, error: 'Invalid part or CF not configured' }, status: 422 if cf_done_id <= 0
 
-    version = @issue.project.default_version
-    unless version
-      # fallback: pick latest open or nearest – bạn đã có VersionPicker thì dùng lại tại đây
-      version = @issue.project.shared_versions.open.order('effective_date NULLS FIRST, created_on DESC').first
-    end
+    version = SananAgile::DoneInSprint.version_for(@issue, cfg)
 
     if check && version.nil?
       return render json: { ok: false, error: 'No default version' }, status: 422

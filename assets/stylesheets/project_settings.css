@@ -240,6 +240,55 @@
   border-top: 1px dashed var(--sa-border);
 }
 
+.sanan-settings .sanan-settings__note {
+  margin: 0 0 12px;
+  color: var(--sa-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.sanan-settings .sanan-settings__table-wrap {
+  margin: 0 0 14px;
+  overflow-x: auto;
+}
+
+.sanan-settings .sanan-settings__done-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sanan-settings .sanan-settings__done-table th,
+.sanan-settings .sanan-settings__done-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--sa-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.sanan-settings .sanan-settings__done-table thead th {
+  color: var(--sa-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sanan-settings .sanan-settings__done-table tbody th {
+  font-weight: 600;
+  color: var(--sa-text);
+  white-space: nowrap;
+}
+
+.sanan-settings .sanan-settings__done-table select {
+  width: 100%;
+  min-width: 180px;
+  max-width: 320px;
+}
+
+.sanan-settings .sanan-settings__done-manual {
+  color: var(--sa-muted);
+  font-size: 12px;
+}
+
 .sanan-settings .sanan-settings__subtitle {
   margin: 4px 0 10px;
   font-size: 13px;

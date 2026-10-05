@@ -1,3 +1,4 @@
+<%= render partial: 'sanan_agile/board_backlog_panel', locals: local_assigns %>
 <%= render partial: 'sanan_agile/agile_sprint_actions', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_header', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_sp_badge', locals: local_assigns %>
@@ -44,6 +45,8 @@
 window.SA_COMMITTED = window.SA_COMMITTED || {};
 window.SA_DOD_SPRINT = window.SA_DOD_SPRINT || {};
 window.SA_ISSUE_SPRINT = Object.assign(window.SA_ISSUE_SPRINT || {}, <%= raw sa_issue_versions.to_json %>);
+// Tracker per card; cards added later (e.g. pulled from the backlog panel) register theirs here.
+window.SA_ISSUE_TRACKER = Object.assign(window.SA_ISSUE_TRACKER || {}, <%= raw sa_issue_trackers.to_json %>);
 (function (dod, ids, fresh) {
   ids.forEach(function (id) { delete dod[id]; }); // DoD may have been cleared on a re-rendered card
   Object.keys(fresh).forEach(function (id) { dod[id] = fresh[id]; });
@@ -66,7 +69,7 @@ window.SA_ISSUE_SPRINT = Object.assign(window.SA_ISSUE_SPRINT || {}, <%= raw sa_
     return !!(m[iid] || m[String(iid)]);
   }
   var TRACKERS = <%= raw sa_std_trackers.to_json %>;
-  var ISSUE_TRACKER = <%= raw sa_issue_trackers.to_json %>;
+  var ISSUE_TRACKER = window.SA_ISSUE_TRACKER;
   var ISSUE_SPRINT = window.SA_DOD_SPRINT; // issue id -> sprint where DoD was reached
   var CURRENT_ID = <%= raw (sa_current_version&.id.to_s).to_json %>;
   var CURRENT_NAME = <%= raw (sa_current_version&.name.to_s).to_json %>;

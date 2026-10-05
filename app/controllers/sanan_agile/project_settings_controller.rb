@@ -12,8 +12,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :code_done_status_name,
                   :code_done_cfid,
 
-                  :development_done_status_name,
-                  :development_done_cfid, 
+                  :done_be_status_name, :done_fe_status_name, :done_qa_status_name,
 
                   :uat_done_status_name, 
                   :uat_done_cfid,
@@ -57,6 +56,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :commit_lock_days_before_end,
                   {commit_dev_status_ids: []},
                   {agile_board_hidden_tracker_ids: []},
+                  :agile_board_backlog_enabled,
                   :roadmap_enabled,
                   :roadmap_capacity_window,
                   { roadmap_blocked_status_ids: [] },

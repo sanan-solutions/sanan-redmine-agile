@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require_dependency File.expand_path('done_in_sprint', __dir__)
+
 module SananAgile
   class ProjectSettings
     DEFAULTS = {
@@ -17,8 +19,6 @@ module SananAgile
       'code_done_status_name'        => '',  # tên status “Done code in version”
       'code_done_cfid'               => '',   # CF để ghi version khi đạt trạng thái này
 
-      'development_done_status_name' => '',
-      'development_done_cfid' => '',
 
       'uat_done_status_name' => '',   # tên status dùng làm cột/trigger “UAT Done”
       'uat_done_cfid'        => '',    # Issue CF sẽ ghi Default Version khi tới UAT Done
@@ -34,6 +34,10 @@ module SananAgile
       'done_be_cfid'          => '',  # Done Backend In Sprint
       'done_fe_cfid'          => '',  # Done Frontend In Sprint
       'done_qa_cfid'          => '',  # Done QA In Sprint
+      # Trigger status (name) filling each Done field automatically; blank = card checkbox / manual only
+      'done_be_status_name'   => '',
+      'done_fe_status_name'   => '',
+      'done_qa_status_name'   => '',
 
       # show checkboxes only for these trackers (optional)
       'befe_trackers'         => [],  # [tracker_id,...] (để trống = tất cả)
@@ -80,6 +84,8 @@ module SananAgile
 
       # Agile board: hide these trackers from cards/column counts (e.g. Epic)
       'agile_board_hidden_tracker_ids' => [],
+      # Agile board backlog panel (drag tickets between the backlog and the board's sprint)
+      'agile_board_backlog_enabled' => '0',
 
       # Product roadmap (quarterly Epic plan)
       'roadmap_enabled' => '0',
@@ -110,7 +116,7 @@ module SananAgile
 
     def self.load(project_id)
       store = Setting.send(:"plugin_#{PLUGIN_KEY}") || {}
-      DEFAULTS.merge(store[project_id.to_s] || {})
+      SananAgile::DoneInSprint.migrate_legacy!(DEFAULTS.merge(store[project_id.to_s] || {}))
     end
 
     def self.save(project_id, params_hash)

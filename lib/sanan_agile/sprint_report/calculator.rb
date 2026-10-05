@@ -14,7 +14,7 @@ module SananAgile
       MemberRow = Struct.new(:user, :user_id, :issue_count, :sp, keyword_init: true)
       CodedIssueRow = Struct.new(
         :issue, :committed, :dod, :be_done, :fe_done, :qa_done,
-        :sp, :be_sp, :fe_sp, :qa_sp, :outcome,
+        :sp, :be_sp, :fe_sp, :qa_sp, :be_plan, :fe_plan, :qa_plan, :outcome,
         keyword_init: true
       )
       IntakeBucket = Struct.new(:source, :count, :sp, keyword_init: true)
@@ -115,7 +115,7 @@ module SananAgile
         be = sum_cf(ids, cfid('sp_be_cfid'))
         fe = sum_cf(ids, cfid('sp_fe_cfid'))
         qa = sum_cf(ids, cfid('sp_qa_cfid'))
-        { sp: be + fe + qa, be: be, fe: fe, qa: qa }
+        { sp: sprint_total_by_issue(ids).values.sum, be: be, fe: fe, qa: qa }
       end
 
       # Closed sprint: the commit set captured at close (else the set as it stands). Tickets removed during
@@ -134,12 +134,37 @@ module SananAgile
         be = hist.sum(:sp_be).to_f + live[:be].to_f
         fe = hist.sum(:sp_fe).to_f + live[:fe].to_f
         qa = hist.sum(:sp_qa).to_f + live[:qa].to_f
-        { sp: be + fe + qa, be: be, fe: fe, qa: qa }
+        { sp: sprint_total_by_issue(ids).values.sum, be: be, fe: fe, qa: qa }
+      end
+
+      # "This sprint" SP of each ticket in this sprint (not its Size): the sprint Total, else the project
+      # Total formula (max / avg) over its sprint BE / FE / QA, else 0. Tickets moved on to another sprint
+      # read this sprint's history row — their live values belong to the new sprint.
+      def sprint_total_by_issue(ids)
+        ids = Array(ids)
+        return {} if ids.empty?
+
+        rows = sprint_history_by_issue(ids)
+        parts = sprint_parts_by_issue(ids)
+        ids.to_h do |iid|
+          total = rows[iid]&.sp_total
+          total = SananAgile::SpTotalFormula.resolve(*parts[iid].values_at(:be, :fe, :qa), nil, cfg: @cfg) if total.nil?
+          [iid, total.to_f]
+        end
+      end
+
+      # { issue_id => raw value } for non-blank values of a custom field.
+      def raw_cf_by_issue(issue_ids, field_id)
+        return {} if field_id.to_i <= 0 || issue_ids.blank?
+
+        CustomValue.where(customized_type: 'Issue', custom_field_id: field_id, customized_id: issue_ids)
+                   .where.not(value: [nil, '']).pluck(:customized_id, :value).to_h
       end
 
       def actual_totals
         @actual_totals ||= {
-          sp: sum_cf(issue_ids_by_done_cf('dod_cfid'), cfid('story_point_cfid')),
+          # Sprint SP counts only tickets reaching DoD in this sprint, each with its sprint SP (not its Size).
+          sp: sprint_total_by_issue(issue_ids_by_done_cf('dod_cfid')).values.sum,
           be: actual_team_sp('done_be_cfid', 'sp_be_cfid', :sp_be),
           fe: actual_team_sp('done_fe_cfid', 'sp_fe_cfid', :sp_fe),
           qa: actual_team_sp('done_qa_cfid', 'sp_qa_cfid', :sp_qa)
@@ -313,23 +338,30 @@ module SananAgile
         issue_team_sp_map(ids, sp_key, hist_col).values.sum
       end
 
-      def issue_team_sp_map(ids, sp_key, hist_col)
-        return {} if ids.blank?
+      # SP of one part (BE / FE / QA) in this sprint for each ticket — never its Size; 0 when unset.
+      def issue_team_sp_map(ids, _sp_key, hist_col)
+        part = hist_col.to_s.delete_prefix('sp_').to_sym
+        parts = sprint_parts_by_issue(ids)
+        Array(ids).to_h { |iid| [iid, parts.dig(iid, part).to_f] }
+      end
 
-        live = sum_cf_by_issue(ids, cfid(sp_key))
-        present = cf_present_ids(ids, cfid(sp_key))
-        hist = sprint_history_by_issue(ids)
-        sizes = issue_size_by_issue(ids)
-        ids.each_with_object({}) do |iid, h|
-          h[iid] = if present.include?(iid)
-                     live[iid].to_f
-                   elsif hist[iid]
-                     hist[iid].public_send(hist_col).to_f
-                   elsif sizes[iid]
-                     sizes[iid].public_send(hist_col).to_f
-                   else
-                     0.0
-                   end
+      # { issue_id => { be:, fe:, qa: } } "This sprint" SP per part (nil when unset). Tickets still on this
+      # sprint use their live values; tickets moved on read this sprint's history row (their live values
+      # belong to the new sprint).
+      def sprint_parts_by_issue(ids)
+        ids = Array(ids)
+        return {} if ids.empty?
+
+        rows = sprint_history_by_issue(ids)
+        here = Issue.where(id: ids, fixed_version_id: @sid).pluck(:id).to_set
+        here_ids = ids.select { |iid| here.include?(iid) }
+        live = %i[be fe qa].to_h { |part| [part, raw_cf_by_issue(here_ids, cfid("sp_#{part}_cfid"))] }
+        ids.to_h do |iid|
+          values = %i[be fe qa].to_h do |part|
+            raw = here.include?(iid) ? live[part][iid] : rows[iid]&.public_send(:"sp_#{part}")
+            [part, raw.nil? ? nil : parse_number(raw)]
+          end
+          [iid, values]
         end
       end
 
@@ -348,7 +380,8 @@ module SananAgile
         qa_set = qa_ids.to_set
         dod_set = dod_ids.to_set
         committed_set = committed_ids.to_set
-        size_sp = sum_cf_by_issue(ids, cfid('story_point_cfid'))
+        sprint_sp = sprint_total_by_issue(ids)
+        planned = sprint_parts_by_issue(ids)
         be_sp = issue_team_sp_map(be_ids, 'sp_be_cfid', :sp_be)
         fe_sp = issue_team_sp_map(fe_ids, 'sp_fe_cfid', :sp_fe)
         qa_sp = issue_team_sp_map(qa_ids, 'sp_qa_cfid', :sp_qa)
@@ -372,10 +405,13 @@ module SananAgile
             be_done: be_set.include?(iid),
             fe_done: fe_set.include?(iid),
             qa_done: qa_set.include?(iid),
-            sp: size_sp[iid].to_f,
+            sp: sprint_sp[iid].to_f,
             be_sp: be_sp[iid].to_f,
             fe_sp: fe_sp[iid].to_f,
             qa_sp: qa_sp[iid].to_f,
+            be_plan: planned.dig(iid, :be),
+            fe_plan: planned.dig(iid, :fe),
+            qa_plan: planned.dig(iid, :qa),
             outcome: ticket_outcome(issue, committed, dod, be_set.include?(iid) || fe_set.include?(iid) || qa_set.include?(iid))
           )
         end
@@ -399,27 +435,10 @@ module SananAgile
         end
       end
 
-      def cf_present_ids(issue_ids, field_id)
-        return [] if field_id.to_i <= 0 || issue_ids.blank?
-
-        CustomValue.where(
-          customized_type: 'Issue',
-          custom_field_id: field_id,
-          customized_id: issue_ids
-        ).where("custom_values.value IS NOT NULL AND custom_values.value != ''")
-         .distinct.pluck(:customized_id)
-      end
-
       def sprint_history_by_issue(issue_ids)
         return {} unless defined?(SananIssueSprintSp) && issue_ids.present?
 
         SananIssueSprintSp.where(version_id: @sid, issue_id: issue_ids).index_by(&:issue_id)
-      end
-
-      def issue_size_by_issue(issue_ids)
-        return {} unless defined?(SananIssueSpSize) && issue_ids.present?
-
-        SananIssueSpSize.where(issue_id: issue_ids).index_by(&:issue_id)
       end
 
       def completed_issues

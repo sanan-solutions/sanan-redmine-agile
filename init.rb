@@ -72,6 +72,8 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/roadmap_baseline', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/roadmap_product', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/priority_icon', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/board_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/product_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)
@@ -111,14 +113,15 @@ Redmine::Plugin.register :sanan_redmine_agile do
                require: :member
 
     permission :view_backlog,
-               { backlogs: [:show, :sections, :issues] },
+               { backlogs: [:show, :sections, :issues], 'sanan_agile/board_backlog' => [:index] },
                require: :member
 
     permission :manage_backlog,
                { backlogs: [:reorder, :create_sprint, :update_sprint, :destroy_sprint, :start_sprint, :complete_sprint,
                             :create_issue, :create_epic, :bulk_move, :attach_to_release,
                             :bulk_update_status, :bulk_update_priority, :bulk_update_tracker,
-                            :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota] },
+                            :bulk_destroy, :quick_update, :pull_intake, :update_sprint_quota],
+                 'sanan_agile/board_backlog' => [:pull, :push] },
                require: :member
 
     permission :view_roadmap,

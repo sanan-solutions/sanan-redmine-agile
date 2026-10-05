@@ -88,11 +88,13 @@
     <section class="sr-card">
       <h3><%= l(:label_sprint_report_actual) %></h3>
       <div class="sr-kpis">
-        <%# Total = SP of tickets reaching DoD (delivered value) — not comparable with the commit total, which is
-            the sum of committed parts. Commit is compared part by part (BE / FE / QA). %>
+        <%# Total = sprint SP of the tickets reaching DoD in this sprint — same measure as the commit total. %>
         <div class="sr-kpi sr-kpi--total" title="<%= l(:text_sprint_report_dod_sp_hint) %>">
           <span class="sr-kpi__label"><%= l(:label_sprint_report_dod_sp) %></span>
           <span class="sr-kpi__value"><%= sprint_report_number(@report.actual_sp) %></span>
+          <% if @report.commit_sp.to_f.positive? %>
+            <span class="sr-kpi__pct"><%= l(:label_sprint_report_part_pct, pct: (@report.actual_sp.to_f * 100 / @report.commit_sp.to_f).round) %></span>
+          <% end %>
         </div>
         <% [[:label_sprint_report_sp_be, @report.actual_be, @report.commit_be],
             [:label_sprint_report_sp_fe, @report.actual_fe, @report.commit_fe],
@@ -133,7 +135,7 @@
               <th><%= l(:field_subject) %></th>
               <th><%= l(:label_sprint_report_intake_source) %></th>
               <th><%= l(:label_sprint_report_dod) %></th>
-              <th class="num"><%= l(:label_sprint_report_sp) %></th>
+              <th><%= l(:label_sprint_report_sp) %></th>
               <th><%= l(:label_sprint_report_sp_be) %></th>
               <th><%= l(:label_sprint_report_sp_fe) %></th>
               <th><%= l(:label_sprint_report_sp_qa) %></th>
@@ -151,10 +153,10 @@
                 <td class="subject"><%= link_to_issue(issue, subject: false) %> <%= h issue.subject %></td>
                 <td><%= sprint_report_intake_badge(issue, @settings) %></td>
                 <td><%= sprint_report_dod_cell(row.dod) %></td>
-                <td class="num"><%= sprint_report_number(row.sp) %></td>
-                <td><%= sprint_report_code_cell(row.be_done, row.be_sp) %></td>
-                <td><%= sprint_report_code_cell(row.fe_done, row.fe_sp) %></td>
-                <td><%= sprint_report_code_cell(row.qa_done, row.qa_sp) %></td>
+                <td><%= sprint_report_code_cell(row.dod, row.sp, row.sp) %></td>
+                <td><%= sprint_report_code_cell(row.be_done, row.be_sp, row.be_plan) %></td>
+                <td><%= sprint_report_code_cell(row.fe_done, row.fe_sp, row.fe_plan) %></td>
+                <td><%= sprint_report_code_cell(row.qa_done, row.qa_sp, row.qa_plan) %></td>
                 <td><%= sprint_report_outcome_cell(row.outcome) %></td>
                 <td><%= h issue.status %></td>
                 <td><%= issue.assigned_to ? link_to_user(issue.assigned_to) : '—' %></td>
@@ -164,10 +166,11 @@
           <tfoot>
             <tr>
               <th colspan="5"><%= l(:label_total) %></th>
-              <th class="num"><%= sprint_report_number(commit_rows.sum(&:sp)) %></th>
-              <th><%= sprint_report_number(commit_rows.sum(&:be_sp)) %> SP</th>
-              <th><%= sprint_report_number(commit_rows.sum(&:fe_sp)) %> SP</th>
-              <th><%= sprint_report_number(commit_rows.sum(&:qa_sp)) %> SP</th>
+              <%# Sprint SP: only tickets that reached DoD in this sprint count. %>
+              <th title="<%= l(:text_sprint_report_sp_total_dod_hint) %>"><%= sprint_report_number(commit_rows.select(&:dod).sum(&:sp)) %> SP</th>
+              <th><%= sprint_report_number(commit_rows.select(&:be_done).sum(&:be_sp)) %> SP</th>
+              <th><%= sprint_report_number(commit_rows.select(&:fe_done).sum(&:fe_sp)) %> SP</th>
+              <th><%= sprint_report_number(commit_rows.select(&:qa_done).sum(&:qa_sp)) %> SP</th>
               <th colspan="3"></th>
             </tr>
           </tfoot>

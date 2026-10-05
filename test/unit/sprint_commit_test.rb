@@ -70,6 +70,38 @@ class SprintCommitTest < ActiveSupport::TestCase
     assert_not_includes ids, in_uat.id
   end
 
+  def test_story_points_column_is_the_sprint_total_not_the_size
+    enable_roadmap!(@project, SananAgile::ProjectSettings.load(@project.id).merge('sp_total_formula' => 'max',
+                                                                                    'sp_total_require_qa' => '0'))
+    with_total = ticket(sp: { be: 1 })
+    SananIssueSprintSp.create!(issue_id: with_total.id, version_id: @sprint.id, sp_total: 5, captured_at: Time.now)
+    from_parts = ticket(sp: { be: 3, fe: 2 }) # no sprint Total: formula max(BE, FE, QA)
+
+    report = SananAgile::SprintReport::Calculator.call(@sprint, cfg: cfg)
+    rows = report.coded_issues.index_by { |r| r.issue.id }
+    assert_equal 5.0, rows[with_total.id].sp
+    assert_equal 3.0, rows[from_parts.id].sp
+    assert_equal 8.0, report.commit_sp # = sum of the column
+  end
+
+  def test_sprint_sp_counts_only_dod_tickets
+    dod_cf = IssueCustomField.create!(name: 'DoD sprint', field_format: 'version', is_for_all: true, tracker_ids: [1, 2])
+    enable_roadmap!(@project, SananAgile::ProjectSettings.load(@project.id).merge(
+      'dod_cfid' => dod_cf.id.to_s, 'sp_total_formula' => 'max', 'sp_total_require_qa' => '0'))
+    @project.reload
+    done = Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'DoD', status_id: 1,
+                         fixed_version: @sprint, priority: IssuePriority.first,
+                         custom_field_values: { @be.id.to_s => '3', dod_cf.id.to_s => @sprint.id.to_s })
+    ticket(sp: { fe: 5 }) # committed, not DoD
+
+    report = SananAgile::SprintReport::Calculator.call(@sprint, cfg: cfg)
+    assert_equal 3.0, report.actual_sp                       # only the DoD ticket's sprint SP
+    assert_equal 8.0, report.commit_sp                       # all committed tickets
+    rows = report.coded_issues.select(&:committed)
+    assert_equal 3.0, rows.select(&:dod).sum(&:sp)           # table total
+    assert_includes rows.select(&:dod).map { |r| r.issue.id }, done.id
+  end
+
   def test_closed_sprint_commit_counts_moved_tickets_from_history_not_removed_ones
     stays = ticket(status_id: 5, sp: { be: 3 })
     moved = ticket(sp: { fe: 2 })
@@ -87,6 +119,9 @@ class SprintCommitTest < ActiveSupport::TestCase
 
     report = SananAgile::SprintReport::Calculator.call(@sprint.reload, cfg: cfg, prefer_snapshot: false)
     assert_equal [3.0, 2.0, 0.0], [report.commit_be, report.commit_fe, report.commit_qa]
-    assert_equal 5.0, report.commit_sp
+    # Commit SP = sum of each ticket's sprint SP (formula over its sprint parts when no Total is set)
+    expected = SananAgile::SpTotalFormula.resolve(3, nil, nil, nil, cfg: cfg).to_f +
+               SananAgile::SpTotalFormula.resolve(nil, 2, nil, nil, cfg: cfg).to_f
+    assert_equal expected, report.commit_sp
   end
 end

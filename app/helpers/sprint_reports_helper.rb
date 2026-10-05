@@ -97,10 +97,15 @@ module SprintReportsHelper
     sprint_report_source_badge(src)
   end
 
-  def sprint_report_code_cell(done, sp)
+  # Done part → "Done · x SP" (green); committed part not done yet → "Commit · x SP" (grey); else "—".
+  def sprint_report_code_cell(done, sp, plan = nil)
     if done
       content_tag(:span, class: 'sr-code-flag sr-code-flag--done') do
         "#{l(:label_sprint_report_code_done)} · #{sprint_report_number(sp)} SP"
+      end
+    elsif plan.to_f.positive?
+      content_tag(:span, class: 'sr-code-flag sr-code-flag--plan') do
+        "#{l(:label_sprint_report_code_commit)} · #{sprint_report_number(plan)} SP"
       end
     else
       content_tag(:span, '—', class: 'sr-code-flag sr-code-flag--skip')
