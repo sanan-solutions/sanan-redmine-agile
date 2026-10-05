@@ -40,6 +40,16 @@ Rails.application.config.to_prepare do
   rescue StandardError => e
     Rails.logger.error "[sanan_redmine_agile] RedmineAgile IssuePatch: #{e.class}: #{e.message}"
   end
+  # Development code reload rebuilds ApplicationController without redmine_agile's patch, and the board's
+  # drag & drop (AgileBoardsController#update → web_socket_service_update) then answers 500.
+  begin
+    if defined?(RedmineAgile::Patches::ApplicationControllerPatch) &&
+       !ApplicationController.included_modules.include?(RedmineAgile::Patches::ApplicationControllerPatch)
+      ApplicationController.send(:include, RedmineAgile::Patches::ApplicationControllerPatch)
+    end
+  rescue StandardError => e
+    Rails.logger.error "[sanan_redmine_agile] RedmineAgile ApplicationControllerPatch: #{e.class}: #{e.message}"
+  end
   if defined?(RedmineChecklists::Patches::IssuePatch) &&
      !Issue.included_modules.include?(RedmineChecklists::Patches::IssuePatch)
     begin
@@ -74,6 +84,7 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/backlog_query', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/priority_icon', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/board_backlog', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/board_groups', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/product_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)

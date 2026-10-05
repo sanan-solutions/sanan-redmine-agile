@@ -6,16 +6,15 @@ module SananAgile
   # parts (only BE, only FE, only test…); its status does not matter, so a ticket stays committed after
   # its dev part is done and it moves on to UAT / Done. The commit set may change during the sprint.
   #
-  # Without team SP fields configured, falls back to the legacy rule: status in set A
-  # (`commit_dev_status_ids`), or every ticket on the version when A is empty.
-  # Set A also drives the board's Development / UAT view (see status_ids).
+  # Without team SP fields configured there is no commit selection: every standard ticket on the sprint counts.
   module SprintCommit
     TEAM_SP_KEYS = %w[sp_be_cfid sp_fe_cfid sp_qa_cfid].freeze
 
     module_function
 
+    # Commit tracking (board tags, commit report) needs the team "This sprint" SP fields.
     def enabled?(cfg)
-      sp_based?(cfg) || status_ids(cfg).any?
+      sp_based?(cfg)
     end
 
     # Commit decided by "This sprint" SP (team SP fields configured).
@@ -27,15 +26,6 @@ module SananAgile
       TEAM_SP_KEYS.map { |k| cfg.to_h[k].to_i }.select(&:positive?)
     end
 
-    # Development statuses (set A): legacy commit rule and the board's Development / UAT phases.
-    def status_ids(cfg)
-      Array(cfg.to_h['commit_dev_status_ids']).map(&:to_i).reject(&:zero?).uniq
-    end
-
-    def in_dev?(issue, cfg)
-      status_ids(cfg).include?(issue.status_id.to_i)
-    end
-
     def issue_ids(version, cfg)
       return [] unless version
 
@@ -43,7 +33,6 @@ module SananAgile
       rel = on_sprint_scope(version, cfg)
       return with_sprint_sp(rel.pluck(:id), version.id, cfg) if sp_based?(cfg)
 
-      rel = rel.where(status_id: status_ids(cfg)) if status_ids(cfg).any?
       rel.pluck(:id)
     end
 
@@ -52,9 +41,8 @@ module SananAgile
       return false unless issue.fixed_version_id.to_i.positive?
       return false unless CommitLock.relevant_issue?(issue, cfg)
       return with_sprint_sp([issue.id], issue.fixed_version_id, cfg).any? if sp_based?(cfg)
-      return true if status_ids(cfg).empty?
 
-      in_dev?(issue, cfg)
+      true
     end
 
     # Ids of the given issues that are committed in their current sprint (one query per sprint).

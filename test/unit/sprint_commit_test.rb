@@ -14,8 +14,7 @@ class SprintCommitTest < ActiveSupport::TestCase
       IssueCustomField.create!(name: "SP #{n} sprint", field_format: 'float', is_for_all: true, tracker_ids: [1, 2, 3])
     end
     enable_roadmap!(@project, 'sp_be_cfid' => @be.id.to_s, 'sp_fe_cfid' => @fe.id.to_s, 'sp_qa_cfid' => @qa.id.to_s,
-                              'standard_tracker' => %w[1 2], 'subtask_tracker' => ['3'], 'epic_tracker' => '',
-                              'commit_dev_status_ids' => %w[1 2])
+                              'standard_tracker' => %w[1 2], 'subtask_tracker' => ['3'], 'epic_tracker' => '')
     @sprint = Version.create!(project: @project, name: 'Sprint C', status: 'open')
   end
 
@@ -32,7 +31,7 @@ class SprintCommitTest < ActiveSupport::TestCase
   def test_ticket_with_sprint_sp_is_committed_whatever_its_status
     dev_only = ticket(sp: { be: 3 })
     done = ticket(status_id: 5, sp: { fe: 2 })      # closed: dev done during the sprint
-    uat = ticket(status_id: 3, sp: { qa: 1 })       # outside set A (e.g. UAT), test committed
+    uat = ticket(status_id: 3, sp: { qa: 1 })       # e.g. UAT, test committed
     ids = SananAgile::SprintCommit.issue_ids(@sprint, cfg)
     assert_equal [dev_only.id, done.id, uat.id].sort, ids.sort
     assert SananAgile::SprintCommit.committed?(done.reload, cfg)
@@ -61,13 +60,13 @@ class SprintCommitTest < ActiveSupport::TestCase
     assert_equal [a.id], SananAgile::SprintCommit.committed_ids_among([a, b], cfg)
   end
 
-  def test_legacy_status_rule_without_team_sp
-    enable_roadmap!(@project, 'standard_tracker' => %w[1 2], 'commit_dev_status_ids' => %w[1 2])
-    in_dev = ticket(status_id: 2)
-    in_uat = ticket(status_id: 3)
-    ids = SananAgile::SprintCommit.issue_ids(@sprint, cfg)
-    assert_includes ids, in_dev.id
-    assert_not_includes ids, in_uat.id
+  def test_without_team_sp_every_standard_ticket_on_the_sprint_counts
+    enable_roadmap!(@project, 'standard_tracker' => %w[1 2])
+    a = ticket(status_id: 2)
+    b = ticket(status_id: 3)
+    assert_equal [a.id, b.id].sort, SananAgile::SprintCommit.issue_ids(@sprint, cfg).sort
+    assert SananAgile::SprintCommit.committed?(b, cfg)
+    assert_not SananAgile::SprintCommit.enabled?(cfg) # no commit tracking without "This sprint" SP fields
   end
 
   def test_story_points_column_is_the_sprint_total_not_the_size

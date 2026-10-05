@@ -1,0 +1,23 @@
+<%# Agile board column groups config (assets/javascripts/agile_board_groups.js). %>
+<% cg_project = local_assigns[:project] || @project %>
+<% cg_cfg = cg_project && SananAgile::ProjectSettings.load(cg_project.id) %>
+<% if cg_cfg && SananAgile::BoardGroups.enabled?(cg_cfg) %>
+  <script>
+    window.SA_BOARD_GROUPS = <%= raw({
+      statusGroups: SananAgile::BoardGroups.status_groups(cg_cfg),
+      projectKey: cg_project.id,
+      labels: {
+        dev: l(:label_sanan_board_group_dev),
+        uat: l(:label_sanan_board_group_uat),
+        closed: l(:label_sanan_board_group_closed),
+        collapse_dev: l(:label_sanan_board_group_collapse_dev),
+        expand_dev: l(:label_sanan_board_group_expand_dev),
+        collapse_uat: l(:label_sanan_board_group_collapse),
+        expand_uat: l(:label_sanan_board_group_expand),
+        collapse_closed: l(:label_sanan_board_group_collapse_closed),
+        expand_closed: l(:label_sanan_board_group_expand_closed)
+      }
+    }.to_json) %>;
+    if (window.SananBoardGroups) window.SananBoardGroups.boot();
+  </script>
+<% end %>

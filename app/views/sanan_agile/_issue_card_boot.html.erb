@@ -1,4 +1,5 @@
 <%= render partial: 'sanan_agile/board_backlog_panel', locals: local_assigns %>
+<%= render partial: 'sanan_agile/board_column_groups', locals: local_assigns %>
 <%= render partial: 'sanan_agile/agile_sprint_actions', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_header', locals: local_assigns %>
 <%= render partial: 'sanan_agile/issue_sp_badge', locals: local_assigns %>
@@ -7,8 +8,9 @@
 <%
   sa_board_cfg = project && SananAgile::ProjectSettings.load(project.id)
   sa_commit_mode = sa_board_cfg && SananAgile::SprintCommit.enabled?(sa_board_cfg)
-  # Set A: Development / UAT board view. The "Commit" flag follows "This sprint" SP when team SP is configured.
-  sa_dev_status_ids = sa_commit_mode ? SananAgile::SprintCommit.status_ids(sa_board_cfg) : []
+  # Development / UAT board view: the Development column group (Settings → Agile board). The "Commit" flag
+  # follows "This sprint" SP.
+  sa_dev_status_ids = sa_commit_mode ? SananAgile::BoardGroups.status_ids_of(sa_board_cfg, 'dev') : []
   sa_sp_based = sa_commit_mode && SananAgile::SprintCommit.sp_based?(sa_board_cfg)
   sa_committed_ids = if sa_sp_based && local_assigns[:issues]
                        SananAgile::SprintCommit.committed_ids_among(issues, sa_board_cfg)

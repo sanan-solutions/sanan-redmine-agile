@@ -158,4 +158,8 @@ class BoardBacklogControllerTest < Redmine::ControllerTest
     assert_equal({ 'be' => 3, 'qa' => 1 }, item['size'])
     assert_equal({ 'be' => 2 }, item['sprint_sp'])
   end
+
+  def test_board_column_groups_are_off_by_default
+    assert_equal '0', SananAgile::ProjectSettings::DEFAULTS['agile_board_uat_group_enabled']
+  end
 end

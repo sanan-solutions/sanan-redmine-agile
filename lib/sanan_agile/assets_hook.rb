@@ -60,6 +60,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     all_css += stylesheet_link_tag 'agile_intake_badges', plugin: 'sanan_redmine_agile'
     all_css += stylesheet_link_tag 'complete_sprint_modal', plugin: 'sanan_redmine_agile'
     all_css += stylesheet_link_tag 'agile_board_backlog', plugin: 'sanan_redmine_agile'
+    all_css += stylesheet_link_tag 'agile_board_groups', plugin: 'sanan_redmine_agile'
     if cfg['story_point_cfid'].present?
       all_css += stylesheet_link_tag 'hide_agile_sp', plugin: 'sanan_redmine_agile'
     end
@@ -74,6 +75,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     all_js += javascript_include_tag 'agile_epic_filter', plugin: 'sanan_redmine_agile'
     all_js += javascript_include_tag 'complete_sprint_modal', plugin: 'sanan_redmine_agile'
     all_js += javascript_include_tag 'agile_board_backlog', plugin: 'sanan_redmine_agile'
+    all_js += javascript_include_tag 'agile_board_groups', plugin: 'sanan_redmine_agile'
     all_js += issue_card_color_js(cfg)
 
     (all_css + all_js).html_safe

@@ -27,14 +27,14 @@
     <nav class="sanan-settings__nav" role="tablist" aria-label="<%= l(:label_sanan_settings_toc) %>">
       <button type="button" class="sanan-settings__tab is-active" role="tab" aria-selected="true" data-sa-tab="sa-general"><%= l(:label_sanan_settings_general) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-trackers"><%= l(:label_sanan_settings_trackers) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-backlog"><%= l(:label_sanan_settings_backlog) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-roadmap"><%= l(:label_sanan_settings_roadmap) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-board"><%= l(:label_sanan_settings_board) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-intake"><%= l(:label_sanan_settings_intake) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-release"><%= l(:label_sanan_settings_release) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-workflow"><%= l(:label_sanan_settings_workflow) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-sp"><%= l(:label_sanan_settings_story_points) %></button>
       <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-befe"><%= l(:label_sanan_settings_befe) %></button>
-      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-workflow"><%= l(:label_sanan_settings_workflow) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-backlog"><%= l(:label_sanan_settings_backlog) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-board"><%= l(:label_sanan_settings_board) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-roadmap"><%= l(:label_sanan_settings_roadmap) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-release"><%= l(:label_sanan_settings_release) %></button>
+      <button type="button" class="sanan-settings__tab" role="tab" aria-selected="false" data-sa-tab="sa-intake"><%= l(:label_sanan_settings_intake) %></button>
     </nav>
 
     <div class="sanan-settings__main">
@@ -156,16 +156,6 @@
             <em><%= l(:text_sanan_commit_lock_days_hint) %></em>
           </span>
         </p>
-        <p>
-          <label><%= l(:label_sanan_commit_dev_statuses) %></label>
-          <span>
-            <%= hidden_field_tag 'settings[commit_dev_status_ids][]', '' %>
-            <%= select_tag 'settings[commit_dev_status_ids][]',
-                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['commit_dev_status_ids']).map(&:to_i)),
-                  multiple: true %>
-            <em><%= l(:text_sanan_commit_dev_statuses_hint_v2) %></em>
-          </span>
-        </p>
       </div>
     </section>
 
@@ -249,6 +239,16 @@
               <%= check_box_tag 'settings[agile_board_backlog_enabled]', '1', cfg['agile_board_backlog_enabled'].to_s == '1' %>
             </span>
             <em><%= l(:text_sanan_board_backlog_enabled_hint) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_board_groups_enabled) %></label>
+          <span>
+            <span class="sanan-settings__check">
+              <%= hidden_field_tag 'settings[agile_board_uat_group_enabled]', '0' %>
+              <%= check_box_tag 'settings[agile_board_uat_group_enabled]', '1', cfg['agile_board_uat_group_enabled'].to_s == '1' %>
+            </span>
+            <em><%= l(:text_sanan_board_groups_enabled_hint) %></em>
           </span>
         </p>
 
@@ -607,6 +607,23 @@
         <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_workflow_hint) %></span>
       </div>
       <div class="sanan-settings-section__body">
+        <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_workflow_phases) %></h4>
+        <p class="sanan-settings__note"><%= l(:text_sanan_workflow_phases_hint) %></p>
+        <% [['dev', :label_sanan_board_group_dev], ['uat', :label_sanan_board_group_uat], ['closed', :label_sanan_board_group_closed]].each do |group, label| %>
+          <% key = SananAgile::BoardGroups::SETTING_KEYS[group] %>
+          <p>
+            <label><%= l(:label_sanan_board_group_statuses, group: l(label)) %></label>
+            <span>
+              <%= hidden_field_tag "settings[#{key}][]", '' %>
+              <%= select_tag "settings[#{key}][]",
+                    options_from_collection_for_select(statuses, :id, :name, Array(cfg[key]).map(&:to_i)),
+                    multiple: true, id: "settings_#{key}" %>
+              <em><%= l(:"text_sanan_board_group_statuses_hint_#{group}") %></em>
+            </span>
+          </p>
+        <% end %>
+
+        <hr class="sanan-settings__divider">
         <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_done_in_sprint) %></h4>
         <p class="sanan-settings__note"><%= l(:text_sanan_done_in_sprint_hint) %></p>
         <div class="sanan-settings__table-wrap">
