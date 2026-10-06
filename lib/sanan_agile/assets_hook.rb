@@ -22,7 +22,13 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     when 'agile_boards'
       agile_board_assets(cfg)
     when 'issues'
-      %w[show new create edit update].include?(c.action_name.to_s) ? issue_show_assets : ''
+      if %w[show new create edit update].include?(c.action_name.to_s)
+        issue_show_assets
+      elsif c.action_name.to_s == 'index'
+        issues_list_assets(cfg)
+      else
+        ''
+      end
     when 'backlogs', 'cs_backlogs', 'sale_backlogs'
       backlog_assets
     when 'roadmaps'
@@ -61,7 +67,8 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     all_css += stylesheet_link_tag 'complete_sprint_modal', plugin: 'sanan_redmine_agile'
     all_css += stylesheet_link_tag 'agile_board_backlog', plugin: 'sanan_redmine_agile'
     all_css += stylesheet_link_tag 'agile_board_groups', plugin: 'sanan_redmine_agile'
-    if cfg['story_point_cfid'].present?
+    # redmine_agile's own SP input is not used: SP live in the plugin's custom fields.
+    if cfg['story_point_cfid'].present? || cfg['sp_sprint_total_cfid'].present?
       all_css += stylesheet_link_tag 'hide_agile_sp', plugin: 'sanan_redmine_agile'
     end
 
@@ -79,6 +86,24 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
     all_js += issue_card_color_js(cfg)
 
     (all_css + all_js).html_safe
+  end
+
+  # Issues list: inline cell editing.
+  def issues_list_assets(cfg)
+    return '' unless SananAgile::InlineIssueEdit.enabled?(cfg)
+
+    config = {
+      urlTemplate: "#{Redmine::Utils.relative_url_root}/sanan_agile/issues/__ID__/inline/__FIELD__",
+      labels: {
+        edit: l(:label_sanan_inline_edit), none: l(:label_sanan_inline_none),
+        notEditable: l(:error_sanan_inline_not_editable), failed: l(:error_sanan_inline_failed)
+      }
+    }
+    (
+      stylesheet_link_tag('issues_inline_edit', plugin: 'sanan_redmine_agile') +
+      javascript_tag("window.SA_INLINE_EDIT = #{config.to_json};") +
+      javascript_include_tag('issues_inline_edit', plugin: 'sanan_redmine_agile')
+    ).html_safe
   end
 
   def issue_show_assets

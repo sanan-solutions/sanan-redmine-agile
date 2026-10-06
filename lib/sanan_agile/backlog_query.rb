@@ -33,12 +33,9 @@ module SananAgile
       }
     end
 
+    # SP to plan with: the sprint estimate, else the Size of a ticket never planned (SananAgile::IssueSp).
     def story_point_for(issue)
-      cf = story_point_cfid
-      return issue.agile_data&.story_points.to_f if cf <= 0
-
-      cv = issue.custom_value_for(cf)
-      parse_number(cv&.value)
+      SananAgile::IssueSp.planning_sp_of(issue, @cfg).to_f
     end
 
     def backlog_page(offset: 0, limit: BACKLOG_PAGE_SIZE, compute_sp: true)
@@ -138,12 +135,7 @@ module SananAgile
     def sum_sp_ids(ids)
       return 0.0 if ids.blank?
 
-      cf = story_point_cfid
-      if cf <= 0
-        defined?(AgileData) ? AgileData.where(issue_id: ids).sum(:story_points).to_f : 0.0
-      else
-        sum_custom_values(ids, cf)
-      end
+      SananAgile::IssueSp.sum(SananAgile::IssueSp.planning_sp(ids, @cfg).values)
     end
 
     def sum_cf_ids(ids, setting_key)
@@ -264,10 +256,6 @@ module SananAgile
 
     def hide_subtasks?
       @cfg['backlog_hide_subtasks'].to_s != '0'
-    end
-
-    def story_point_cfid
-      @cfg['story_point_cfid'].to_i
     end
 
     def sum_sp(issues)

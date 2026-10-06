@@ -353,3 +353,20 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Field following the plugin-wide (global) settings */
+.sanan-settings .sanan-settings__inherited {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #f1f2f4;
+  color: #626f86;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+  vertical-align: middle;
+  text-transform: none;
+}
+
+.sanan-settings .sanan-settings__scope { color: #626f86; }

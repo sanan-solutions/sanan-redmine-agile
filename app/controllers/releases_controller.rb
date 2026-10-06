@@ -121,11 +121,7 @@ class ReleasesController < ApplicationController
 
     @progress = @release.progress
     issue_ids = parent_ids + Array(@child_issues).map(&:id)
-    @sp_size_by_issue = if issue_ids.any? && defined?(SananIssueSpSize)
-                          SananIssueSpSize.where(issue_id: issue_ids).index_by(&:issue_id)
-                        else
-                          {}
-                        end
+    @sp_size_by_issue = SananAgile::IssueSp.values_for(issue_ids, @settings, :size)
     @release_item_by_issue = @release.items.includes(:added_by).index_by(&:issue_id)
   end
 
@@ -339,8 +335,7 @@ class ReleasesController < ApplicationController
 
     item = @release.items.find_by!(issue_id: params[:issue_id])
     issue = Issue.visible(User.current).find(item.issue_id)
-    @sp_size_by_issue = SananIssueSpSize.where(issue_id: issue.id).index_by(&:issue_id) if defined?(SananIssueSpSize)
-    @sp_size_by_issue ||= {}
+    @sp_size_by_issue = SananAgile::IssueSp.values_for([issue.id], @settings, :size)
     unless helpers.release_team_estimated?(issue, part)
       return render json: { ok: false, error: 'Ticket is not estimated for this part' }, status: 422
     end

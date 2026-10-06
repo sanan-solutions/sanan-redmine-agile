@@ -6,10 +6,10 @@ module SananAgile
         # Block move to resolve_status unless required BE/FE Done flags are set.
         # Must be a real validation (not after_save + throw) so Agile board gets 422 JSON.
         validate :sanan_require_done_parts_on_resolve, if: :will_check_resolve_rule?
-        attr_accessor :_sanan_agile_internal, :sanan_sp_size_attrs, :sanan_sp_sprint_attrs,
-                      :sanan_skip_commit_lock
+        attr_accessor :_sanan_agile_internal, :sanan_skip_commit_lock
         validate :sanan_protect_commit_lock, if: :sanan_check_commit_lock?
         before_save :sanan_snapshot_sprint_sp_on_version_change
+        before_save :sanan_apply_sp_totals
         before_save :sanan_stamp_done_in_sprint
         # chạy sau khi issue lưu (insert/update)
         after_save :sanan_agile_after_save
@@ -39,20 +39,12 @@ module SananAgile
       end
     end
 
+    # SP shown by redmine_agile (cards, column sums): the "This sprint" Total (SananAgile::IssueSp).
     def story_points
-      val = nil
-      if self.class.reflect_on_association(:agile_data)
-        rec = if respond_to?(:agile_data_without_default)
-                agile_data_without_default
-              else
-                association(:agile_data).load_target
-              end
-        val = rec.try(:story_points) if rec
-      end
-      if val.nil? && id && defined?(AgileData)
-        val = AgileData.where(issue_id: id).pick(:story_points)
-      end
-      val
+      return nil unless project_id
+
+      cfg = SananAgile::ProjectSettings.load(project_id)
+      SananAgile::IssueSp.total_of(SananAgile::IssueSp.values(self, cfg, :sprint), cfg)
     end
 
     private
@@ -70,9 +62,6 @@ module SananAgile
         self._sanan_agile_internal = true
 
         maybe_close_parent_epic!(cfg)
-        persist_sanan_sp_size
-        persist_sanan_sp_sprint
-        sync_story_points_from_cf(cfg)
       ensure
         self._sanan_agile_internal = false
       end
@@ -148,6 +137,17 @@ module SananAgile
       SananAgile::SprintSpHistory.on_version_change!(self, cfg)
     end
 
+    # Size / Sprint Totals from their BE / FE / QA parts (formula in the settings), on every save.
+    def sanan_apply_sp_totals
+      return if @_sanan_agile_internal
+      return unless project_id
+
+      cfg = SananAgile::ProjectSettings.load(project_id)
+      return if cfg.blank? || cfg['sanan_agile_enabled'] == '0'
+
+      SananAgile::SpTotalFormula.apply_issue!(self, cfg)
+    end
+
     # Done BE / FE / Code / QA, UAT Done: filled in the same save when the ticket enters their status.
     def sanan_stamp_done_in_sprint
       return if @_sanan_agile_internal
@@ -158,36 +158,6 @@ module SananAgile
       return if cfg.blank? || cfg['sanan_agile_enabled'] == '0'
 
       SananAgile::DoneInSprint.stamp!(self, cfg)
-    end
-
-    def persist_sanan_sp_size
-      return if sanan_sp_size_attrs.nil?
-
-      SananAgile::SprintSpHistory.apply_size_attrs!(self, sanan_sp_size_attrs)
-    end
-
-    def persist_sanan_sp_sprint
-      return if sanan_sp_sprint_attrs.nil?
-
-      SananAgile::SprintSpHistory.apply_sprint_total_attrs!(self, sanan_sp_sprint_attrs)
-    end
-
-    # ===== Story Point sync =====
-    def sync_story_points_from_cf(cfg)
-      cfid = cfg['story_point_cfid'].to_s.strip
-      return if cfid.blank?
-
-      raw = custom_field_value(cfid.to_i)
-      sp  = parse_float_or_nil(raw)
-
-      agile_model = defined?(SananAgile::AgileData) ? SananAgile::AgileData : AgileData
-      row = agile_model.find_or_initialize_by(issue_id: id)
-      return if row.persisted? && row.story_points == sp
-
-      init_journal(User.current || User.anonymous,
-                   "Sync SP CF(#{cfid}) → agile_data.story_points=#{sp.inspect}")
-      row.story_points = sp
-      row.save!(validate: false)
     end
 
     def will_check_resolve_rule?

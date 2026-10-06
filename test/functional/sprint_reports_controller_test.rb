@@ -89,20 +89,27 @@ class SprintReportsControllerTest < Redmine::ControllerTest
     assert_equal 9.0, report.actual_be # 4 (still here) + 5 (history), not 4 + 8
   end
 
+  def with_settings(extra)
+    enable_roadmap!(@project, SananAgile::ProjectSettings.load(@project.id).merge(extra))
+    @project.reload
+  end
+
   def test_part_without_sprint_sp_counts_zero_not_size
-    issue = Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'Sized only', status_id: 1,
-                          fixed_version: @sprint, priority: IssuePriority.first,
-                          custom_field_values: { @done_be.id.to_s => @sprint.id.to_s })
-    SananIssueSpSize.create!(issue_id: issue.id, sp_be: 6)
+    size_be = IssueCustomField.create!(name: 'Size BE', field_format: 'float', is_for_all: true, tracker_ids: [1])
+    with_settings('size_be_cfid' => size_be.id.to_s)
+    Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'Sized only', status_id: 1,
+                  fixed_version: @sprint, priority: IssuePriority.first,
+                  custom_field_values: { @done_be.id.to_s => @sprint.id.to_s, size_be.id.to_s => '6' })
 
     report = SananAgile::SprintReport::Calculator.call(@sprint, cfg: SananAgile::ProjectSettings.load(@project.id))
     assert_equal 4.0, report.actual_be
   end
 
   def test_sprint_total_commit_not_dod_shows_commit_cell_and_is_not_summed
-    total_only = Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'Total only', status_id: 1,
-                               fixed_version: @sprint, priority: IssuePriority.first)
-    SananIssueSprintSp.create!(issue_id: total_only.id, version_id: @sprint.id, sp_total: 5, captured_at: Time.current)
+    total = IssueCustomField.create!(name: 'SP sprint Total', field_format: 'float', is_for_all: true, tracker_ids: [1])
+    with_settings('sp_sprint_total_cfid' => total.id.to_s)
+    Issue.create!(project: @project, tracker_id: 1, author_id: 2, subject: 'Total only', status_id: 1,
+                  fixed_version: @sprint, priority: IssuePriority.first, custom_field_values: { total.id.to_s => '5' })
 
     get :show, params: { project_id: @project.identifier, id: @sprint.id }
     assert_response :success

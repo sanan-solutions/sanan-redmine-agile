@@ -1,11 +1,8 @@
 # frozen_string_literal: true
 class SananAgile::ProjectSettingsController < ApplicationController
-  before_action :find_project
-  before_action :authorize # dựa theo permission :manage_sanan_agile_settings
-
-  def update
-    cfg = params.require(:settings)
-                .permit(:sanan_agile_enabled,
+  # Settings fields accepted from the form (project and global settings share it).
+  PERMITTED = [
+                  :sanan_agile_enabled,
                   :sanan_agile_version_strategy, 
                   :skip_if_already_set, 
 
@@ -20,7 +17,7 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   { dod_checkbox_trackers: [] },
                   { dod_checkbox_statuses: [] },
                   :dod_cfid,
-                  :story_point_cfid,
+                  :story_point_cfid, :size_be_cfid, :size_fe_cfid, :size_qa_cfid, :sp_sprint_total_cfid,
                   :sp_total_formula,
                   :sp_total_require_qa,
 
@@ -56,10 +53,12 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :commit_lock_days_before_end,
                   {agile_board_hidden_tracker_ids: []},
                   :agile_board_backlog_enabled,
+                  :issues_inline_edit_enabled,
                   :agile_board_uat_group_enabled,
                   { agile_board_group_dev_status_ids: [] },
                   { agile_board_group_uat_status_ids: [] },
                   { agile_board_group_closed_status_ids: [] },
+                  { progress_excluded_status_ids: [] },
                   :roadmap_enabled,
                   :roadmap_capacity_window,
                   { roadmap_blocked_status_ids: [] },
@@ -78,8 +77,18 @@ class SananAgile::ProjectSettingsController < ApplicationController
                   :cs_ready_sp_alert_threshold,
                   :sale_ready_sp_alert_threshold,
                   :intake_ready_sp_alert_mail,
-                  :customer_deadline_cfid,
-                )
+                  :customer_deadline_cfid
+  ].freeze
+
+  def self.permitted(params)
+    params.require(:settings).permit(*PERMITTED)
+  end
+
+  before_action :find_project
+  before_action :authorize # dựa theo permission :manage_sanan_agile_settings
+
+  def update
+    cfg = self.class.permitted(params)
     SananAgile::ProjectSettings.save(@project.id, cfg)
     flash[:notice] = l(:notice_successful_update)
     redirect_to settings_project_path(@project) # quay lại trang Settings (giữ dải tabs)

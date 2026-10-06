@@ -1,10 +1,13 @@
-<% cfg = SananAgile::ProjectSettings.load(@project.id) %>
+<%# Project settings tab, also used for the plugin-wide settings (Administration → Sanan Agile, global: true). %>
+<% global = local_assigns[:global] %>
+<% cfg = global ? SananAgile::ProjectSettings.load_global : SananAgile::ProjectSettings.load(@project.id) %>
+<% inherited = global ? [] : SananAgile::ProjectSettings.inherited_keys(@project.id) %>
 <% issue_custom_fields = IssueCustomField.sorted.all %>
 <% version_cfs = VersionCustomField.order(:name) %>
 <% tracker_map = (cfg['card_color_tracker_map'] || {}).stringify_keys %>
 <% trackers = Tracker.order(:position) %>
 <% statuses = IssueStatus.sorted %>
-<% open_versions = @project.shared_versions.open.to_a %>
+<% open_versions = global ? [] : @project.shared_versions.open.to_a %>
 <% mode = (cfg['card_color_tracker_mode'].presence || 'body') %>
 <%
   issue_cf_opts = [['— Không dùng —', '']] + issue_custom_fields.map { |cf| ["##{cf.id} — #{cf.name} (#{cf.field_format})", cf.id] }
@@ -20,8 +23,12 @@
 <%= stylesheet_link_tag 'project_settings', plugin: 'sanan_redmine_agile' %>
 <%= javascript_include_tag 'project_settings', plugin: 'sanan_redmine_agile' %>
 
-<div class="box tabular sanan-settings" id="sanan-settings">
+<div class="box tabular sanan-settings" id="sanan-settings"
+     data-inherited-keys="<%= inherited.join(',') %>" data-inherited-label="<%= l(:label_sanan_settings_inherited) %>">
   <p class="sanan-settings__intro"><%= l(:text_sanan_settings_intro) %></p>
+  <p class="sanan-settings__intro sanan-settings__scope">
+    <%= global ? l(:text_sanan_settings_global_scope) : l(:text_sanan_settings_project_scope) %>
+  </p>
 
   <div class="sanan-settings__layout">
     <nav class="sanan-settings__nav" role="tablist" aria-label="<%= l(:label_sanan_settings_toc) %>">
@@ -38,7 +45,7 @@
     </nav>
 
     <div class="sanan-settings__main">
-  <%= form_tag(project_sanan_agile_project_settings_path(@project), method: :put) do %>
+  <%= form_tag(global ? sanan_agile_global_settings_path : project_sanan_agile_project_settings_path(@project), method: :put) do %>
 
     <section class="sanan-settings-section is-active" id="sa-general" data-sa-panel="sa-general" role="tabpanel">
       <div class="sanan-settings-section__head">
@@ -46,6 +53,7 @@
         <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_general_hint) %></span>
       </div>
       <div class="sanan-settings-section__body">
+        <% unless global %>
         <p>
           <label><%= l(:label_enabled_for_project) %></label>
           <span class="sanan-settings__check">
@@ -53,6 +61,7 @@
             <%= check_box_tag 'settings[sanan_agile_enabled]', '1', cfg['sanan_agile_enabled'] == '1' %>
           </span>
         </p>
+        <% end %>
         <p>
           <label><%= l(:label_version_strategy) %></label>
           <span>
@@ -71,6 +80,16 @@
               <%= check_box_tag 'settings[skip_if_already_set]', '1', cfg['skip_if_already_set'] == '1' %>
             </span>
             <em><%= l(:label_skip_note) %></em>
+          </span>
+        </p>
+        <p>
+          <label><%= l(:label_sanan_inline_edit_enabled) %></label>
+          <span>
+            <span class="sanan-settings__check">
+              <%= hidden_field_tag 'settings[issues_inline_edit_enabled]', '0' %>
+              <%= check_box_tag 'settings[issues_inline_edit_enabled]', '1', cfg['issues_inline_edit_enabled'].to_s == '1' %>
+            </span>
+            <em><%= l(:text_sanan_inline_edit_enabled_hint) %></em>
           </span>
         </p>
       </div>
@@ -131,6 +150,7 @@
             <%= check_box_tag 'settings[backlog_hide_subtasks]', '1', cfg['backlog_hide_subtasks'].to_s != '0' %>
           </span>
         </p>
+        <% unless global %>
         <p>
           <label><%= l(:label_sanan_backlog_version) %></label>
           <span>
@@ -139,6 +159,7 @@
             <em><%= l(:text_sanan_backlog_version_hint) %></em>
           </span>
         </p>
+        <% end %>
         <p>
           <label><%= l(:label_sanan_velocity_window) %></label>
           <span>
@@ -318,6 +339,7 @@
             <%= check_box_tag 'settings[cs_backlog_enabled]', '1', cfg['cs_backlog_enabled'].to_s == '1' %>
           </span>
         </p>
+        <% unless global %>
         <p>
           <label>CS Queue Version</label>
           <span>
@@ -326,6 +348,7 @@
             <em>Version hàng đợi CS (không dùng làm Product sprint)</em>
           </span>
         </p>
+        <% end %>
         <p>
           <label>CS Ready statuses</label>
           <span>
@@ -345,11 +368,13 @@
             <%= check_box_tag 'settings[sale_backlog_enabled]', '1', cfg['sale_backlog_enabled'].to_s == '1' %>
           </span>
         </p>
+        <% unless global %>
         <p>
           <label>Sale Queue Version</label>
           <%= select_tag 'settings[sale_queue_version_id]',
                 options_for_select([['—', '']] + open_versions.map { |v| [v.name, v.id] }, cfg['sale_queue_version_id'].to_s) %>
         </p>
+        <% end %>
         <p>
           <label>Sale Ready statuses</label>
           <%= select_tag 'settings[sale_ready_status_ids][]',
@@ -457,14 +482,31 @@
         <span class="sanan-settings-section__hint"><%= l(:text_sanan_settings_story_points_hint) %></span>
       </div>
       <div class="sanan-settings-section__body">
-        <h4 class="sanan-settings__subtitle">Issue Custom Fields</h4>
-        <p>
-          <label>Story Point (tổng)</label>
-          <span>
-            <%= select_tag 'settings[story_point_cfid]', options_for_select(issue_cf_opts, cfg['story_point_cfid']) %>
-            <em>Size tổng — đồng bộ <code>agile_data.story_points</code>. Không reset khi đổi sprint.</em>
-          </span>
-        </p>
+        <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_sp_fields_size) %></h4>
+        <p class="sanan-settings__note"><%= l(:text_sanan_sp_fields_size_hint) %></p>
+        <div class="sanan-settings__subgrid">
+          <% [['size_be_cfid', :label_sprint_report_sp_be], ['size_fe_cfid', :label_sprint_report_sp_fe],
+              ['size_qa_cfid', :label_sprint_report_sp_qa], ['story_point_cfid', :label_sanan_sp_total]].each do |key, label| %>
+            <p>
+              <label><%= l(label) %></label>
+              <%= select_tag "settings[#{key}]", options_for_select(issue_cf_opts, cfg[key].to_s), id: "settings_#{key}" %>
+            </p>
+          <% end %>
+        </div>
+
+        <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_sp_fields_sprint) %></h4>
+        <p class="sanan-settings__note"><%= l(:text_sanan_sp_fields_sprint_hint) %></p>
+        <div class="sanan-settings__subgrid">
+          <% [['sp_be_cfid', :label_sprint_report_sp_be], ['sp_fe_cfid', :label_sprint_report_sp_fe],
+              ['sp_qa_cfid', :label_sprint_report_sp_qa], ['sp_sprint_total_cfid', :label_sanan_sp_total]].each do |key, label| %>
+            <p>
+              <label><%= l(label) %></label>
+              <%= select_tag "settings[#{key}]", options_for_select(issue_cf_opts, cfg[key].to_s), id: "settings_#{key}" %>
+            </p>
+          <% end %>
+        </div>
+
+        <hr class="sanan-settings__divider">
         <% sp_formula = %w[max avg].include?(cfg['sp_total_formula'].to_s) ? cfg['sp_total_formula'] : 'manual' %>
         <p>
           <label><%= l(:label_sanan_sp_total_formula) %></label>
@@ -491,20 +533,6 @@
             <em><%= l(:text_sanan_sp_total_require_qa_hint) %></em>
           </span>
         </p>
-        <div class="sanan-settings__subgrid">
-          <p>
-            <label>SP Backend (sprint)</label>
-            <%= select_tag 'settings[sp_be_cfid]', options_for_select(issue_cf_opts, cfg['sp_be_cfid']), include_blank: true %>
-          </p>
-          <p>
-            <label>SP Frontend (sprint)</label>
-            <%= select_tag 'settings[sp_fe_cfid]', options_for_select(issue_cf_opts, cfg['sp_fe_cfid']), include_blank: true %>
-          </p>
-          <p>
-            <label>SP QA (sprint)</label>
-            <%= select_tag 'settings[sp_qa_cfid]', options_for_select(issue_cf_opts, cfg['sp_qa_cfid']), include_blank: true %>
-          </p>
-        </div>
 
         <hr class="sanan-settings__divider">
         <h4 class="sanan-settings__subtitle">Version CF — Commit (snapshot khi đóng sprint)</h4>
@@ -623,6 +651,16 @@
           </p>
         <% end %>
 
+        <p>
+          <label><%= l(:label_sanan_progress_excluded_statuses) %></label>
+          <span>
+            <%= hidden_field_tag 'settings[progress_excluded_status_ids][]', '' %>
+            <%= select_tag 'settings[progress_excluded_status_ids][]',
+                  options_from_collection_for_select(statuses, :id, :name, Array(cfg['progress_excluded_status_ids']).map(&:to_i)),
+                  multiple: true, id: 'settings_progress_excluded_status_ids' %>
+            <em><%= l(:text_sanan_progress_excluded_statuses_hint) %></em>
+          </span>
+        </p>
         <hr class="sanan-settings__divider">
         <h4 class="sanan-settings__subtitle"><%= l(:label_sanan_done_in_sprint) %></h4>
         <p class="sanan-settings__note"><%= l(:text_sanan_done_in_sprint_hint) %></p>

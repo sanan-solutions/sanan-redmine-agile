@@ -37,7 +37,7 @@ module SananAgile
       @items_by_issue = SananRoadmapItem.where(project_id: @project.id).index_by(&:issue_id)
       @epics = Issue.visible
                     .where(project_id: @project.id, tracker_id: epic_tracker_id)
-                    .includes(:status, :assigned_to)
+                    .includes(:status, :assigned_to, :priority)
                     .to_a
       @stories_by_epic = load_stories(@epics.map(&:id))
       self
@@ -81,7 +81,8 @@ module SananAgile
           next if item.year == @year && item.quarter == q
           next unless item.covers?(@year, q)
 
-          continuations[q] << { id: epic.id, subject: epic.subject, progress: ser[:progress], color: ser[:color],
+          continuations[q] << { id: epic.id, subject: epic.subject, progress: ser[:progress],
+                                dev_progress: ser[:dev_progress], color: ser[:color],
                                 from: SananRoadmapMove.label(item.year, item.quarter), in_data: item.year == @year }
         end
       end
@@ -211,17 +212,42 @@ module SananAgile
       scope = Issue.visible.where(parent_id: epic_ids).includes(:status, :assigned_to, :tracker)
       scope = scope.where.not(tracker_id: subtask_tracker_ids) if subtask_tracker_ids.any?
       stories = scope.order(:id).to_a
-      sp = story_points_for(stories.map(&:id))
+      ids = stories.map(&:id)
+      sp = story_points_for(ids)
+      dod = present_ids(ids, @cfg['dod_cfid'])
+      uat_done = present_ids(ids, @cfg['uat_done_cfid'])
       stories.group_by(&:parent_id).transform_values do |list|
-        list.map { |s| serialize_story(s, sp[s.id]) }
+        list.map { |s| serialize_story(s, sp[s.id], dod.include?(s.id), uat_done.include?(s.id)) }
       end
     end
 
+    # Ids of the issues whose custom field has a value.
+    def present_ids(ids, cfid)
+      cfid = cfid.to_i
+      return Set.new if ids.empty? || cfid <= 0
+
+      CustomValue.where(customized_type: 'Issue', custom_field_id: cfid, customized_id: ids)
+                 .where.not(value: [nil, '']).distinct.pluck(:customized_id).to_set
+    end
+
+    def status_phases
+      @status_phases ||= SananAgile::BoardGroups.status_groups(@cfg)
+    end
+
+    def progress_excluded_status_ids
+      @progress_excluded_status_ids ||= Array(@cfg['progress_excluded_status_ids']).map(&:to_i).reject(&:zero?)
+    end
+
+    # Progress (by Size, else by count) on two milestones: ready to release (passed UAT / closed) and
+    # development done (DoD reached / in UAT / ready). Stories in an excluded status (Rejected…) count nowhere.
     def serialize_epic(epic, item, stories)
       stories ||= []
-      sp_total = stories.sum { |s| s[:sp].to_f }
-      sp_done = stories.select { |s| s[:closed] }.sum { |s| s[:sp].to_f }
-      done_count = stories.count { |s| s[:closed] }
+      scope = stories.reject { |s| s[:excluded] }
+      sp_total = scope.sum { |s| s[:sp].to_f }
+      sp_done = scope.select { |s| s[:ready] }.sum { |s| s[:sp].to_f }
+      sp_dev = scope.select { |s| s[:dev_done] }.sum { |s| s[:sp].to_f }
+      done_count = scope.count { |s| s[:ready] }
+      dev_count = scope.count { |s| s[:dev_done] }
 
       {
         id: epic.id,
@@ -231,6 +257,8 @@ module SananAgile
         color: status_color(epic.status),
         closed: epic.closed?,
         owner: epic.assigned_to&.name,
+        priority: epic.priority&.name.to_s,
+        priority_key: SananAgile::PriorityIcon.key(epic.priority),
         health: item ? item.health_key : 'on_track',
         position: item ? item.position.to_i : 0,
         year: item&.year,
@@ -239,11 +267,15 @@ module SananAgile
         end_quarter: item&.end_quarter,
         span: item ? item.span : 1,
         releases: (@releases_by_epic || {})[epic.id] || [],
-        progress: epic_progress(epic, stories, sp_total, sp_done, done_count),
+        progress: epic_progress(epic, scope, sp_total, sp_done, done_count),
+        dev_progress: epic_progress(epic, scope, sp_total, sp_dev, dev_count),
         sp_total: round_sp(sp_total),
         sp_done: round_sp(sp_done),
-        story_count: stories.size,
+        sp_dev: round_sp(sp_dev),
+        story_count: scope.size,
         done_count: done_count,
+        dev_count: dev_count,
+        excluded_count: stories.size - scope.size,
         stories: stories,
         moves: serialize_moves(@moves_by_epic.to_h[epic.id], item)
       }
@@ -269,7 +301,7 @@ module SananAgile
       }
     end
 
-    # SP-weighted when stories carry SP; otherwise share of closed stories.
+    # SP-weighted when stories carry SP; otherwise share of stories.
     def epic_progress(epic, stories, sp_total, sp_done, done_count)
       return epic.closed? ? 100 : epic.done_ratio.to_i if stories.empty?
       return ((sp_done / sp_total) * 100).round if sp_total.positive?
@@ -277,7 +309,11 @@ module SananAgile
       ((done_count.to_f / stories.size) * 100).round
     end
 
-    def serialize_story(story, sp)
+    # ready: passed UAT (UAT Done set) or closed; dev_done: also DoD reached or in the UAT phase.
+    def serialize_story(story, sp, dod = false, uat_done = false)
+      excluded = progress_excluded_status_ids.include?(story.status_id)
+      ready = !excluded && (story.closed? || uat_done)
+      dev_done = ready || (!excluded && (dod || status_phases[story.status_id] == 'uat'))
       {
         id: story.id,
         subject: story.subject,
@@ -288,24 +324,19 @@ module SananAgile
         closed: story.closed?,
         assignee: story.assigned_to&.name,
         sp: sp.nil? ? nil : round_sp(sp),
-        progress: story.closed? ? 100 : story.done_ratio.to_i
+        progress: story.closed? ? 100 : story.done_ratio.to_i,
+        excluded: excluded,
+        ready: ready,
+        dev_done: dev_done
       }
     end
 
+    # Size Total of each story (its estimate; the formula of its Size parts when the Total is empty).
     def story_points_for(ids)
       return {} if ids.empty?
 
-      cf = @cfg['story_point_cfid'].to_i
-      if cf.positive?
-        CustomValue.where(customized_type: 'Issue', custom_field_id: cf, customized_id: ids)
-                   .pluck(:customized_id, :value)
-                   .each_with_object({}) { |(id, v), h| n = parse_number(v); h[id] = n unless n.nil? }
-      elsif defined?(AgileData)
-        AgileData.where(issue_id: ids).where.not(story_points: nil).pluck(:issue_id, :story_points)
-                 .to_h { |id, v| [id, v.to_f] }
-      else
-        {}
-      end
+      SananAgile::IssueSp.values_for(ids, @cfg, :size)
+                         .transform_values { |v| SananAgile::IssueSp.total_of(v, @cfg)&.to_f }.compact
     end
 
     def status_legend

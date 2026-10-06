@@ -40,7 +40,7 @@
   </td>
   <td class="sp<%= ' backlog-cell-edit' if edit %>"
       <% if edit %>data-field="story_points" data-value="<%= backlog_issue_sp(issue) %>" data-edit-type="sp"<% end %>>
-    <span class="backlog-cell-edit__display"><%= backlog_issue_sp(issue) %></span>
+    <span class="backlog-cell-edit__display"><%= backlog_issue_sp_cell(issue) %></span>
   </td>
   <td class="status<%= ' backlog-cell-edit' if edit %>"
       <% if edit %>data-field="status_id" data-value="<%= issue.status_id %>" data-edit-type="status"<% end %>>

@@ -11,7 +11,14 @@ module SananAgile
       'card_color_tracker_map'=> {},
       'card_color_tracker_mode' => 'border',
       # Auto set story point for redmine agile
-      'story_point_cfid'    => '',
+      # Size (estimate of the whole ticket, does not change per sprint): issue custom fields
+      'story_point_cfid'    => '',        # Size Total
+      'size_be_cfid'        => '',
+      'size_fe_cfid'        => '',
+      'size_qa_cfid'        => '',
+      # "This sprint" SP (current / next sprint; snapshot per sprint in sanan_issue_sprint_sps):
+      # sp_be_cfid / sp_fe_cfid / sp_qa_cfid below, and the sprint Total (also a sub-task's personal SP)
+      'sp_sprint_total_cfid' => '',
       'sp_total_formula'    => 'manual',  # manual | max | avg
       'sp_total_require_qa' => '0',       # Total empty unless tester SP is set
 
@@ -83,12 +90,16 @@ module SananAgile
       'agile_board_hidden_tracker_ids' => [],
       # Agile board backlog panel (drag tickets between the backlog and the board's sprint)
       'agile_board_backlog_enabled' => '0',
+      # Issues tab: edit list cells in place
+      'issues_inline_edit_enabled' => '1',
       # Agile board column groups: Development | UAT | Closed (statuses per group below), each collapsible
       'agile_board_uat_group_enabled' => '0',
       # Statuses per column group (not picked anywhere: closed → Closed, otherwise Development)
       'agile_board_group_dev_status_ids' => [],
       'agile_board_group_uat_status_ids' => [],
       'agile_board_group_closed_status_ids' => [],
+      # Statuses left out of Roadmap progress (scope removed, e.g. Rejected)
+      'progress_excluded_status_ids' => [],
 
       # Product roadmap (quarterly Epic plan)
       'roadmap_enabled' => '0',
@@ -117,16 +128,66 @@ module SananAgile
 
     PLUGIN_KEY = :sanan_redmine_agile
 
+    # Plugin-wide defaults live under this key of the store, next to the per-project hashes. A project stores
+    # only what differs from them, so changing a global setting reaches every project that follows it.
+    GLOBAL_KEY = '_global'
+
+    # Settings that only make sense per project (they point at the project's own versions, or switch the
+    # plugin on): never taken from, nor shown in, the global settings.
+    PROJECT_ONLY_KEYS = %w[sanan_agile_enabled backlog_version_id cs_queue_version_id sale_queue_version_id].freeze
+
+    def self.store
+      Setting.send(:"plugin_#{PLUGIN_KEY}") || {}
+    end
+
+    # Global settings over the built-in defaults.
+    def self.load_global
+      SananAgile::DoneInSprint.migrate_legacy!(DEFAULTS.merge(global_overrides))
+    end
+
+    def self.global_overrides
+      (store[GLOBAL_KEY] || {}).except(*PROJECT_ONLY_KEYS)
+    end
+
     def self.load(project_id)
-      store = Setting.send(:"plugin_#{PLUGIN_KEY}") || {}
-      SananAgile::DoneInSprint.migrate_legacy!(DEFAULTS.merge(store[project_id.to_s] || {}))
+      project = store[project_id.to_s] || {}
+      SananAgile::DoneInSprint.migrate_legacy!(DEFAULTS.merge(global_overrides).merge(project))
+    end
+
+    # Keys a project takes from the global settings (not stored for the project).
+    def self.inherited_keys(project_id)
+      stored = store[project_id.to_s] || {}
+      DEFAULTS.keys - PROJECT_ONLY_KEYS - stored.keys
     end
 
     def self.save(project_id, params_hash)
-      store = Setting.send(:"plugin_#{PLUGIN_KEY}") || {}
-      cfg   = DEFAULTS.merge(params_hash.to_h.slice(*DEFAULTS.keys))
-      store[project_id.to_s] = cfg
-      Setting.send(:"plugin_#{PLUGIN_KEY}=", store)
+      cfg = DEFAULTS.merge(params_hash.to_h.stringify_keys.slice(*DEFAULTS.keys))
+      global = load_global
+      overrides = cfg.reject do |key, value|
+        !PROJECT_ONLY_KEYS.include?(key) && comparable(value) == comparable(global[key])
+      end
+      write(project_id.to_s, overrides)
+    end
+
+    def self.save_global(params_hash)
+      cfg = DEFAULTS.merge(params_hash.to_h.stringify_keys.slice(*DEFAULTS.keys)).except(*PROJECT_ONLY_KEYS)
+      write(GLOBAL_KEY, cfg)
+    end
+
+    def self.write(key, value)
+      data = store.dup
+      # Own copies: values shared with DEFAULTS or another entry would be dumped as YAML aliases.
+      data[key] = JSON.parse(value.to_json)
+      Setting.send(:"plugin_#{PLUGIN_KEY}=", data)
+    end
+
+    # Values as the form submits them: multi-selects carry a blank entry and keep no order.
+    def self.comparable(value)
+      case value
+      when Array then value.map(&:to_s).reject(&:empty?).sort
+      when Hash then value.to_h.transform_keys(&:to_s).transform_values(&:to_s).reject { |_k, v| v.empty? }.sort.to_h
+      else value.to_s
+      end
     end
   end
 end

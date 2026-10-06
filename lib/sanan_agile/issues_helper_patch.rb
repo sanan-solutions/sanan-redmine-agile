@@ -13,7 +13,8 @@ module SananAgile
     ].freeze
 
     STORY_POINT_SETTING_KEYS = %w[
-      story_point_cfid sp_be_cfid sp_fe_cfid sp_qa_cfid
+      size_be_cfid size_fe_cfid size_qa_cfid story_point_cfid
+      sp_be_cfid sp_fe_cfid sp_qa_cfid sp_sprint_total_cfid
     ].freeze
 
     def self.apply!

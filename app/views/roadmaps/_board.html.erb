@@ -30,6 +30,21 @@
     epic_execution: l(:label_sanan_roadmap_epic_execution),
     plan: l(:label_sanan_roadmap_plan),
     unplanned: l(:label_sanan_roadmap_unplanned),
+    ready: l(:label_sanan_roadmap_ready),
+    dev_done: l(:label_sanan_roadmap_dev_done),
+    phase_out: l(:label_sanan_roadmap_phase_out),
+    tip_title: l(:label_sanan_roadmap_tip_title),
+    tip_ready: l(:text_sanan_roadmap_tip_ready),
+    tip_dev_only: l(:label_sanan_roadmap_tip_dev_only),
+    tip_dev: l(:text_sanan_roadmap_tip_dev),
+    tip_rest: l(:label_sanan_roadmap_tip_rest),
+    tip_rest_hint: l(:text_sanan_roadmap_tip_rest),
+    tip_excluded: l(:text_sanan_roadmap_tip_excluded),
+    tip_by_count: l(:text_sanan_roadmap_tip_by_count),
+    forecast: l(:label_sanan_roadmap_forecast),
+    forecast_hint: l(:text_sanan_roadmap_forecast_hint),
+    priority: l(:field_priority),
+    no_match: l(:label_sanan_roadmap_unplanned_no_match),
     new_story: l(:label_sanan_roadmap_new_story),
     close: l(:button_close),
     cap_remaining: l(:label_sanan_roadmap_cap_remaining),
@@ -180,6 +195,8 @@
           <button type="button" class="rm-icon-btn" data-rm-backlog-close title="<%= l(:button_close) %>" aria-label="<%= l(:button_close) %>">&times;</button>
         </div>
         <div class="rm-sub"><%= l(:text_sanan_roadmap_unplanned_hint) %></div>
+        <input type="search" id="rm-unplanned-search" class="rm-unplanned__search"
+               placeholder="<%= l(:label_sanan_roadmap_unplanned_search) %>" aria-label="<%= l(:label_sanan_roadmap_unplanned_search) %>">
         <div id="rm-unplanned-body"></div>
       </div>
     </aside>

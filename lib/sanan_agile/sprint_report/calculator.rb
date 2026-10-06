@@ -144,10 +144,9 @@ module SananAgile
         ids = Array(ids)
         return {} if ids.empty?
 
-        rows = sprint_history_by_issue(ids)
         parts = sprint_parts_by_issue(ids)
         ids.to_h do |iid|
-          total = rows[iid]&.sp_total
+          total = parts[iid][:total]
           total = SananAgile::SpTotalFormula.resolve(*parts[iid].values_at(:be, :fe, :qa), nil, cfg: @cfg) if total.nil?
           [iid, total.to_f]
         end
@@ -199,7 +198,7 @@ module SananAgile
         return empty if issue_ids.blank?
 
         sources = sources_by_issue(issue_ids)
-        sp_by = sum_cf_by_issue(issue_ids, cfid('story_point_cfid'))
+        sp_by = sprint_total_by_issue(issue_ids)
         issue_ids.each do |iid|
           key = sources[iid] || 'product'
           key = 'product' unless %w[cs sale product].include?(key)
@@ -345,21 +344,21 @@ module SananAgile
         Array(ids).to_h { |iid| [iid, parts.dig(iid, part).to_f] }
       end
 
-      # { issue_id => { be:, fe:, qa: } } "This sprint" SP per part (nil when unset). Tickets still on this
-      # sprint use their live values; tickets moved on read this sprint's history row (their live values
-      # belong to the new sprint).
+      # { issue_id => { be:, fe:, qa:, total: } } "This sprint" SP (nil when unset). A ticket that left this
+      # sprint reads the history row snapshot when it left (its fields now hold the next estimate); others
+      # (on the sprint, or a sub-task of a ticket on it) read their fields.
       def sprint_parts_by_issue(ids)
         ids = Array(ids)
         return {} if ids.empty?
 
         rows = sprint_history_by_issue(ids)
         here = Issue.where(id: ids, fixed_version_id: @sid).pluck(:id).to_set
-        here_ids = ids.select { |iid| here.include?(iid) }
-        live = %i[be fe qa].to_h { |part| [part, raw_cf_by_issue(here_ids, cfid("sp_#{part}_cfid"))] }
+        live = SananAgile::IssueSp.values_for(ids, @cfg, :sprint)
         ids.to_h do |iid|
-          values = %i[be fe qa].to_h do |part|
-            raw = here.include?(iid) ? live[part][iid] : rows[iid]&.public_send(:"sp_#{part}")
-            [part, raw.nil? ? nil : parse_number(raw)]
+          source = !here.include?(iid) && rows[iid] ? rows[iid] : live[iid]
+          values = %i[be fe qa total].to_h do |part|
+            v = source&.public_send(:"sp_#{part}")
+            [part, v.nil? ? nil : v.to_f]
           end
           [iid, values]
         end
@@ -490,7 +489,8 @@ module SananAgile
         subs = scope.pluck(:id, :assigned_to_id)
         return [] if subs.empty?
 
-        sp_by_issue = sum_cf_by_issue(subs.map(&:first), cfid('story_point_cfid'))
+        # Personal SP of a sub-task = its sprint Total (this sprint's history row once it left the sprint).
+        sp_by_issue = sprint_total_by_issue(subs.map(&:first))
         grouped = Hash.new { |h, k| h[k] = { count: 0, sp: 0.0 } }
         subs.each do |issue_id, user_id|
           grouped[user_id][:count] += 1

@@ -10,10 +10,11 @@ class SprintCommitTest < ActiveSupport::TestCase
   def setup
     User.current = User.find(1)
     @project = Project.find(1)
-    @be, @fe, @qa = %w[BE FE QA].map do |n|
+    @be, @fe, @qa, @total = %w[BE FE QA Total].map do |n|
       IssueCustomField.create!(name: "SP #{n} sprint", field_format: 'float', is_for_all: true, tracker_ids: [1, 2, 3])
     end
     enable_roadmap!(@project, 'sp_be_cfid' => @be.id.to_s, 'sp_fe_cfid' => @fe.id.to_s, 'sp_qa_cfid' => @qa.id.to_s,
+                              'sp_sprint_total_cfid' => @total.id.to_s,
                               'standard_tracker' => %w[1 2], 'subtask_tracker' => ['3'], 'epic_tracker' => '')
     @sprint = Version.create!(project: @project, name: 'Sprint C', status: 'open')
   end
@@ -23,7 +24,7 @@ class SprintCommitTest < ActiveSupport::TestCase
   end
 
   def ticket(status_id: 1, tracker_id: 1, sp: {})
-    values = sp.to_h { |part, v| [{ be: @be, fe: @fe, qa: @qa }[part].id.to_s, v.to_s] }
+    values = sp.to_h { |part, v| [{ be: @be, fe: @fe, qa: @qa, total: @total }[part].id.to_s, v.to_s] }
     Issue.create!(project: @project, tracker_id: tracker_id, author_id: 2, subject: 'T', status_id: status_id,
                   fixed_version: @sprint, priority: IssuePriority.first, custom_field_values: values)
   end
@@ -44,8 +45,7 @@ class SprintCommitTest < ActiveSupport::TestCase
   end
 
   def test_sprint_total_alone_also_commits
-    t = ticket
-    SananIssueSprintSp.create!(issue_id: t.id, version_id: @sprint.id, sp_total: 3, captured_at: Time.now)
+    t = ticket(sp: { total: 3 })
     assert_includes SananAgile::SprintCommit.issue_ids(@sprint, cfg), t.id
   end
 
@@ -72,8 +72,7 @@ class SprintCommitTest < ActiveSupport::TestCase
   def test_story_points_column_is_the_sprint_total_not_the_size
     enable_roadmap!(@project, SananAgile::ProjectSettings.load(@project.id).merge('sp_total_formula' => 'max',
                                                                                     'sp_total_require_qa' => '0'))
-    with_total = ticket(sp: { be: 1 })
-    SananIssueSprintSp.create!(issue_id: with_total.id, version_id: @sprint.id, sp_total: 5, captured_at: Time.now)
+    with_total = ticket(sp: { be: 1, total: 5 })
     from_parts = ticket(sp: { be: 3, fe: 2 }) # no sprint Total: formula max(BE, FE, QA)
 
     report = SananAgile::SprintReport::Calculator.call(@sprint, cfg: cfg)

@@ -94,6 +94,11 @@
     return out;
   };
 
+  R.productOf = function (epic) {
+    var found = epic && R.findEpic(epic.id);
+    return found ? found.product : null;
+  };
+
   R.findEpic = function (id) {
     id = Number(id);
     for (var p = 0; p < R.data.products.length; p++) {
@@ -130,16 +135,104 @@
 
   R.quarterLabel = function (year, quarter) { return 'Q' + quarter + (Number(year) === Number(R.data.year) ? '' : '/' + year); };
 
+  // Ready to release (done / sp_done) and development done (dev / sp_dev), by Size else by count.
   R.progressOf = function (epics) {
-    var stories = 0, done = 0, spTotal = 0, spDone = 0;
+    var stories = 0, done = 0, dev = 0, spTotal = 0, spDone = 0, spDev = 0;
     epics.forEach(function (e) {
       stories += e.story_count;
       done += e.done_count;
+      dev += e.dev_count || 0;
       spTotal += Number(e.sp_total) || 0;
       spDone += Number(e.sp_done) || 0;
+      spDev += Number(e.sp_dev) || 0;
     });
-    var pct = spTotal > 0 ? Math.round(spDone / spTotal * 100) : (stories > 0 ? Math.round(done / stories * 100) : 0);
-    return { stories: stories, done: done, spTotal: spTotal, spDone: spDone, pct: pct };
+    function pctOf(sp, n) {
+      return spTotal > 0 ? Math.round(sp / spTotal * 100) : (stories > 0 ? Math.round(n / stories * 100) : 0);
+    }
+    return { stories: stories, done: done, dev: dev, spTotal: spTotal, spDone: spDone, spDev: spDev,
+             pct: pctOf(spDone, done), devPct: pctOf(spDev, dev) };
+  };
+
+  // Two-colour bar: ready to release (dark) over development done (light). tipHtml: R.progressTipHtml().
+  R.splitBar = function (ready, dev, tipHtml, extraClass) {
+    ready = Math.max(0, Math.min(100, Number(ready) || 0));
+    dev = Math.max(ready, Math.min(100, Number(dev) || 0));
+    return '<div class="rm-bar rm-bar--split' + (extraClass ? ' ' + extraClass : '') + '"' +
+      (tipHtml ? ' data-rm-tip="' + R.esc(tipHtml) + '"' : '') + '>' +
+      '<b style="width:' + dev + '%"></b><i style="width:' + ready + '%"></i></div>';
+  };
+
+  // Hover explanation of a progress bar: what each colour means, its share and SP, what is left out.
+  // o: R.progressOf / R.epicProgress; opts: { excluded: n, forecast: R.forecast() }.
+  R.progressTipHtml = function (o, opts) {
+    opts = opts || {};
+    var bySp = Number(o.spTotal) > 0;
+    var total = bySp ? Number(o.spTotal) : Number(o.stories) || 0;
+    var ready = bySp ? Number(o.spDone) : Number(o.done) || 0;
+    var dev = bySp ? Number(o.spDev) : Number(o.dev) || 0;
+    function amount(n) { return bySp ? R.fmtSp(n) + ' ' + R.t.sp : n + ' ' + R.t.stories; }
+    function pct(n) { return total > 0 ? Math.round(n / total * 100) : 0; }
+    function row(cls, label, hint, n) {
+      return '<div class="rm-tip__row"><span class="rm-tip__sw rm-tip__sw--' + cls + '"></span>' +
+        '<span class="rm-tip__label"><b>' + R.esc(label) + '</b><small>' + R.esc(hint) + '</small></span>' +
+        '<span class="rm-tip__val"><b>' + pct(n) + '%</b><small>' + R.esc(amount(n)) + '</small></span></div>';
+    }
+    var html = '<div class="rm-tip__title">' + R.esc(R.fmt(R.t.tip_title, { total: amount(total) })) + '</div>' +
+      row('ready', R.t.ready, R.t.tip_ready, ready) +
+      row('dev', R.t.tip_dev_only, R.t.tip_dev, Math.max(dev - ready, 0)) +
+      row('rest', R.t.tip_rest, R.t.tip_rest_hint, Math.max(total - dev, 0));
+    if (opts.excluded) html += '<div class="rm-tip__note">' + R.esc(R.fmt(R.t.tip_excluded, { n: opts.excluded })) + '</div>';
+    if (opts.forecast) html += '<div class="rm-tip__note">⏱ ' + R.esc(opts.forecast.text) + '<br><small>' + R.esc(opts.forecast.hint) + '</small></div>';
+    if (!bySp) html += '<div class="rm-tip__note"><small>' + R.esc(R.t.tip_by_count) + '</small></div>';
+    return html;
+  };
+
+  R.epicTipHtml = function (epic, product) {
+    return R.progressTipHtml(R.epicProgress(epic), { excluded: epic.excluded_count, forecast: R.forecast(epic, product) });
+  };
+
+  // One floating tooltip for every [data-rm-tip] (bars, % labels): appended to <body>, so drawers and
+  // scrolling lists do not clip it.
+  R.bindTips = function () {
+    if (R.bindTips.done) return;
+    R.bindTips.done = true;
+    var $tip = null;
+    $(document).on('mouseenter', '.sanan-roadmap [data-rm-tip]', function () {
+      var html = this.getAttribute('data-rm-tip');
+      if (!html) return;
+      if (!$tip) $tip = $('<div class="rm-tip" role="tooltip"></div>').appendTo('body');
+      $tip.html(html).show();
+      var r = this.getBoundingClientRect();
+      var w = $tip.outerWidth(), h = $tip.outerHeight();
+      var top = r.bottom + 8;
+      if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 8);
+      var left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8));
+      $tip.css({ top: top, left: left });
+    }).on('mouseleave', '.sanan-roadmap [data-rm-tip]', function () {
+      if ($tip) $tip.hide();
+    });
+    $(window).on('scroll', function () { if ($tip) $tip.hide(); });
+  };
+  $(function () { R.bindTips(); });
+
+  R.epicProgress = function (e) {
+    return { stories: e.story_count, done: e.done_count, dev: e.dev_count || 0, spTotal: Number(e.sp_total) || 0,
+             spDone: Number(e.sp_done) || 0, spDev: Number(e.sp_dev) || 0, pct: e.progress, devPct: e.dev_progress || e.progress };
+  };
+
+  // "~2 sprints · around 15/11": Size left until ready to release / the product's team velocity.
+  R.forecast = function (epic, product) {
+    var cap = product && product.capacity;
+    var velocity = cap && Number(cap.velocity);
+    var left = (Number(epic.sp_total) || 0) - (Number(epic.sp_done) || 0);
+    if (!velocity || velocity <= 0 || left <= 0 || epic.closed) return null;
+    var sprints = Math.ceil(left / velocity);
+    var days = Number(cap.sprint_days) || 14;
+    var date = new Date(Date.now() + sprints * days * 86400000);
+    return {
+      text: R.fmt(R.t.forecast, { sprints: sprints, date: date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' }) }),
+      hint: R.fmt(R.t.forecast_hint, { velocity: R.fmtSp(velocity), days: days })
+    };
   };
 
   R.epicCount = function (n) {

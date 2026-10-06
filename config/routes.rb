@@ -1,5 +1,13 @@
 # frozen_string_literal: true
 Rails.application.routes.draw do
+  # Plugin-wide settings (admin)
+  get 'admin/sanan_agile', to: 'sanan_agile/global_settings#edit', as: :sanan_agile_global_settings
+  put 'admin/sanan_agile', to: 'sanan_agile/global_settings#update'
+
+  # Inline editing of issue list cells
+  get 'sanan_agile/issues/:id/inline/:field', to: 'sanan_agile/inline_issues#show', as: :sanan_inline_issue
+  patch 'sanan_agile/issues/:id/inline/:field', to: 'sanan_agile/inline_issues#update'
+
   resources :projects do
     namespace :sanan_agile do
       # Không cần trang edit riêng vì dùng Project Settings tab; chỉ cần endpoint update

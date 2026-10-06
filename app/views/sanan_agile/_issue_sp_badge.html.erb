@@ -1,7 +1,7 @@
 <%# == Sanan Agile: Story Point badge + BE/FE/TEST popover on Agile cards == %>
 <% prj = project %>
 <% cfg = SananAgile::ProjectSettings.load(prj&.id) %>
-<% sp_cf  = cfg['story_point_cfid'].to_i %>
+<% sp_cf  = cfg['sp_sprint_total_cfid'].to_i %>
 <% be_cf  = cfg['sp_be_cfid'].to_i %>
 <% fe_cf  = cfg['sp_fe_cfid'].to_i %>
 <% qa_cf  = cfg['sp_qa_cfid'].to_i %>
@@ -24,20 +24,14 @@
       format_sp.call(issue.custom_field_value(cfid.to_i))
     end
 
-    size_by = if defined?(SananIssueSpSize)
-                SananIssueSpSize.where(issue_id: Array(issues).map(&:id)).index_by(&:issue_id)
-              else
-                {}
-              end
+    # Board = the sprint: "This sprint" SP (Total, else the formula of its parts) and its BE / FE / QA parts.
+    sprint_by = SananAgile::IssueSp.values_for(Array(issues).map(&:id), cfg, :sprint)
     sp_map = Array(issues).each_with_object({}) do |i, h|
-      total = read_cf.call(i, sp_cf)
-      if total.nil? && i.respond_to?(:story_points) && i.story_points.present?
-        total = format_sp.call(i.story_points)
-      end
-      size = size_by[i.id]
-      be = format_sp.call(size&.sp_be)
-      fe = format_sp.call(size&.sp_fe)
-      qa = format_sp.call(size&.sp_qa)
+      values = sprint_by[i.id]
+      total = format_sp.call(SananAgile::IssueSp.total_of(values, cfg))
+      be = format_sp.call(values&.sp_be)
+      fe = format_sp.call(values&.sp_fe)
+      qa = format_sp.call(values&.sp_qa)
       next if total.nil? && be.nil? && fe.nil? && qa.nil?
       h[i.id] = { sp: total, be: be, fe: fe, qa: qa }
     end

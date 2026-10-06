@@ -28,12 +28,9 @@ module SananAgile
       }
     end
 
+    # SP to plan with: the sprint estimate, else the Size of a ticket never planned (SananAgile::IssueSp).
     def story_point_for(issue)
-      cf = @cfg['story_point_cfid'].to_i
-      return issue.agile_data&.story_points.to_f if cf <= 0
-
-      cv = issue.custom_value_for(cf)
-      parse_number(cv&.value)
+      SananAgile::IssueSp.planning_sp_of(issue, @cfg).to_f
     end
 
     private

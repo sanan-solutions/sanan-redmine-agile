@@ -260,6 +260,12 @@
       clearTimeout(searchTimer);
       searchTimer = setTimeout(function () { R.state.q = v; R.renderLists(); }, 150);
     });
+    var traySearchTimer = null;
+    $(document).on('input', '#rm-unplanned-search', function () {
+      var v = $.trim(this.value);
+      clearTimeout(traySearchTimer);
+      traySearchTimer = setTimeout(function () { R.state.unplannedQ = v; R.renderLists(); }, 150);
+    });
     R.$root.on('click', '[data-rm-print]', function () { window.print(); });
 
     // Ghost (continuation) card: select the Epic when it is on this board, else open the issue.

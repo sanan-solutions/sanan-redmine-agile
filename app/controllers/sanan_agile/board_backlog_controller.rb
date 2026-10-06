@@ -23,12 +23,11 @@ class SananAgile::BoardBacklogController < ApplicationController
     issues = scope.offset(offset).limit(SananAgile::BoardBacklog::PAGE_SIZE + 1).to_a
     has_more = issues.size > SananAgile::BoardBacklog::PAGE_SIZE
     issues = issues.first(SananAgile::BoardBacklog::PAGE_SIZE)
-    sizes = defined?(SananIssueSpSize) ? SananIssueSpSize.where(issue_id: issues.map(&:id)).index_by(&:issue_id) : {}
     extras = SananAgile::BoardBacklog.extras(issues, @cfg)
 
     render json: {
       sources: SananAgile::BoardBacklog.sources(@project, @cfg, params[:target_version_id]),
-      issues: issues.map { |i| SananAgile::BoardBacklog.issue_json(i, @cfg, sizes, extras[i.id]) },
+      issues: issues.map { |i| SananAgile::BoardBacklog.issue_json(i, @cfg, extras[i.id]) },
       has_more: has_more,
       next_offset: offset + issues.size
     }

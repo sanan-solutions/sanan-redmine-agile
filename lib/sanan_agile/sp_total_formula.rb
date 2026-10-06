@@ -21,7 +21,7 @@ module SananAgile
     end
 
     # Team sizes (BE/FE/QA) and the derived Total apply to standard tickets only. Sub-tasks — and any other
-    # non-standard tracker except the Epic tracker — carry only a personal SP (story_point_cfid, used for
+    # non-standard tracker except the Epic tracker — carry only a personal SP (the sprint Total field, used for
     # per-member effort). Without Standard Trackers configured, only Sub-task Trackers are personal.
     def subtask?(issue, cfg)
       return false unless issue && cfg
@@ -37,12 +37,50 @@ module SananAgile
       Array(cfg[key]).map(&:to_i).reject(&:zero?)
     end
 
+    # Before an issue is saved (form, inline edit, board, API): derive the Size and Sprint Totals from their
+    # BE / FE / QA parts. The Total follows the formula while it is empty or still equal to the formula of the
+    # previous parts; a Total typed by hand is kept. With "Require tester SP" the derived Total stays empty
+    # until QA is set (a Total typed by hand is still kept).
     def apply_issue!(issue, cfg)
       return unless issue && cfg
-      return if subtask?(issue, cfg) # never derive / clear the personal SP of a sub-task
+      return if subtask?(issue, cfg) # a sub-task only has its personal SP (the sprint Total)
+      return unless auto?(cfg) # "Enter Total manually": nothing is derived
 
-      apply_size_total!(issue, cfg)
-      apply_sprint_total!(issue, cfg)
+      changed = changed_cf_ids(issue)
+      %i[size sprint].each { |group| apply_group!(issue, cfg, group, changed) }
+    end
+
+    def apply_group!(issue, cfg, group, changed)
+      total_id = SananAgile::IssueSp.cfid(cfg, group, :total)
+      part_ids = SananAgile::IssueSp.cfids(cfg, group, %i[be fe qa])
+      return unless total_id.positive? && part_ids.any?
+      return unless issue.new_record? || (changed & (part_ids + [total_id])).any?
+
+      now = SananAgile::IssueSp.values(issue, cfg, group)
+      return if changed.include?(total_id) && !now.sp_total.nil? # set by hand in this save: kept
+      return if [now.sp_be, now.sp_fe, now.sp_qa].all?(&:nil?) && (changed & part_ids).empty? # nothing to derive from
+
+      before = issue.new_record? ? nil : SananAgile::IssueSp.values_for([issue.id], cfg, group)[issue.id]
+      followed = before.nil? || before.sp_total.nil? ||
+                 same?(before.sp_total, suggested(before.sp_be, before.sp_fe, before.sp_qa, cfg: cfg))
+      return unless now.sp_total.nil? || followed
+
+      # suggested is nil while "Require tester SP" waits for QA: the derived Total stays empty until then.
+      set_cf(issue, total_id, suggested(now.sp_be, now.sp_fe, now.sp_qa, cfg: cfg))
+    end
+
+    def changed_cf_ids(issue)
+      issue.custom_field_values.select { |v| v.value_was.to_s != v.value.to_s }.map(&:custom_field_id)
+    end
+
+    def set_cf(issue, cfid, value)
+      issue.custom_field_values = { cfid.to_s => format_sp(value) }
+    end
+
+    def same?(a, b)
+      return a.nil? && b.nil? if a.nil? || b.nil?
+
+      (a.to_f - b.to_f).abs < 0.0001
     end
 
     def resolve(be, fe, qa, current = nil, cfg:)
@@ -70,35 +108,6 @@ module SananAgile
 
       f = val.to_f
       (f % 1).zero? ? f.to_i.to_s : f.to_s
-    end
-
-    def apply_size_total!(issue, cfg)
-      cfid = cfg['story_point_cfid'].to_i
-      return unless cfid.positive?
-      return unless auto?(cfg) || require_qa?(cfg)
-      return if issue.try(:sanan_sp_size_attrs).nil? && !auto?(cfg)
-
-      h = attrs_hash(issue.try(:sanan_sp_size_attrs))
-      if h.empty? && issue.id && defined?(SananIssueSpSize)
-        row = SananIssueSpSize.find_by(issue_id: issue.id)
-        h = { sp_be: row&.sp_be, sp_fe: row&.sp_fe, sp_qa: row&.sp_qa } if row
-      end
-      val = resolve(h[:sp_be], h[:sp_fe], h[:sp_qa], issue.custom_field_value(cfid), cfg: cfg)
-      issue.custom_field_values = { cfid.to_s => format_sp(val) }
-    end
-
-    def apply_sprint_total!(issue, cfg)
-      return unless auto?(cfg) || require_qa?(cfg)
-      return unless sprint_issue?(issue, cfg)
-      return if issue.try(:sanan_sp_sprint_attrs).nil? && !auto?(cfg)
-
-      be = issue.custom_field_value(cfg['sp_be_cfid'].to_i)
-      fe = issue.custom_field_value(cfg['sp_fe_cfid'].to_i)
-      qa = issue.custom_field_value(cfg['sp_qa_cfid'].to_i)
-      h = attrs_hash(issue.try(:sanan_sp_sprint_attrs))
-      current = h[:sp_total]
-      val = resolve(be, fe, qa, current, cfg: cfg)
-      issue.sanan_sp_sprint_attrs = h.merge('sp_total' => format_sp(val))
     end
 
     def max_of(be, fe, qa)
@@ -135,26 +144,5 @@ module SananAgile
       parse(raw).nil?
     end
 
-    def attrs_hash(raw)
-      return {}.with_indifferent_access if raw.nil?
-
-      h = if raw.respond_to?(:to_unsafe_h)
-            raw.to_unsafe_h
-          elsif raw.respond_to?(:to_h)
-            raw.to_h
-          else
-            {}
-          end
-      h.with_indifferent_access
-    end
-
-    def sprint_issue?(issue, cfg)
-      vid = issue.fixed_version_id.to_i
-      return false unless vid.positive?
-      return false if defined?(SananAgile::ProductBacklog) &&
-                      SananAgile::ProductBacklog.version_ids(cfg).include?(vid)
-
-      true
-    end
   end
 end

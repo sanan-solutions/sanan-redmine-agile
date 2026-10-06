@@ -26,6 +26,11 @@ module SananAgile
       TEAM_SP_KEYS.map { |k| cfg.to_h[k].to_i }.select(&:positive?)
     end
 
+    # Team parts and the sprint Total: any of them set means the ticket takes work in this sprint.
+    def sprint_cfids(cfg)
+      SananAgile::IssueSp.cfids(cfg, :sprint)
+    end
+
     def issue_ids(version, cfg)
       return [] unless version
 
@@ -57,19 +62,14 @@ module SananAgile
       end
     end
 
-    # Subset of ids having a "This sprint" SP on version_id: a team SP value, or a sprint Total.
-    def with_sprint_sp(ids, version_id, cfg)
+    # Subset of ids (tickets on the sprint) having a "This sprint" SP: a team part or the sprint Total.
+    def with_sprint_sp(ids, _version_id, cfg)
       ids = Array(ids).map(&:to_i)
       return [] if ids.empty?
 
-      found = CustomValue.where(customized_type: 'Issue', custom_field_id: team_cfids(cfg), customized_id: ids)
+      found = CustomValue.where(customized_type: 'Issue', custom_field_id: sprint_cfids(cfg), customized_id: ids)
                          .where.not(value: [nil, ''])
-                         .distinct.pluck(:customized_id)
-      if defined?(SananIssueSprintSp)
-        found |= SananIssueSprintSp.where(version_id: version_id.to_i, issue_id: ids)
-                                   .where.not(sp_total: nil).pluck(:issue_id)
-      end
-      found = found.to_set
+                         .distinct.pluck(:customized_id).to_set
       ids.select { |id| found.include?(id) }
     end
 

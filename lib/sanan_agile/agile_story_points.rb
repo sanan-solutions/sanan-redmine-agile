@@ -12,24 +12,16 @@ module SananAgile
       install_controller!
     end
 
+    # Issue#story_points (redmine_agile cards, charts, column sums) = the "This sprint" Total of the ticket.
     def install_on_issue!
       return unless defined?(Issue)
 
       Issue.class_eval do
         def story_points
-          val = nil
-          if self.class.reflect_on_association(:agile_data)
-            rec = if respond_to?(:agile_data_without_default)
-                    agile_data_without_default
-                  else
-                    association(:agile_data).load_target
-                  end
-            val = rec.try(:story_points) if rec
-          end
-          if val.nil? && id && defined?(AgileData)
-            val = AgileData.where(issue_id: id).pick(:story_points)
-          end
-          val
+          return nil unless project_id
+
+          cfg = SananAgile::ProjectSettings.load(project_id)
+          SananAgile::IssueSp.total_of(SananAgile::IssueSp.values(self, cfg, :sprint), cfg)
         end
       end
     end
@@ -92,18 +84,7 @@ module SananAgile
         end
 
         def sanan_issue_story_points(issue)
-          return nil unless issue
-
-          if issue.respond_to?(:story_points)
-            issue.story_points
-          elsif issue.class.respond_to?(:reflect_on_association) &&
-                issue.class.reflect_on_association(:agile_data)
-            issue.agile_data.try(:story_points)
-          elsif defined?(AgileData) && issue.id
-            AgileData.where(issue_id: issue.id).pick(:story_points)
-          end
-        rescue NoMethodError
-          defined?(AgileData) && issue.id ? AgileData.where(issue_id: issue.id).pick(:story_points) : nil
+          issue&.story_points
         end
       end
     end

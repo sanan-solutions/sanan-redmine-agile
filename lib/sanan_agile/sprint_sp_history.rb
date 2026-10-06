@@ -6,13 +6,18 @@ module SananAgile
   module SprintSpHistory
     module_function
 
+    # Leaving a sprint: snapshot its "This sprint" SP (BE / FE / QA / Total) into the history and clear the
+    # fields for the next estimate. Moving from the Product Backlog (or no version) into a sprint keeps the
+    # values: they are the re-estimate made for that sprint.
     def on_version_change!(issue, cfg)
       return unless issue
       return unless version_changing?(issue)
 
       old_vid = previous_version_id(issue)
-      snapshot!(issue, old_vid, cfg) if sprint_version?(old_vid, cfg)
-      reset_sprint_team_cfs!(issue, cfg)
+      return unless sprint_version?(old_vid, cfg)
+
+      snapshot!(issue, old_vid, cfg)
+      reset_sprint_cfs!(issue, cfg)
     end
 
     def snapshot!(issue, version_id, cfg, user = nil)
@@ -22,18 +27,15 @@ module SananAgile
       row.sp_be = db_cf_number(issue, cfg['sp_be_cfid'])
       row.sp_fe = db_cf_number(issue, cfg['sp_fe_cfid'])
       row.sp_qa = db_cf_number(issue, cfg['sp_qa_cfid'])
-      if issue.respond_to?(:sanan_sp_sprint_attrs) && !issue.sanan_sp_sprint_attrs.nil?
-        pending = params_hash(issue.sanan_sp_sprint_attrs)
-        row.sp_total = blank_to_nil_decimal(pending[:sp_total])
-      end
+      row.sp_total = db_cf_number(issue, cfg['sp_sprint_total_cfid'])
       row.captured_at = Time.current
       row.captured_by_id = (user || User.current).try(:id)
       row.save
     end
 
-    def reset_sprint_team_cfs!(issue, cfg)
+    def reset_sprint_cfs!(issue, cfg)
       values = {}
-      %w[sp_be_cfid sp_fe_cfid sp_qa_cfid].each do |key|
+      SananAgile::IssueSp::KEYS[:sprint].each_value do |key|
         cfid = cfg[key].to_i
         next if cfid <= 0
 
@@ -47,40 +49,12 @@ module SananAgile
       issue.custom_field_values = values if values.any?
     end
 
-    def apply_size_attrs!(issue, raw)
-      return unless issue && issue.id && !raw.nil?
-
-      h = params_hash(raw)
-      row = SananIssueSpSize.find_or_initialize_by(issue_id: issue.id)
-      row.sp_be = blank_to_nil_decimal(h[:sp_be])
-      row.sp_fe = blank_to_nil_decimal(h[:sp_fe])
-      row.sp_qa = blank_to_nil_decimal(h[:sp_qa])
-      row.save
-    end
-
-    def apply_sprint_total_attrs!(issue, raw)
-      return unless issue && issue.id && !raw.nil?
-      return if version_just_changed?(issue)
-
-      cfg = SananAgile::ProjectSettings.load(issue.project_id)
-      return unless cfg.present? && sprint_version?(issue.fixed_version_id, cfg)
-
-      h = params_hash(raw)
-      row = SananIssueSprintSp.find_or_initialize_by(
-        issue_id: issue.id,
-        version_id: issue.fixed_version_id.to_i
-      )
-      row.sp_total = blank_to_nil_decimal(h[:sp_total])
-      row.captured_at ||= Time.current
-      row.save
-    end
-
+    # A real sprint: not the Product Backlog nor a CS / Sale intake queue.
     def sprint_version?(version_id, cfg)
       vid = version_id.to_i
       return false unless vid.positive?
-      return false if ProductBacklog.version_ids(cfg).include?(vid)
 
-      true
+      !(ProductBacklog.version_ids(cfg) + SananAgile::IntakeSource.intake_queue_version_ids(cfg)).include?(vid)
     end
 
     def db_cf_number(issue, cfid)

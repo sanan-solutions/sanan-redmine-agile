@@ -245,18 +245,13 @@ class IntakeBacklogsController < ApplicationController
     issue.save
   end
 
+  # Backlog SP is the estimate to plan with (sprint Total; first estimate also becomes the Size).
   def apply_quick_sp!(issue, value)
     raw = value.to_s.strip.tr(',', '.')
     sp = raw.blank? ? nil : Float(raw)
-    cf = @settings['story_point_cfid'].to_i
-    if cf > 0
-      issue.safe_attributes = { 'custom_field_values' => { cf.to_s => (sp.nil? ? '' : sp.to_s) } }
-      issue.save
-    else
-      row = (defined?(AgileData) ? AgileData : SananAgile::AgileData).find_or_initialize_by(issue_id: issue.id)
-      row.story_points = sp
-      row.save(validate: false)
-    end
+    return false unless SananAgile::IssueSp.assign_planning_sp(issue, @settings, sp)
+
+    issue.save
   rescue ArgumentError, TypeError
     false
   end

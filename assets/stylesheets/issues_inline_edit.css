@@ -1,0 +1,88 @@
+/* Inline editing on the Issues list (issues_inline_edit.js). */
+table.list.issues td.sa-ie-cell { position: relative; }
+
+.sa-ie-pencil,
+.sa-ie-pencil:hover,
+.sa-ie-pencil:focus {
+  position: absolute;
+  top: 50%;
+  right: 2px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0;
+  padding: 0;
+  border: 1px solid #dcdfe4;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(9, 30, 66, 0.12);
+  color: #44546f;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sa-ie-pencil:hover { border-color: #85b8ff; color: #0c66e4; }
+.sa-ie-pencil svg { display: block; margin: 0 auto; }
+
+table.list.issues td.sa-ie-editing { padding-top: 2px; padding-bottom: 2px; }
+
+.sa-ie-editor { display: block; max-width: 100%; }
+
+.sa-ie-editor .sa-ie-input {
+  box-sizing: border-box;
+  max-width: 100%;
+  height: 28px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid #0c66e4;
+  border-radius: 6px;
+  background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(12, 102, 228, 0.18);
+  color: #172b4d;
+  font: inherit;
+  font-size: 13px;
+  line-height: 26px;
+  outline: none;
+}
+
+/* Select: sized to its options (not the whole column), own chevron instead of the native arrow. */
+.sa-ie-editor select.sa-ie-input {
+  width: auto;
+  min-width: 120px;
+  max-width: 260px;
+  padding-right: 28px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5' fill='none' stroke='%2344546f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 12px;
+  cursor: pointer;
+}
+
+.sa-ie-editor input.sa-ie-input { width: 100%; min-width: 120px; }
+.sa-ie-editor input[type="date"].sa-ie-input { width: auto; min-width: 140px; }
+.sa-ie-editor input[type="number"].sa-ie-input { width: 100px; min-width: 80px; }
+
+table.list.issues td.sa-ie-loading { opacity: 0.55; }
+
+table.list.issues td.sa-ie-saved {
+  background: #dcfff1;
+  transition: background 0.6s;
+}
+
+.sa-ie-error {
+  position: fixed;
+  z-index: 10070;
+  display: none;
+  max-width: 320px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #ae2e24;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: pre-line;
+  box-shadow: 0 4px 12px rgba(9, 30, 66, 0.3);
+}

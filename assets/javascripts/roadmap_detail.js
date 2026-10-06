@@ -162,6 +162,14 @@
       : '';
   };
 
+  // Where a story stands for the Epic progress: ready to release / development done / left out.
+  R.storyPhase = function (s) {
+    if (s.excluded) return '<span class="rm-phase rm-phase--out">' + R.esc(R.t.phase_out) + '</span>';
+    if (s.ready) return '<span class="rm-phase rm-phase--ready">' + R.esc(R.t.ready) + '</span>';
+    if (s.dev_done) return '<span class="rm-phase rm-phase--dev">' + R.esc(R.t.dev_done) + '</span>';
+    return '<b class="rm-pct">' + s.progress + '%</b>';
+  };
+
   R.renderDetail = function () {
     if (R.state.review && R.renderReview()) {
       R.showDrawer('detail');
@@ -180,8 +188,12 @@
     if (epic.quarter && !product.can_manage) {
       pills += '<span class="rm-pill">' + R.dot(R.HEALTH_COLORS[epic.health]) + R.esc(R.healthLabel(epic.health)) + '</span>';
     }
-    pills += '<span class="rm-pill">' + epic.progress + '%</span>';
+    var tip = R.esc(R.epicTipHtml(epic, product));
+    pills += '<span class="rm-pill rm-pill--ready" data-rm-tip="' + tip + '">' + R.esc(R.t.ready) + ' <b>' + epic.progress + '%</b></span>';
+    pills += '<span class="rm-pill rm-pill--dev" data-rm-tip="' + tip + '">' + R.esc(R.t.dev_done) + ' <b>' + (epic.dev_progress || epic.progress) + '%</b></span>';
     if (epic.sp_total) pills += '<span class="rm-pill">' + R.fmtSp(epic.sp_done) + '/' + R.fmtSp(epic.sp_total) + ' ' + R.esc(R.t.sp) + '</span>';
+    var forecast = R.forecast(epic, product);
+    if (forecast) pills += '<span class="rm-pill" title="' + R.esc(forecast.hint) + '">⏱ ' + R.esc(forecast.text) + '</span>';
     (epic.releases || []).forEach(function (r) {
       pills += '<span class="rm-pill rm-rel--' + R.esc(r.state) + '" title="' + R.esc((R.t.rel_state || {})[r.state] || r.state) + '">🚀 ' + R.esc(r.name) + '</span>';
     });
@@ -197,10 +209,12 @@
             '<span class="rm-pill">' + R.dot(s.color) + R.esc(s.status) + '</span>' +
             '<span class="rm-small rm-assignee">' + R.esc(s.assignee || R.t.unassigned) + '</span>' +
             (s.sp !== null && s.sp !== undefined ? '<span class="rm-small">' + R.fmtSp(s.sp) + ' ' + R.esc(R.t.sp) + '</span>' : '') +
-            '<b class="rm-pct">' + s.progress + '%</b>' +
+            R.storyPhase(s) +
           '</div>' +
         '</div>' +
-        '<div class="rm-bar rm-bar--thin rm-mt-sm rm-story__bar"><i style="width:' + s.progress + '%"></i></div>' +
+        (s.excluded ? '' : (s.ready || s.dev_done
+          ? R.splitBar(s.ready ? 100 : 0, 100, null, 'rm-bar--thin rm-mt-sm rm-story__bar')
+          : '<div class="rm-bar rm-bar--thin rm-mt-sm rm-story__bar"><i style="width:' + s.progress + '%"></i></div>')) +
       '</div>';
     }).join('');
 
@@ -212,7 +226,8 @@
         '<button type="button" class="rm-icon-btn" data-rm-close title="' + R.esc(R.t.close) + '" aria-label="' + R.esc(R.t.close) + '">&times;</button>' +
       '</div>' +
       '<h3 class="rm-detail__title">' + R.issueLink(epic.id, '#' + epic.id) + ' ' + R.esc(epic.subject) + '</h3>' +
-      '<div class="rm-sub">' + R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' + epic.story_count + ' ' + R.esc(R.t.stories) + '</div>' +
+      '<div class="rm-sub">' + (epic.priority ? R.priorityBadge(epic) + ' · ' : '') +
+        R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' + epic.story_count + ' ' + R.esc(R.t.stories) + '</div>' +
       '<div class="rm-detail__pills rm-mt-sm">' + pills + '</div>' +
       R.hintBox(epic, product) +
       (product.can_manage ? R.planControls(epic) : '') +

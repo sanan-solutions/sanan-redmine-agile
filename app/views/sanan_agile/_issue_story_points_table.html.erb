@@ -1,90 +1,46 @@
 <%#
-  Size chuẩn + SP sprint này + lịch sử — luôn dưới attributes / trước Description.
+  Issue page: Size, This sprint SP (current / next sprint) and the per-sprint history — under the attributes.
+  Values come from the issue custom fields (SananAgile::IssueSp); history from sanan_issue_sprint_sps.
 %>
 <% issue = local_assigns[:issue] || @issue %>
 <% project = issue&.project %>
 <% if issue && project && respond_to?(:sanan_agile_enabled_for?) && sanan_agile_enabled_for?(project) %>
   <% cfg = SananAgile::ProjectSettings.load(project.id) %>
-  <% total_cf = cfg['story_point_cfid'].to_i %>
-  <% be_on = cfg['sp_be_cfid'].to_i.positive? %>
-  <% fe_on = cfg['sp_fe_cfid'].to_i.positive? %>
-  <% qa_on = cfg['sp_qa_cfid'].to_i.positive? %>
-  <% size_row = defined?(SananIssueSpSize) ? SananIssueSpSize.find_by(issue_id: issue.id) : nil %>
-  <% sprint_row = (issue.fixed_version_id.to_i.positive? && defined?(SananIssueSprintSp)) ? SananIssueSprintSp.find_by(issue_id: issue.id, version_id: issue.fixed_version_id) : nil %>
-  <% history = defined?(SananIssueSprintSp) ? SananIssueSprintSp.where(issue_id: issue.id).includes(:version, :captured_by).order(captured_at: :desc) : [] %>
-  <% history = history.reject { |row| sanan_issue_on_sprint?(issue, cfg) && row.version_id == issue.fixed_version_id } if history.respond_to?(:reject) %>
+  <% personal_only = SananAgile::SpTotalFormula.subtask?(issue, cfg) %>
+  <% parts = personal_only ? [] : %i[be fe qa].select { |p| cfg["sp_#{p}_cfid"].to_i.positive? } %>
+  <% size = SananAgile::IssueSp.values(issue, cfg, :size) %>
+  <% sprint = SananAgile::IssueSp.values(issue, cfg, :sprint) %>
+  <% size_parts = personal_only ? [] : %i[be fe qa].select { |p| SananAgile::IssueSp.cfid(cfg, :size, p).positive? } %>
+  <% history = SananIssueSprintSp.where(issue_id: issue.id).includes(:version).order(captured_at: :desc).to_a %>
+  <% labels = { be: :label_sprint_report_sp_be, fe: :label_sprint_report_sp_fe, qa: :label_sprint_report_sp_qa } %>
+  <% kpi = lambda do |label, value|
+       content_tag(:div, class: 'sanan-sp-kpi') do
+         content_tag(:span, label, class: 'sanan-sp-kpi__label') + content_tag(:span, sanan_format_sp(value), class: 'sanan-sp-kpi__value')
+       end
+     end %>
 
-  <% size_total_val = sanan_cf_value_object_for(issue, total_cf)&.value.presence || issue.custom_field_value(total_cf) %>
-  <%# Sub-task: only the personal SP is shown. %>
-  <% personal_only = defined?(SananAgile::SpTotalFormula) && SananAgile::SpTotalFormula.subtask?(issue, cfg) %>
-  <% be_on = fe_on = qa_on = false if personal_only %>
-  <% history = [] if personal_only %>
-  <% on_sprint = (be_on || fe_on || qa_on) && sanan_issue_on_sprint?(issue, cfg) %>
-
-  <div class="sanan-sp-show<%= ' sanan-sp-show--pair' if on_sprint %>">
-    <div class="sanan-sp-block sanan-sp-block--compact">
-      <div class="sanan-sp-block__head">
-        <strong class="sanan-sp-block__title"><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_size_group) %></strong>
-      </div>
-      <div class="sanan-sp-kpis">
-        <% if be_on %>
-          <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_be) %></span>
-            <span class="sanan-sp-kpi__value"><%= sanan_format_sp(size_row&.sp_be) %></span>
-          </div>
-        <% end %>
-        <% if fe_on %>
-          <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_fe) %></span>
-            <span class="sanan-sp-kpi__value"><%= sanan_format_sp(size_row&.sp_fe) %></span>
-          </div>
-        <% end %>
-        <% if qa_on %>
-          <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_qa) %></span>
-            <span class="sanan-sp-kpi__value"><%= sanan_format_sp(size_row&.sp_qa) %></span>
-          </div>
-        <% end %>
-        <% if total_cf.positive? %>
-          <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_total) %></span>
-            <span class="sanan-sp-kpi__value"><%= sanan_format_sp(size_total_val) %></span>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <% if on_sprint %>
+  <div class="sanan-sp-show<%= ' sanan-sp-show--pair' unless personal_only %>">
+    <% unless personal_only %>
       <div class="sanan-sp-block sanan-sp-block--compact">
         <div class="sanan-sp-block__head">
-          <strong class="sanan-sp-block__title"><%= l(:label_sanan_sp_sprint_group) %></strong>
+          <strong class="sanan-sp-block__title"><%= l(:label_sanan_sp_size_group) %></strong>
         </div>
         <div class="sanan-sp-kpis">
-          <% if be_on %>
-            <div class="sanan-sp-kpi">
-              <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_be) %></span>
-              <span class="sanan-sp-kpi__value"><%= sanan_format_sp(issue.custom_field_value(cfg['sp_be_cfid'].to_i)) %></span>
-            </div>
-          <% end %>
-          <% if fe_on %>
-            <div class="sanan-sp-kpi">
-              <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_fe) %></span>
-              <span class="sanan-sp-kpi__value"><%= sanan_format_sp(issue.custom_field_value(cfg['sp_fe_cfid'].to_i)) %></span>
-            </div>
-          <% end %>
-          <% if qa_on %>
-            <div class="sanan-sp-kpi">
-              <span class="sanan-sp-kpi__label"><%= l(:label_sprint_report_sp_qa) %></span>
-              <span class="sanan-sp-kpi__value"><%= sanan_format_sp(issue.custom_field_value(cfg['sp_qa_cfid'].to_i)) %></span>
-            </div>
-          <% end %>
-          <div class="sanan-sp-kpi">
-            <span class="sanan-sp-kpi__label"><%= l(:label_sanan_sp_total) %></span>
-            <span class="sanan-sp-kpi__value"><%= sanan_format_sp(sprint_row&.sp_total) %></span>
-          </div>
+          <% size_parts.each do |p| %><%= kpi.call(l(labels[p]), size[p]) %><% end %>
+          <% if SananAgile::IssueSp.cfid(cfg, :size, :total).positive? %><%= kpi.call(l(:label_sanan_sp_total), size.sp_total) %><% end %>
         </div>
       </div>
     <% end %>
+
+    <div class="sanan-sp-block sanan-sp-block--compact">
+      <div class="sanan-sp-block__head">
+        <strong class="sanan-sp-block__title"><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_sprint_group) %></strong>
+      </div>
+      <div class="sanan-sp-kpis">
+        <% parts.each do |p| %><%= kpi.call(l(labels[p]), sprint[p]) %><% end %>
+        <%= kpi.call(personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_total), SananAgile::IssueSp.total_of(sprint, cfg)) %>
+      </div>
+    </div>
   </div>
 
   <% if history.any? %>
@@ -95,20 +51,16 @@
       <table class="list sanan-sp-table">
         <thead>
           <tr>
-            <th><%= l(:field_version) rescue 'Sprint' %></th>
-            <% if be_on %><th><%= l(:label_sprint_report_sp_be) %></th><% end %>
-            <% if fe_on %><th><%= l(:label_sprint_report_sp_fe) %></th><% end %>
-            <% if qa_on %><th><%= l(:label_sprint_report_sp_qa) %></th><% end %>
-            <th><%= l(:label_sanan_sp_total) %></th>
+            <th><%= l(:field_version) %></th>
+            <% parts.each do |p| %><th><%= l(labels[p]) %></th><% end %>
+            <th><%= personal_only ? l(:label_sanan_sp_personal) : l(:label_sanan_sp_total) %></th>
           </tr>
         </thead>
         <tbody>
           <% history.each do |row| %>
             <tr class="<%= cycle('odd', 'even', name: 'sanan_sp_hist') %>">
               <td class="name"><%= row.version ? link_to(row.version.name, version_path(row.version)) : "##{row.version_id}" %></td>
-              <% if be_on %><td class="value"><%= sanan_format_sp(row.sp_be) %></td><% end %>
-              <% if fe_on %><td class="value"><%= sanan_format_sp(row.sp_fe) %></td><% end %>
-              <% if qa_on %><td class="value"><%= sanan_format_sp(row.sp_qa) %></td><% end %>
+              <% parts.each do |p| %><td class="value"><%= sanan_format_sp(row.public_send(:"sp_#{p}")) %></td><% end %>
               <td class="value"><%= sanan_format_sp(row.sp_total.nil? ? row.team_total : row.sp_total) %></td>
             </tr>
           <% end %>

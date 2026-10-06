@@ -150,8 +150,13 @@ class BoardBacklogControllerTest < Redmine::ControllerTest
   end
 
   def test_index_gives_size_and_sprint_team_sp_of_a_sprint_ticket
-    SananIssueSpSize.create!(issue_id: @next_issue.id, sp_be: 3, sp_qa: 1)
-    @next_issue.reload.custom_field_values = { @be.id.to_s => '2' }
+    size_be, size_qa = %w[BE QA].map do |n|
+      IssueCustomField.create!(name: "Size #{n}", field_format: 'float', is_for_all: true, tracker_ids: [1])
+    end
+    enable_roadmap!(@project, SananAgile::ProjectSettings.load(@project.id).merge(
+      'size_be_cfid' => size_be.id.to_s, 'size_qa_cfid' => size_qa.id.to_s, 'sp_total_require_qa' => '0'))
+    @project.reload
+    @next_issue.reload.custom_field_values = { @be.id.to_s => '2', size_be.id.to_s => '3', size_qa.id.to_s => '1' }
     @next_issue.save!
     get :index, params: { project_id: @project.identifier, source: @next.id, target_version_id: @sprint.id }
     item = json['issues'].find { |i| i['id'] == @next_issue.id }

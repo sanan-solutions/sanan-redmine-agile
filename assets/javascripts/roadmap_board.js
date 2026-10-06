@@ -46,6 +46,13 @@
     return tags ? '<div class="rm-tags">' + tags + '</div>' : '';
   };
 
+  // Priority icon + name, as on the board cards (.sanan-agile-priority icons).
+  R.priorityBadge = function (epic) {
+    if (!epic.priority) return '';
+    return '<span class="sanan-agile-priority rm-priority" title="' + R.esc(R.t.priority + ': ' + epic.priority) + '">' +
+      '<span class="priority priority-' + R.esc(epic.priority_key || 'default') + '"></span>' + R.esc(epic.priority) + '</span>';
+  };
+
   R.epicCard = function (epic, added) {
     var planned = !!epic.quarter;
     var meta = R.esc(epic.status) + (planned ? ' · ' + R.esc(R.healthLabel(epic.health)) : '');
@@ -56,20 +63,27 @@
         '<div class="rm-row">' +
           '<div class="rm-titlewrap">' + R.dot(epic.color) +
             '<div><div class="rm-epic__title">' + R.esc(epic.subject) + '</div>' +
-            '<div class="rm-meta">#' + epic.id + ' · ' + meta + '</div></div>' +
+            '<div class="rm-meta">#' + epic.id + ' · ' + meta + '</div>' +
+            (epic.priority ? '<div class="rm-meta rm-meta--priority">' + R.priorityBadge(epic) + '</div>' : '') + '</div>' +
           '</div>' +
           '<b class="rm-pct">' + (R.hintFor(epic) ? '<span class="rm-hint rm-hint--' + R.hintFor(epic).health + '" title="' +
             R.esc(R.t.hint + ': ' + R.healthLabel(R.hintFor(epic).health) + '\n' + R.hintFor(epic).reasons.join('\n')) + '">!</span> ' : '') +
-            epic.progress + '%</b>' +
+            '<span data-rm-tip="' + R.esc(R.epicTipHtml(epic, R.productOf(epic))) + '">' + epic.progress + '%' +
+            ((epic.dev_progress || 0) > epic.progress ? ' <span class="rm-pct__dev">· dev ' + epic.dev_progress + '%</span>' : '') +
+            '</span></b>' +
         '</div>' +
         R.epicTags(epic, added) +
-        '<div class="rm-bar rm-mt-sm"><i style="width:' + epic.progress + '%"></i></div>' +
+        R.splitBar(epic.progress, epic.dev_progress, R.epicTipHtml(epic, R.productOf(epic)), 'rm-mt-sm') +
         '<div class="rm-chips">' + R.statusChips(epic) + '</div>' +
         '<div class="rm-epic__extra rm-meta">' +
           R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' +
           epic.done_count + '/' + epic.story_count + ' ' + R.esc(R.t.stories) +
           (epic.sp_total ? ' · ' + R.fmtSp(epic.sp_done) + '/' + R.fmtSp(epic.sp_total) + ' ' + R.esc(R.t.sp) : '') +
           ((epic.releases || []).length ? ' · 🚀 ' + R.esc(epic.releases.map(function (r) { return r.name; }).join(', ')) : '') +
+          (function () {
+            var f = R.forecast(epic, R.productOf ? R.productOf(epic) : null);
+            return f ? ' · <span class="rm-forecast" title="' + R.esc(f.hint) + '">⏱ ' + R.esc(f.text) + '</span>' : '';
+          })() +
         '</div>' +
       '</div>';
   };
@@ -130,7 +144,7 @@
           (p.parent_name ? '<div class="rm-small">' + R.esc(p.parent_name) + '</div>' : '') +
           (p.epic_tracker_id ? '' : '<div class="rm-small rm-qcap__warn rm-mt-xs">' + R.esc(R.t.no_epic_tracker) + '</div>') +
           '<div class="rm-small rm-mt">' + R.esc(R.t.portfolio_progress) + '</div>' +
-          '<div class="rm-bar rm-mt-xs"><i data-rm-progress-bar style="width:0%"></i></div>' +
+          '<div data-rm-progress-bar class="rm-mt-xs">' + R.splitBar(0, 0) + '</div>' +
           '<div class="rm-small rm-strong rm-mt-xs" data-rm-progress-pct>0%</div>' +
           '<div class="rm-small rm-mt-xs" data-rm-progress-sp></div>' +
         '</div>' +
@@ -174,7 +188,14 @@
       var quarter = $list.attr('data-quarter');
       var epics = R.listFor(product, quarter) || [];
       var added = Number(quarter) ? R.addedAfterBaseline(product, quarter) : {};
-      var html = epics.filter(R.epicVisible).map(function (e) { return R.epicCard(e, added); }).join('');
+      var shown = epics.filter(R.epicVisible);
+      var trayQ = Number(quarter) ? '' : (R.state.unplannedQ || '').toLowerCase().replace(/^#/, '');
+      if (trayQ) {
+        shown = shown.filter(function (e) {
+          return String(e.id) === trayQ || String(e.subject).toLowerCase().indexOf(trayQ) !== -1;
+        });
+      }
+      var html = shown.map(function (e) { return R.epicCard(e, added); }).join('');
       if (Number(quarter) && !R.filtersActive()) {
         html += ((product.continuations || {})[String(quarter)] || []).map(R.ghostCard).join('');
       }
@@ -184,7 +205,7 @@
       if (!html) {
         html = addable && !R.filtersActive()
           ? '<button type="button" class="rm-empty rm-empty--add" data-rm-add="' + quarter + '">+ ' + R.esc(R.t.add_epic) + '</button>'
-          : '<div class="rm-empty">' + R.esc(R.t.no_epics) + '</div>';
+          : '<div class="rm-empty">' + R.esc(trayQ && epics.length ? R.t.no_match : R.t.no_epics) + '</div>';
       }
       $list.html(html);
       $list.siblings('.rm-add').prop('hidden', !addable || !$list.children('.rm-epic').length);
@@ -224,8 +245,10 @@
     R.data.products.forEach(function (p) {
       var pr = R.progressOf(R.plannedEpics(p));
       var $row = R.$root.find('.rm-product-row[data-product="' + p.id + '"]');
-      $row.find('[data-rm-progress-bar]').css('width', pr.pct + '%');
-      $row.find('[data-rm-progress-pct]').text(pr.pct + '%');
+      var tip = R.progressTipHtml(pr);
+      $row.find('[data-rm-progress-bar]').html(R.splitBar(pr.pct, pr.devPct, tip));
+      $row.find('[data-rm-progress-pct]').text(pr.pct + '%' + (pr.devPct > pr.pct ? ' · dev ' + pr.devPct + '%' : ''))
+        .attr('data-rm-tip', tip);
       $row.find('[data-rm-progress-sp]').text(pr.spTotal > 0 ? R.fmtSp(pr.spDone) + '/' + R.fmtSp(pr.spTotal) + ' ' + R.t.sp : '');
     });
   };

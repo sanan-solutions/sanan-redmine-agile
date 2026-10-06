@@ -68,6 +68,7 @@ Rails.application.config.to_prepare do
   SananAgile::IssuesHelperPatch.apply!
   require_dependency File.expand_path('lib/sanan_agile/sprint_sp_history', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sp_total_formula', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/issue_sp', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/issue_sp_hook', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/commit_lock', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/sprint_commit', __dir__)
@@ -85,6 +86,7 @@ Rails.application.config.to_prepare do
   require_dependency File.expand_path('lib/sanan_agile/priority_icon', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/board_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/board_groups', __dir__)
+  require_dependency File.expand_path('lib/sanan_agile/inline_issue_edit', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/product_backlog', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_source', __dir__)
   require_dependency File.expand_path('lib/sanan_agile/intake_backlog_query', __dir__)
@@ -245,6 +247,11 @@ Redmine::Plugin.register :sanan_redmine_agile do
 
   # Tạo plugin settings key hợp lệ: Setting.plugin_sanan_redmine_agile (Hash)
   settings default: {}, partial: nil
+
+  # Plugin-wide defaults for every project.
+  menu :admin_menu, :sanan_agile_global_settings,
+       { controller: 'sanan_agile/global_settings', action: 'edit' },
+       caption: :label_sanan_settings_global, html: { class: 'icon icon-settings' }
 end
 
 # Project menu order (see SananAgile::ProjectMenuOrder): Gantt, Calendar, Roadmap, Product Roadmap, Backlog,

@@ -107,28 +107,9 @@
     });
   }
 
-  function sprintVisible(root) {
-    var box = root.querySelector('#sanan-sp-sprint-form');
-    var sel = root.querySelector('#issue_fixed_version_id');
-    if (!box) return false;
-    if (!sel) return !box.hidden;
-    var v = sel.value;
-    if (!v) return false;
-    var backlogVid = box.getAttribute('data-backlog-version-id') || '';
-    if (backlogVid && String(v) === String(backlogVid)) return false;
-    return true;
-  }
-
-  function syncSprintBox(root) {
-    var box = root.querySelector('#sanan-sp-sprint-form');
-    if (!box) return;
-    box.hidden = !sprintVisible(root);
-  }
-
   function initIssueSpForm(root) {
     root = root || d;
     hideNativeSpFields(root);
-    syncSprintBox(root);
     refreshGroup(root, 'size');
     refreshGroup(root, 'sprint');
   }
@@ -143,10 +124,6 @@
   d.addEventListener('change', function (e) {
     var t = e.target;
     if (!t) return;
-    if (t.id === 'issue_fixed_version_id') {
-      initIssueSpForm(t.closest('#issue-form') || t.closest('#global-modal') || d);
-      return;
-    }
     var role = t.getAttribute && t.getAttribute('data-sanan-sp-role');
     var group = t.getAttribute && t.getAttribute('data-sanan-sp-group');
     if (!group || (role !== 'be' && role !== 'fe' && role !== 'qa')) return;

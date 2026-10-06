@@ -68,7 +68,7 @@ module SananAgile
     def sprint_cache_key(version)
       parent_ids = Issue.where(fixed_version_id: version.id).select(:id)
       touched = Issue.where(fixed_version_id: version.id).or(Issue.where(parent_id: parent_ids)).maximum(:updated_on)
-      cfg_keys = %w[story_point_cfid subtask_tracker standard_tracker sp_be_cfid sp_fe_cfid sp_qa_cfid
+      cfg_keys = %w[story_point_cfid sp_sprint_total_cfid subtask_tracker standard_tracker sp_be_cfid sp_fe_cfid sp_qa_cfid
                     sp_actual_version_cfid dod_cfid]
       digest = Digest::MD5.hexdigest(@cfg.to_h.slice(*cfg_keys).to_json)
       ['sanan_roadmap_sprint', version.id, version.updated_on.to_i, touched.to_i, digest]

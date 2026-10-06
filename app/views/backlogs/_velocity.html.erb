@@ -14,7 +14,7 @@
     <span class="backlog-velocity__hint"><%= l(:text_backlog_velocity_hint) %></span>
   </div>
   <div class="backlog-velocity__metrics">
-    <% if cfg['story_point_cfid'].to_i.positive? %>
+    <% if cfg['sp_sprint_total_cfid'].to_i.positive? || cfg['story_point_cfid'].to_i.positive? %>
       <div class="backlog-velocity__cell backlog-velocity__cell--total" title="<%= h backlog_velocity_metric_title(:sp) %>">
         <span class="backlog-velocity__label"><%= l(:label_backlog_velocity_team) %></span>
         <span class="backlog-velocity__value"><%= velocity.sp.nil? ? '—' : backlog_sp_number(velocity.sp) %></span>

@@ -86,15 +86,23 @@ module BacklogsHelper
     parts.compact.join(' · ')
   end
 
+  # SP to plan with (SananAgile::IssueSp.planning_sp): '' when the ticket must be re-estimated.
   def backlog_issue_sp(issue, cfg = nil)
     cfg ||= @settings || SananAgile::ProjectSettings.load(@project.id)
-    cf = cfg['story_point_cfid'].to_i
-    if cf <= 0
-      return backlog_sp_number(issue.agile_data&.story_points)
-    end
+    sp = SananAgile::IssueSp.planning_sp_of(issue, cfg)
+    sp.nil? ? '' : backlog_sp_number(sp)
+  end
 
-    cv = issue.custom_value_for(cf)
-    backlog_sp_number(cv&.value.to_s.strip.empty? ? 0 : cv.value)
+  # Backlog SP cell: the number, or a "re-estimate" hint for a ticket back from a sprint without a new estimate.
+  def backlog_issue_sp_cell(issue, cfg = nil)
+    sp = backlog_issue_sp(issue, cfg)
+    return sp unless sp == ''
+
+    if SananAgile::IssueSp.been_on_sprint?(issue)
+      content_tag(:span, l(:label_backlog_sp_reestimate), class: 'backlog-sp-reestimate', title: l(:text_backlog_sp_reestimate))
+    else
+      '—'
+    end
   end
 
   def backlog_release_badge(issue)
@@ -168,7 +176,7 @@ module BacklogsHelper
     velocity = defined?(@velocity) ? @velocity : nil
     compare = section.version.present? && velocity && velocity.sample_size.to_i.positive?
     rows = []
-    if cfg['story_point_cfid'].to_i.positive?
+    if cfg['sp_sprint_total_cfid'].to_i.positive? || cfg['story_point_cfid'].to_i.positive?
       rows << { role: 'total', short: l(:label_backlog_sp_total), commit: section.sp_total, velocity: compare ? velocity.sp : nil }
     end
     if cfg['sp_be_cfid'].to_i.positive?
@@ -249,7 +257,7 @@ module BacklogsHelper
       {
         param: :commit_sp,
         input_id: 'backlog-create-sprint-commit-sp',
-        issue_key: 'story_point_cfid',
+        issue_key: 'sp_sprint_total_cfid',
         version_key: 'sp_commit_version_cfid',
         label: "#{l(:label_sprint_report_commit)} SP",
         default: velocity&.sp

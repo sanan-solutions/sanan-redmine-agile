@@ -380,3 +380,130 @@
   height: 12px;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%230c66e4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 12px 12px;
 }
+
+/* Epic priority (same icons as the board cards' .sanan-agile-priority; copied here because the portfolio
+   roadmap page does not load the board stylesheet). */
+.rm-priority {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.rm-priority .priority {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: 14px;
+}
+
+.rm-priority .priority-lowest {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23029934' d='M11.707 7.293a.999.999 0 00-1.414 0L8 9.586V2a1 1 0 10-2 0v7.586L3.707 7.293a.999.999 0 10-1.414 1.414l4 4a.997.997 0 001.414 0l4-4a.999.999 0 000-1.414z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-low2 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%2301A671'%3e%3cpath d='M7 12a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 9.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 12z'/%3e%3cpath opacity='.7' d='M7 7a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 4.75l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 7z'/%3e%3c/g%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-low3 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%2300B3AD' d='M7 9.5a.995.995 0 01-.6-.2l-4-3a1 1 0 011.2-1.6L7 7.25l3.4-2.55a1 1 0 011.2 1.599l-4 3A.99.99 0 017 9.5z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-default {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%230065FF' d='M11.5 6h-9a1 1 0 110-2h9a1 1 0 110 2zm0 4h-9a1 1 0 110-2h9a1 1 0 110 2z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-high5 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23614BA6' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-high4 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23FC8C12' d='M10.999 9.5a.996.996 0 01-.599-.2L7 6.75 3.6 9.3a1 1 0 01-1.2-1.6l4-3a.996.996 0 011.2 0l4 3a.999.999 0 01-.601 1.8z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-high3 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cg fill='%23F14F28'%3e%3cpath d='M10.999 7a.994.994 0 01-.599-.2L7 4.25 3.6 6.8a1 1 0 01-1.2-1.6l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01.2 1.399.992.992 0 01-.8.401z'/%3e%3cpath opacity='.7' d='M10.999 12a.994.994 0 01-.599-.2L7 9.25 3.6 11.8a1 1 0 01-1.2-1.599l4-3a.995.995 0 011.199 0l4 3a.998.998 0 01-.6 1.799z'/%3e%3c/g%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-high2 {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23E5123D' d='M11.707 5.293l-4-4a.999.999 0 00-1.414 0l-4 4a.999.999 0 101.414 1.414L6 4.414V12a1 1 0 102 0V4.414l2.293 2.293a.997.997 0 001.414 0 .999.999 0 000-1.414z'/%3e%3c/svg%3e");
+}
+
+.rm-priority .priority-highest {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14'%3e%3cpath fill='%23BC092E' d='M11.6 4.2l-4-3a.999.999 0 00-1.2 0l-4 3A1 1 0 002 5v7a1.001 1.001 0 001.6.8L7 10.25l3.4 2.55a.995.995 0 001.047.095c.339-.17.553-.516.553-.895V5a1 1 0 00-.4-.8z'/%3e%3c/svg%3e");
+}
+
+.rm-meta--priority { margin-top: 2px; }
+
+/* Unplanned drawer search */
+.rm-unplanned__search {
+  display: block;
+  width: 100%;
+  height: 32px;
+  margin: 10px 0 4px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  border: 1px solid #dcdfe4;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
+}
+
+/* Progress: ready to release (dark) over development done (light) */
+.sanan-roadmap .rm-bar--split { position: relative; }
+.sanan-roadmap .rm-bar--split > b,
+.sanan-roadmap .rm-bar--split > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  border-radius: 999px;
+}
+.sanan-roadmap .rm-bar--split > b { background: #9bd9b6; }
+.sanan-roadmap .rm-bar--split > i { background: #1f845a; }
+.sanan-roadmap .rm-pct__dev { color: #4c9a72; font-size: 11px; font-weight: 600; }
+.sanan-roadmap .rm-pill--ready b { color: #1f845a; }
+.sanan-roadmap .rm-pill--dev b { color: #4c9a72; }
+.sanan-roadmap .rm-forecast { white-space: nowrap; }
+
+.sanan-roadmap .rm-phase {
+  padding: 1px 7px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.sanan-roadmap .rm-phase--ready { background: #dcfff1; color: #1f845a; }
+.sanan-roadmap .rm-phase--dev { background: #ecfbf3; color: #4c9a72; }
+.sanan-roadmap .rm-phase--out { background: #f1f2f4; color: #626f86; }
+
+/* Progress tooltip (appended to <body>) */
+.sanan-roadmap [data-rm-tip] { cursor: help; }
+.rm-tip {
+  position: fixed;
+  z-index: 10080;
+  display: none;
+  width: 300px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #172b4d;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(9, 30, 66, 0.35);
+  pointer-events: none;
+}
+.rm-tip__title { margin-bottom: 8px; font-weight: 700; }
+.rm-tip__row { display: flex; align-items: flex-start; gap: 8px; margin-top: 6px; }
+.rm-tip__sw { flex: 0 0 auto; width: 10px; height: 10px; margin-top: 3px; border-radius: 3px; }
+.rm-tip__sw--ready { background: #1f845a; }
+.rm-tip__sw--dev { background: #9bd9b6; }
+.rm-tip__sw--rest { background: #dcdfe4; }
+.rm-tip__label { flex: 1 1 auto; }
+.rm-tip__label b, .rm-tip__val b { display: block; }
+.rm-tip small { display: block; color: #b3bac5; font-size: 11px; }
+.rm-tip__val { flex: 0 0 auto; text-align: right; }
+.rm-tip__note { margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.15); }

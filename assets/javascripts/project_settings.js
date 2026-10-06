@@ -51,9 +51,34 @@
     activate(initial, false);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSananSettingsTabs);
-  } else {
+  // Project settings: tag the fields that follow the global settings (not stored for the project).
+  function markInherited() {
+    var root = document.getElementById('sanan-settings');
+    if (!root) return;
+    var keys = (root.getAttribute('data-inherited-keys') || '').split(',').filter(Boolean);
+    if (!keys.length) return;
+    var label = root.getAttribute('data-inherited-label') || 'global';
+    keys.forEach(function (key) {
+      var input = root.querySelector('[name="settings[' + key + ']"]:not([type="hidden"]), [name="settings[' + key + '][]"]:not([type="hidden"])');
+      if (!input) return;
+      var row = input.closest('p, tr, label');
+      var title = row && (row.querySelector(':scope > label') || row.querySelector('th, label'));
+      if (!title || title.querySelector('.sanan-settings__inherited')) return;
+      var tag = document.createElement('span');
+      tag.className = 'sanan-settings__inherited';
+      tag.textContent = label;
+      title.appendChild(tag);
+    });
+  }
+
+  function boot() {
     initSananSettingsTabs();
+    markInherited();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
   }
 })();

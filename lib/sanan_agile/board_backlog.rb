@@ -58,75 +58,34 @@ module SananAgile
       end
     end
 
-    # Per ticket of one page: SP (the backlog's SP column), Done BE / FE sprint, sub-task progress.
+    # Per ticket of one page: SP to plan with (as the Backlog), Size and This-sprint parts, Done BE / FE sprint,
+    # sub-task progress.
     def extras(issues, cfg)
       ids = Array(issues).map(&:id)
       return {} if ids.empty?
 
-      sp = story_points(ids, cfg)
+      plan = SananAgile::IssueSp.planning_sp(ids, cfg)
+      size = SananAgile::IssueSp.values_for(ids, cfg, :size)
+      sprint = SananAgile::IssueSp.values_for(ids, cfg, :sprint)
       done = { be: done_sprints(ids, cfg['done_be_cfid']), fe: done_sprints(ids, cfg['done_fe_cfid']) }
-      sprint = sprint_sp(issues, cfg)
       children = Issue.where(parent_id: ids).group(:parent_id).count
       closed = Issue.joins(:status).where(parent_id: ids, issue_statuses: { is_closed: true }).group(:parent_id).count
       ids.to_h do |iid|
         [iid, {
-          sp: sp[iid],
+          sp: plan[iid],
+          size: parts_hash(size[iid]),
+          sprint: parts_hash(sprint[iid]),
           done_be: done[:be][iid],
           done_fe: done[:fe][iid],
-          sprint: sprint[iid],
           subtasks: children[iid].to_i.positive? ? { done: closed[iid].to_i, total: children[iid].to_i } : nil
         }]
       end
     end
 
-    def story_points(ids, cfg)
-      cfid = cfg['story_point_cfid'].to_i
-      raw = if cfid.positive?
-              CustomValue.where(customized_type: 'Issue', custom_field_id: cfid, customized_id: ids)
-                         .where.not(value: [nil, '']).pluck(:customized_id, :value)
-            elsif defined?(AgileData)
-              AgileData.where(issue_id: ids).where.not(story_points: nil).pluck(:issue_id, :story_points)
-            else
-              []
-            end
-      raw.each_with_object({}) do |(iid, value), h|
-        n = Float(value.to_s.tr(',', '.')) rescue nil
-        h[iid] = (n == n.to_i ? n.to_i : n) if n
-      end
-    end
+    def parts_hash(values)
+      return {} unless values
 
-    # "This sprint" SP of tickets sitting on a sprint (an upcoming sprint as the panel's source): team values
-    # and the sprint Total. Product Backlog tickets have none.
-    def sprint_sp(issues, cfg)
-      on_sprint = Array(issues).select do |i|
-        i.fixed_version_id.to_i.positive? && !non_sprint_ids(cfg).include?(i.fixed_version_id)
-      end
-      return {} if on_sprint.empty?
-
-      ids = on_sprint.map(&:id)
-      parts = TEAM_PARTS.to_h do |part, key|
-        cfid = cfg[key].to_i
-        values = if cfid.positive?
-                   CustomValue.where(customized_type: 'Issue', custom_field_id: cfid, customized_id: ids)
-                              .where.not(value: [nil, '']).pluck(:customized_id, :value).to_h
-                 else
-                   {}
-                 end
-        [part.to_sym, values]
-      end
-      totals = if defined?(SananIssueSprintSp)
-                 on_sprint.each_with_object({}) do |i, h|
-                   row = SananIssueSprintSp.find_by(issue_id: i.id, version_id: i.fixed_version_id)
-                   h[i.id] = row&.sp_total
-                 end
-               else
-                 {}
-               end
-      on_sprint.each_with_object({}) do |i, h|
-        values = parts.transform_values { |m| number(m[i.id]) }.compact
-        values[:total] = number(totals[i.id]) unless totals[i.id].nil?
-        h[i.id] = values if values.any?
-      end
+      SananAgile::IssueSp::PARTS.to_h { |part| [part, values[part]] }.compact
     end
 
     def number(raw)
@@ -149,8 +108,7 @@ module SananAgile
       pairs.to_h { |iid, v| [iid, names[v.to_i] || v.to_s] }
     end
 
-    def issue_json(issue, cfg, sizes, extra = {})
-      size = sizes[issue.id]
+    def issue_json(issue, cfg, extra = {})
       extra ||= {}
       {
         id: issue.id,
@@ -167,8 +125,8 @@ module SananAgile
         done_be: extra[:done_be],
         done_fe: extra[:done_fe],
         subtasks: extra[:subtasks],
-        sprint_sp: extra[:sprint],
-        size: size ? { be: number(size.sp_be), fe: number(size.sp_fe), qa: number(size.sp_qa) }.compact : {}
+        sprint_sp: extra[:sprint] || {},
+        size: extra[:size] || {}
       }
     end
   end

@@ -209,8 +209,9 @@
       return bits.length ? title + ': ' + bits.join(' · ') : '';
     }
     var sprint = issue.sprint_sp || {};
+    var size = issue.size || {};
     return [
-      line(t('sizeGroup'), issue.sp, issue.size),
+      line(t('sizeGroup'), size.total, size),
       line(t('sprintGroup'), sprint.total, sprint)
     ].filter(Boolean).join('\n');
   }
@@ -218,8 +219,7 @@
   function renderBadges(issue) {
     var out = [];
     var tip = spTip(issue);
-    var hasSize = issue.sp != null || Object.keys(issue.size || {}).length;
-    if (hasSize || tip) {
+    if (issue.sp != null || tip) {
       out.push('<span class="sa-bb-badge sa-bb-badge--sp" data-sa-tip="' + esc(tip) + '">' +
         esc(issue.sp != null ? issue.sp : '—') + ' SP</span>');
     }
@@ -428,14 +428,19 @@
 
   function openDialog(issue, statusId, parts, $item, $col) {
     closeDialog();
-    var opts = '<option value=""></option>' + (cfg.spOptions || []).map(function (v) {
-      return '<option value="' + esc(v) + '">' + esc(v) + '</option>';
-    }).join('');
+    // Prefilled with the ticket's current "This sprint" estimate (re-estimated while it waited in the backlog).
+    var current = issue.sprint_sp || {};
+    function opts(selected) {
+      var sel = selected == null ? '' : String(selected);
+      return '<option value=""></option>' + (cfg.spOptions || []).map(function (v) {
+        return '<option value="' + esc(v) + '"' + (String(v) === sel ? ' selected' : '') + '>' + esc(v) + '</option>';
+      }).join('');
+    }
     var fields = parts.map(function (p) {
       var hint = issue.size && issue.size[p] != null
         ? '<span class="sa-bb-dialog__size">' + esc(t('size')) + ' ' + esc(issue.size[p]) + '</span>' : '';
       return '<label class="sa-bb-dialog__field"><span>' + esc(t(p)) + hint + '</span>' +
-        '<select name="' + esc(p) + '">' + opts + '</select></label>';
+        '<select name="' + esc(p) + '">' + opts(current[p]) + '</select></label>';
     }).join('');
     var into = esc(t('modalInto'))
       .replace('__SPRINT__', '<strong>' + esc(cfg.target.name) + '</strong>')
