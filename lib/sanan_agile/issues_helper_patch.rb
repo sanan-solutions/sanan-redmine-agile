@@ -2,10 +2,9 @@
 
 require_dependency 'issues_helper'
 require_dependency File.expand_path('agile_data_association', __dir__)
+require_dependency File.expand_path('sp_total_formula', __dir__)
 
 module SananAgile
-  SP_FIBO = [0, 0.5, 1, 2, 3, 5, 8, 13, 21, 34].freeze
-
   module IssuesHelperPatch
     SPRINT_DONE_SETTING_KEYS = %w[
       done_be_cfid done_fe_cfid done_qa_cfid

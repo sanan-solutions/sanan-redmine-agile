@@ -1,5 +1,6 @@
 (function (w, d) {
-  var FIBO = [0, 0.5, 1, 2, 3, 5, 8, 13, 21, 34];
+  // SP scale (SananAgile::SP_FIBO), read from the form's data-sp-scale.
+  var FIBO = [0, 0.5, 1, 2, 3, 5, 8, 13, 20, 40, 100];
 
   function parseNum(v) {
     var s = String(v || '').trim().replace(',', '.');
@@ -107,8 +108,16 @@
     });
   }
 
+  function loadScale(root) {
+    var m = meta(root);
+    var scale = m && (m.getAttribute('data-sp-scale') || '').split(',').map(parseNum)
+      .filter(function (n) { return n != null; });
+    if (scale && scale.length) FIBO = scale;
+  }
+
   function initIssueSpForm(root) {
     root = root || d;
+    loadScale(root);
     hideNativeSpFields(root);
     refreshGroup(root, 'size');
     refreshGroup(root, 'sprint');

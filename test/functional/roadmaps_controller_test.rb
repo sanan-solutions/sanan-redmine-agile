@@ -180,4 +180,69 @@ class RoadmapsControllerTest < Redmine::ControllerTest
     post :create_baseline, params: { project_id: @project.identifier, year: 2026, quarter: 4 }
     assert_response :forbidden
   end
+  def test_update_priority_changes_epic_priority_with_journal
+    high = IssuePriority.find_by(name: 'High') || IssuePriority.active.where.not(id: @epic.priority_id).first
+    assert_difference -> { Journal.count } => 1 do
+      patch :update_priority, params: { project_id: @project.identifier, issue_id: @epic.id, priority_id: high.id }
+    end
+    assert_response :success
+    json = ActiveSupport::JSON.decode(response.body)
+    assert_equal [high.id, high.name], [json['priority_id'], json['priority']]
+    assert_equal high.id, @epic.reload.priority_id
+  end
+
+  def test_update_priority_needs_edit_permission
+    Role.find(1).remove_permission!(:edit_issues)
+    Role.find(1).remove_permission!(:edit_own_issues) if Role.find(1).permissions.include?(:edit_own_issues)
+    other = IssuePriority.active.where.not(id: @epic.priority_id).first
+    patch :update_priority, params: { project_id: @project.identifier, issue_id: @epic.id, priority_id: other.id }
+    assert_response :forbidden
+    assert_not_equal other.id, @epic.reload.priority_id
+  end
+
+  def test_update_priority_rejects_unknown_priority
+    patch :update_priority, params: { project_id: @project.identifier, issue_id: @epic.id, priority_id: 0 }
+    assert_response :unprocessable_entity
+  end
+
+  def test_data_carries_dates_and_priority_edit_flag
+    plan!(@epic, 2026, 4)
+    story = create_story!(@epic)
+    story.reload.update!(start_date: '2026-10-05', due_date: '2026-10-20')
+    @epic.reload
+    get :data, params: { project_id: @project.identifier, year: 2026 }
+    json = ActiveSupport::JSON.decode(response.body)
+    epic = json['products'].first['quarters']['4'].detect { |e| e['id'] == @epic.id }
+    # The Epic's own dates (derived from its stories under Redmine's default setting).
+    assert_equal [@epic.start_date.to_s, @epic.due_date.to_s], [epic['start_date'], epic['due_date']]
+    assert_equal '2026-10-20', epic['due_date']
+    # Redmine derives a parent's priority from its sub-tasks by default: not editable then.
+    assert_equal false, epic['priority_editable']
+    assert epic['priority_derived']
+    assert_equal %w[2026-10-05 2026-10-20], [epic['stories'].first['start_date'], epic['stories'].first['due_date']]
+    assert json['priorities'].any? { |p| p['id'] == @epic.priority_id }
+  end
+  def test_priority_of_epic_with_stories_editable_when_independent
+    create_story!(@epic)
+    plan!(@epic, 2026, 4)
+    with_settings parent_issue_priority: 'independent' do
+      get :data, params: { project_id: @project.identifier, year: 2026 }
+      epic = ActiveSupport::JSON.decode(response.body)['products'].first['quarters']['4'].first
+      assert epic['priority_editable']
+
+      other = IssuePriority.active.where.not(id: @epic.priority_id).first
+      patch :update_priority, params: { project_id: @project.identifier, issue_id: @epic.id, priority_id: other.id }
+      assert_response :success
+      assert_equal other.id, @epic.reload.priority_id
+    end
+  end
+
+  def test_update_priority_refused_when_derived_from_stories
+    create_story!(@epic)
+    other = IssuePriority.active.where.not(id: @epic.priority_id).first
+    with_settings parent_issue_priority: 'derived' do
+      patch :update_priority, params: { project_id: @project.identifier, issue_id: @epic.id, priority_id: other.id }
+    end
+    assert_response :forbidden
+  end
 end

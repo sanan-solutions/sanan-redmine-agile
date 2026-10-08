@@ -139,6 +139,7 @@
         }
       });
       if (tr) tr.classList.toggle('closed', !!res.closed);
+      refreshTotals();
       a.td.classList.add('sa-ie-saved');
       setTimeout(function () { a.td.classList.remove('sa-ie-saved'); }, 1200);
     }).fail(function (xhr) {
@@ -151,6 +152,37 @@
       var again = a.td.querySelector('.sa-ie-input');
       if (again) again.focus();
     });
+  }
+
+  // Query totals (above the list, and per group) are sums over the whole query: reload them from the list
+  // page itself so they follow its filters / grouping. Saves in a row are coalesced into one request.
+  function refreshTotals() {
+    if (!document.querySelector('p.query-totals, table.list.issues tr.group .totals')) return;
+    clearTimeout(refreshTotals.timer);
+    refreshTotals.timer = setTimeout(function () {
+      if (refreshTotals.xhr) refreshTotals.xhr.abort();
+      refreshTotals.xhr = $.ajax({ url: w.location.href, dataType: 'html', cache: false }).done(function (html) {
+        var page = new DOMParser().parseFromString(html, 'text/html');
+        var fresh = page.querySelector('p.query-totals');
+        var current = document.querySelector('p.query-totals');
+        if (fresh && current) current.innerHTML = fresh.innerHTML;
+        var groups = {};
+        page.querySelectorAll('table.list.issues tr.group').forEach(function (g) {
+          var name = g.querySelector('.name');
+          if (name) groups[name.textContent] = g;
+        });
+        document.querySelectorAll('table.list.issues tr.group').forEach(function (g) {
+          var name = g.querySelector('.name');
+          var src = name && groups[name.textContent];
+          if (!src) return;
+          ['.count', '.totals'].forEach(function (sel) {
+            var to = g.querySelector(sel);
+            var from = src.querySelector(sel);
+            if (to && from) to.innerHTML = from.innerHTML;
+          });
+        });
+      });
+    }, 300);
   }
 
   var $tip = null;

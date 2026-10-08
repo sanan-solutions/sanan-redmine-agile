@@ -49,8 +49,22 @@
   // Priority icon + name, as on the board cards (.sanan-agile-priority icons).
   R.priorityBadge = function (epic) {
     if (!epic.priority) return '';
-    return '<span class="sanan-agile-priority rm-priority" title="' + R.esc(R.t.priority + ': ' + epic.priority) + '">' +
+    var tip = R.t.priority + ': ' + epic.priority + (epic.priority_derived ? '\n' + R.t.priority_derived : '');
+    return '<span class="sanan-agile-priority rm-priority' + (epic.priority_derived ? ' is-derived' : '') + '" title="' + R.esc(tip) + '">' +
       '<span class="priority priority-' + R.esc(epic.priority_key || 'default') + '"></span>' + R.esc(epic.priority) + '</span>';
+  };
+
+  // Priority of an Epic: a select (icon + name) when the user may change it, else the badge.
+  R.priorityControl = function (epic) {
+    var list = R.data.priorities || [];
+    if (!epic.priority_editable || !list.length) return R.priorityBadge(epic);
+    return '<span class="sanan-agile-priority rm-priority rm-priority--edit" title="' + R.esc(R.t.priority) + '">' +
+      '<span class="priority priority-' + R.esc(epic.priority_key || 'default') + '"></span>' +
+      '<select class="rm-priority__select" data-rm-priority="' + epic.id + '" aria-label="' + R.esc(R.t.priority) + '">' +
+        list.map(function (p) {
+          return '<option value="' + p.id + '"' + (p.id === epic.priority_id ? ' selected' : '') + '>' + R.esc(p.name) + '</option>';
+        }).join('') +
+      '</select></span>';
   };
 
   R.epicCard = function (epic, added) {
@@ -61,19 +75,18 @@
         '" data-id="' + epic.id + '" tabindex="0" role="button">' +
         (planned ? '<span class="rm-health-stripe" style="background:' + R.HEALTH_COLORS[epic.health] + '"></span>' : '') +
         '<div class="rm-row">' +
-          '<div class="rm-titlewrap">' + R.dot(epic.color) +
-            '<div><div class="rm-epic__title">' + R.esc(epic.subject) + '</div>' +
-            '<div class="rm-meta">#' + epic.id + ' · ' + meta + '</div>' +
-            (epic.priority ? '<div class="rm-meta rm-meta--priority">' + R.priorityBadge(epic) + '</div>' : '') + '</div>' +
-          '</div>' +
+          '<div class="rm-titlewrap">' + R.dot(epic.color) + '<div class="rm-epic__title">' + R.esc(epic.subject) + '</div></div>' +
           '<b class="rm-pct">' + (R.hintFor(epic) ? '<span class="rm-hint rm-hint--' + R.hintFor(epic).health + '" title="' +
             R.esc(R.t.hint + ': ' + R.healthLabel(R.hintFor(epic).health) + '\n' + R.hintFor(epic).reasons.join('\n')) + '">!</span> ' : '') +
             '<span data-rm-tip="' + R.esc(R.epicTipHtml(epic, R.productOf(epic))) + '">' + epic.progress + '%' +
             ((epic.dev_progress || 0) > epic.progress ? ' <span class="rm-pct__dev">· dev ' + epic.dev_progress + '%</span>' : '') +
             '</span></b>' +
         '</div>' +
+        '<div class="rm-meta">#' + epic.id + ' · ' + meta + '</div>' +
+        (epic.priority || epic.start_date || epic.due_date
+          ? '<div class="rm-meta rm-meta--priority">' + (epic.priority ? R.priorityControl(epic) : '') + R.dateRange(epic) + '</div>' : '') +
         R.epicTags(epic, added) +
-        R.splitBar(epic.progress, epic.dev_progress, R.epicTipHtml(epic, R.productOf(epic)), 'rm-mt-sm') +
+        R.splitBar(epic.progress, epic.dev_progress, R.epicTipHtml(epic, R.productOf(epic)), 'rm-epic__bar') +
         '<div class="rm-chips">' + R.statusChips(epic) + '</div>' +
         '<div class="rm-epic__extra rm-meta">' +
           R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' +
@@ -215,6 +228,7 @@
       R.$root.find('[data-rm-qcount="' + q + '"]').text(R.epicCount(n));
     });
     $('#rm-unplanned-count').text(R.data.products.reduce(function (sum, p) { return sum + p.unplanned.length; }, 0));
+    if (R.renderTimeline) R.renderTimeline();
 
     var $lists = R.$root.find('.rm-list');
     $lists.each(function () {

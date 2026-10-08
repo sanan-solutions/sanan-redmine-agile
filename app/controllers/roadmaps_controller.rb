@@ -9,7 +9,7 @@ class RoadmapsController < ApplicationController
   before_action :ensure_roadmap_enabled, only: [:show, :data]
   before_action :authorize
   before_action :authorize_manage, only: [:move, :update_health, :update_span, :create_baseline, :destroy_baseline]
-  before_action :find_epic, only: [:move, :update_health, :update_span]
+  before_action :find_epic, only: [:move, :update_health, :update_span, :update_priority]
 
   def show
     @year = parse_year(params[:year]) || Date.today.year
@@ -53,6 +53,27 @@ class RoadmapsController < ApplicationController
     render json: { ok: true }
   rescue ActiveRecord::RecordInvalid => e
     render_error_json(e.record.errors.full_messages.first)
+  end
+
+  # Epic priority, edited on the card / drawer. Goes through the issue's safe attributes and journal, as
+  # the issue form does.
+  def update_priority
+    priority = IssuePriority.active.find_by(id: params[:priority_id])
+    return render_error_json(l(:error_sanan_roadmap_priority_invalid)) unless priority
+    unless @epic.safe_attribute?('priority_id') && !@epic.priority_derived?
+      return render_error_json(l(:error_sanan_roadmap_priority_forbidden), :forbidden)
+    end
+
+    @epic.init_journal(User.current)
+    @epic.safe_attributes = { 'priority_id' => priority.id.to_s }
+    if @epic.save
+      render json: { ok: true, priority_id: priority.id, priority: priority.name,
+                     priority_key: SananAgile::PriorityIcon.key(priority) }
+    else
+      render_error_json(@epic.errors.full_messages.first)
+    end
+  rescue ActiveRecord::StaleObjectError
+    render_error_json(l(:notice_issue_update_conflict), :conflict)
   end
 
   # Number of quarters the Epic spans, from its start quarter (1..4).

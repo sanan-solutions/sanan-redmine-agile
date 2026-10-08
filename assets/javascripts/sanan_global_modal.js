@@ -583,8 +583,43 @@ function bootSananGlobalModal() {
     }, 0);
   }
 
-  function setErrorModal() {
-    modalBody.innerHTML = "Có lỗi xảy ra"
+  // A failed request / script error, with what failed and when, so it can be matched against the server log.
+  // error: { status, serverMessage } for an HTTP error; { saved: true } when the issue was saved and a later
+  // step (refreshing the page surfaces) failed.
+  function setErrorModal(error) {
+    error = error || {};
+    let hint;
+    if (error.saved) hint = "Đã lưu issue, nhưng bước cập nhật màn hình sau đó bị lỗi. Tải lại trang để xem issue.";
+    else if (error.status === 403) hint = "Bạn không có quyền thực hiện thao tác này trên project.";
+    else if (error.status === 404) hint = "Không tìm thấy project / issue (hoặc module chưa bật cho project).";
+    else if (error.status >= 500) hint = "Lỗi phía máy chủ — xem log/production.log tại thời điểm này để biết nguyên nhân.";
+    else hint = "Lỗi trên trình duyệt — mở Console (F12) để xem chi tiết.";
+    const detail = error.status
+      ? "HTTP " + error.status + (error.serverMessage ? " — " + error.serverMessage : "")
+      : (error.message || "");
+    modalBody.innerHTML =
+      '<div class="sanan-modal-error" style="padding:16px;line-height:1.5">' +
+        '<p style="margin:0 0 6px;font-weight:700;color:#c9372c">Có lỗi xảy ra</p>' +
+        (detail ? '<p style="margin:0 0 6px">' + escapeHtml(detail) + '</p>' : '') +
+        '<p style="margin:0;color:#626f86;font-size:12px">' + escapeHtml(hint) + ' · ' +
+          escapeHtml(new Date().toLocaleString()) + '</p>' +
+      '</div>';
+  }
+
+  // Readable message of an error response: Redmine's error text (HTML page or JSON errors), else nothing.
+  async function serverMessageOf(response) {
+    try {
+      const text = await response.text();
+      if (/json/.test(response.headers.get('content-type') || '')) {
+        const data = JSON.parse(text);
+        return [].concat(data.errors || data.error || []).join("; ").slice(0, 300);
+      }
+      const doc = new DOMParser().parseFromString(text, 'text/html');
+      const el = doc.querySelector('#errorExplanation') || doc.querySelector('#content p') || doc.querySelector('h1, h2');
+      return el ? el.textContent.replace(/\s+/g, ' ').trim().slice(0, 300) : '';
+    } catch (e) {
+      return '';
+    }
   }
 
   function handleViewAfterSubmit(issueId) {
@@ -1004,6 +1039,7 @@ function bootSananGlobalModal() {
         statusId = currentStatusId
       }
 
+      let saved = false;
       fetch(form.action, {
         method: form.method,
         body: formData,
@@ -1018,8 +1054,12 @@ function bootSananGlobalModal() {
             if (action === Action.CREATE) applyBacklogCreateDefaults();
             return;
           }
-          throw new Error("response status not ok")
+          const err = new Error("HTTP " + response.status);
+          err.status = response.status;
+          err.serverMessage = await serverMessageOf(response);
+          throw err;
         }
+        saved = true;
 
         // "Create and continue": Redmine redirects back to a fresh new-issue form.
         if (isCreate && /\/issues\/new$/.test(new URL(response.url, location.origin).pathname)) {
@@ -1062,7 +1102,8 @@ function bootSananGlobalModal() {
           handleViewAfterSubmit(issueId)
       }).catch(error => {
         console.error(error);
-        setErrorModal();
+        setErrorModal({ status: error.status, serverMessage: error.serverMessage, message: error.message,
+                        saved: saved && !error.status });
       });
     }
   });

@@ -13,9 +13,9 @@
 
     R.bindEvents();
     try {
-      if (window.localStorage.getItem('sananRoadmapView') === 'detailed') {
-        R.$root.find('[data-rm-view="detailed"]').trigger('click');
-      }
+      var view = window.localStorage.getItem('sananRoadmapView');
+      if (view === 'detailed' || view === 'timeline') R.$root.addClass(view === 'timeline' ? 'is-timeline' : '')
+        .removeClass('is-compact').find('[data-rm-view]').removeClass('is-active').filter('[data-rm-view="' + view + '"]').addClass('is-active');
     } catch (err) { /* ignore */ }
     R.renderBoard();
     R.renderAll();

@@ -53,7 +53,7 @@ class SananAgile::AssetsHook < Redmine::Hook::ViewListener
       # media all: the stylesheet also carries the print / PDF layout.
       stylesheet_link_tag('roadmap', plugin: 'sanan_redmine_agile', media: 'all') +
       javascript_include_tag('roadmap_core', 'roadmap_board', 'roadmap_team', 'roadmap_detail',
-                             'roadmap_actions', 'roadmap', plugin: 'sanan_redmine_agile')
+                             'roadmap_timeline', 'roadmap_actions', 'roadmap', plugin: 'sanan_redmine_agile')
     ).html_safe
   end
 

@@ -68,4 +68,17 @@ class DoneInSprintTest < ActiveSupport::TestCase
     assert_equal 'Resolved', cfg['done_qa_status_name']
     assert_not cfg.key?('development_done_cfid')
   end
+  # A project without a default version (e.g. just created): the nearest dated open version, with SQL that
+  # every database accepts (MariaDB / MySQL reject "NULLS LAST").
+  def test_ticket_without_sprint_in_project_without_default_version_uses_nearest_dated_version
+    @project.update_column(:default_version_id, nil)
+    @sprint.update!(effective_date: Date.new(2026, 12, 1))
+    @other.update!(effective_date: Date.new(2026, 11, 1))
+    issue = new_issue(fixed_version: nil, status_id: RESOLVED)
+    sql = @project.reload.versions.open.reorder(Arel.sql('effective_date IS NULL, effective_date ASC, id DESC')).to_sql
+    assert_no_match(/NULLS/i, sql)
+
+    issue.save!
+    assert_equal @other.id.to_s, issue.reload.custom_field_value(@done_qa)
+  end
 end

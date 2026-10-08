@@ -60,6 +60,7 @@
   <div id="sanan-sp-hide-cfs" hidden
        data-cf-ids="<%= hide_ids.join(',') %>"
        data-sp-formula="<%= sp_formula %>"
+       data-sp-scale="<%= SananAgile::SP_FIBO.join(',') %>"
        data-sp-require-qa="<%= sp_require_qa ? '1' : '0' %>"></div>
 
   <%= render partial: 'sanan_agile/issue_sprint_done_form', locals: { issue: issue } %>

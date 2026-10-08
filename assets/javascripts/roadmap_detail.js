@@ -209,6 +209,7 @@
             '<span class="rm-pill">' + R.dot(s.color) + R.esc(s.status) + '</span>' +
             '<span class="rm-small rm-assignee">' + R.esc(s.assignee || R.t.unassigned) + '</span>' +
             (s.sp !== null && s.sp !== undefined ? '<span class="rm-small">' + R.fmtSp(s.sp) + ' ' + R.esc(R.t.sp) + '</span>' : '') +
+            R.dateRange(s) +
             R.storyPhase(s) +
           '</div>' +
         '</div>' +
@@ -226,8 +227,9 @@
         '<button type="button" class="rm-icon-btn" data-rm-close title="' + R.esc(R.t.close) + '" aria-label="' + R.esc(R.t.close) + '">&times;</button>' +
       '</div>' +
       '<h3 class="rm-detail__title">' + R.issueLink(epic.id, '#' + epic.id) + ' ' + R.esc(epic.subject) + '</h3>' +
-      '<div class="rm-sub">' + (epic.priority ? R.priorityBadge(epic) + ' · ' : '') +
-        R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' + epic.story_count + ' ' + R.esc(R.t.stories) + '</div>' +
+      '<div class="rm-sub rm-detail__sub">' + (epic.priority ? R.priorityControl(epic) + ' · ' : '') +
+        R.esc(R.t.owner) + ': ' + R.esc(epic.owner || R.t.unassigned) + ' · ' + epic.story_count + ' ' + R.esc(R.t.stories) +
+        (epic.start_date || epic.due_date ? ' · ' + R.dateRange(epic) : '') + '</div>' +
       '<div class="rm-detail__pills rm-mt-sm">' + pills + '</div>' +
       R.hintBox(epic, product) +
       (product.can_manage ? R.planControls(epic) : '') +

@@ -83,6 +83,7 @@ Rails.application.routes.draw do
     patch 'product_roadmap/move', to: 'roadmaps#move', as: :product_roadmap_move
     patch 'product_roadmap/health', to: 'roadmaps#update_health', as: :product_roadmap_health
     patch 'product_roadmap/span', to: 'roadmaps#update_span', as: :product_roadmap_span
+    patch 'product_roadmap/priority', to: 'roadmaps#update_priority', as: :product_roadmap_priority
     get 'product_roadmap/data', to: 'roadmaps#data', as: :product_roadmap_data
     post 'product_roadmap/baseline', to: 'roadmaps#create_baseline', as: :product_roadmap_baseline
     delete 'product_roadmap/baseline', to: 'roadmaps#destroy_baseline'

@@ -138,7 +138,8 @@ Redmine::Plugin.register :sanan_redmine_agile do
                require: :member
 
     permission :view_roadmap,
-               { roadmaps: [:show, :data] },
+               # update_priority: further limited by the issue's own edit permission / workflow.
+               { roadmaps: [:show, :data, :update_priority] },
                require: :member
 
     permission :manage_roadmap,

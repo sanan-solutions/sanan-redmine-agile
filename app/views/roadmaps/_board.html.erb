@@ -44,6 +44,7 @@
     forecast: l(:label_sanan_roadmap_forecast),
     forecast_hint: l(:text_sanan_roadmap_forecast_hint),
     priority: l(:field_priority),
+    priority_derived: l(:text_sanan_roadmap_priority_derived),
     no_match: l(:label_sanan_roadmap_unplanned_no_match),
     new_story: l(:label_sanan_roadmap_new_story),
     close: l(:button_close),
@@ -121,6 +122,19 @@
     bl_added_short: l(:label_sanan_roadmap_bl_added_short),
     bl_state: SananAgile::RoadmapBaseline::STATES.to_h { |st| [st, l(:"label_sanan_roadmap_bl_state_#{st}")] },
     months: ::I18n.t('date.abbr_month_names'),
+    start_date: l(:field_start_date),
+    due_date: l(:field_due_date),
+    tl_items: l(:label_sanan_roadmap_tl_items),
+    tl_expand_all: l(:label_sanan_roadmap_tl_expand_all),
+    tl_collapse_all: l(:label_sanan_roadmap_tl_collapse_all),
+    tl_no_dates: l(:label_sanan_roadmap_tl_no_dates),
+    tl_planned: l(:text_sanan_roadmap_tl_planned),
+    tl_partial: l(:text_sanan_roadmap_tl_partial),
+    tl_today: l(:label_sanan_roadmap_tl_today),
+    tl_overdue: l(:label_sanan_roadmap_tl_overdue),
+    tl_empty: l(:label_sanan_roadmap_tl_empty),
+    tl_legend_dated: l(:label_sanan_roadmap_tl_legend_dated),
+    tl_legend_planned: l(:label_sanan_roadmap_tl_legend_planned),
     error: l(:error_sanan_roadmap_request_failed)
   }.to_json) %></script>
 
@@ -163,6 +177,7 @@
       <div class="rm-group rm-toggle" role="group">
         <button type="button" class="rm-btn is-active" data-rm-view="compact"><%= l(:label_sanan_roadmap_compact) %></button>
         <button type="button" class="rm-btn" data-rm-view="detailed"><%= l(:label_sanan_roadmap_detailed) %></button>
+        <button type="button" class="rm-btn" data-rm-view="timeline"><%= l(:label_sanan_roadmap_timeline) %></button>
       </div>
       <div class="rm-group">
         <button type="button" class="rm-btn rm-btn--backlog" data-rm-backlog hidden title="<%= l(:text_sanan_roadmap_unplanned_hint) %>">📥 <%= l(:label_sanan_roadmap_unplanned) %> <span class="rm-count" id="rm-unplanned-count">0</span></button>
@@ -182,6 +197,7 @@
     <div class="rm-main">
       <div class="rm-board">
         <div class="rm-scroll" id="rm-board"></div>
+        <div class="rm-scroll rm-tl-wrap" id="rm-timeline"></div>
       </div>
       <div class="rm-legend" id="rm-legend"></div>
     </div>

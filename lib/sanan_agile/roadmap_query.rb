@@ -37,7 +37,7 @@ module SananAgile
       @items_by_issue = SananRoadmapItem.where(project_id: @project.id).index_by(&:issue_id)
       @epics = Issue.visible
                     .where(project_id: @project.id, tracker_id: epic_tracker_id)
-                    .includes(:status, :assigned_to, :priority)
+                    .includes(:status, :assigned_to, :priority, :project, :tracker)
                     .to_a
       @stories_by_epic = load_stories(@epics.map(&:id))
       self
@@ -82,7 +82,10 @@ module SananAgile
           next unless item.covers?(@year, q)
 
           continuations[q] << { id: epic.id, subject: epic.subject, progress: ser[:progress],
-                                dev_progress: ser[:dev_progress], color: ser[:color],
+                                dev_progress: ser[:dev_progress], color: ser[:color], closed: ser[:closed],
+                                start_date: ser[:start_date], due_date: ser[:due_date],
+                                year: item.year, quarter: item.quarter, end_year: item.end_year,
+                                end_quarter: item.end_quarter,
                                 from: SananRoadmapMove.label(item.year, item.quarter), in_data: item.year == @year }
         end
       end
@@ -258,7 +261,13 @@ module SananAgile
         closed: epic.closed?,
         owner: epic.assigned_to&.name,
         priority: epic.priority&.name.to_s,
+        priority_id: epic.priority_id,
         priority_key: SananAgile::PriorityIcon.key(epic.priority),
+        # Redmine's own rule: editable issue, and the priority is not derived from the sub-tasks.
+        priority_editable: epic.safe_attribute?('priority_id') && !epic.priority_derived?,
+        priority_derived: epic.priority_derived?,
+        start_date: epic.start_date&.to_s,
+        due_date: epic.due_date&.to_s,
         health: item ? item.health_key : 'on_track',
         position: item ? item.position.to_i : 0,
         year: item&.year,
@@ -323,6 +332,8 @@ module SananAgile
         color: status_color(story.status),
         closed: story.closed?,
         assignee: story.assigned_to&.name,
+        start_date: story.start_date&.to_s,
+        due_date: story.due_date&.to_s,
         sp: sp.nil? ? nil : round_sp(sp),
         progress: story.closed? ? 100 : story.done_ratio.to_i,
         excluded: excluded,

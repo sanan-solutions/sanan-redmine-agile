@@ -80,7 +80,7 @@ class InlineIssuesControllerTest < Redmine::ControllerTest
 
     get :show, params: { id: @issue.id, field: "cf_#{be.id}" }
     assert_equal 'select', json['type']
-    assert_equal %w[0 0.5 1 2 3 5 8 13 21 34], json['options'].map(&:last)
+    assert_equal %w[0 0.5 1 2 3 5 8 13 20 40 100], json['options'].map(&:last)
 
     get :show, params: { id: @issue.id, field: "cf_#{total.id}" }
     assert_not_includes json['options'].map(&:last), '0.5' # integer field

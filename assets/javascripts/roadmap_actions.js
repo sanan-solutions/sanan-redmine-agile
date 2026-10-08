@@ -103,6 +103,25 @@
   };
 
   R.bindEvents = function () {
+    // Priority select on a card / in the drawer: not a click on the card.
+    R.$root.on('click mousedown keydown', '[data-rm-priority]', function (e) { e.stopPropagation(); });
+    R.$root.on('change', '[data-rm-priority]', function () {
+      var select = this;
+      var found = R.findEpic(Number($(select).attr('data-rm-priority')));
+      if (!found) return;
+      var epic = found.epic;
+      select.disabled = true;
+      R.request('PATCH', found.product.urls.priority, { issue_id: epic.id, priority_id: select.value }).done(function (res) {
+        epic.priority_id = res.priority_id;
+        epic.priority = res.priority;
+        epic.priority_key = res.priority_key;
+        R.renderAll();
+      }).fail(function () {
+        select.value = String(epic.priority_id);
+        select.disabled = false;
+      });
+    });
+
     R.$root.on('click keydown', '.rm-epic:not(.rm-epic--ghost)', function (e) {
       if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
       e.preventDefault();
@@ -305,10 +324,11 @@
 
     R.$root.on('click', '[data-rm-view]', function () {
       var view = $(this).attr('data-rm-view');
-      R.$root.toggleClass('is-compact', view === 'compact');
+      R.$root.toggleClass('is-compact', view === 'compact').toggleClass('is-timeline', view === 'timeline');
       R.$root.find('[data-rm-view]').removeClass('is-active');
       $(this).addClass('is-active');
       try { window.localStorage.setItem('sananRoadmapView', view); } catch (err) { /* ignore */ }
+      R.renderLists(); // also (re)draws the timeline when it is the view
     });
 
     R.$root.on('change', '[data-rm-health]', function () {

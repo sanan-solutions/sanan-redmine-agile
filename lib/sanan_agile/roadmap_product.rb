@@ -33,6 +33,7 @@ module SananAgile
         current_quarter: today.year == year ? (today.month - 1) / 3 + 1 : 0,
         today: today.to_s,
         statuses: status_legend(projects.first),
+        priorities: IssuePriority.active.map { |pr| { id: pr.id, name: pr.name, key: SananAgile::PriorityIcon.key(pr) } },
         products: prepared.map do |p, cfg, query|
           payload(p, year: year, user: user, today: today, cfg: cfg, data: query.finish(deps))
         end
@@ -59,6 +60,7 @@ module SananAgile
           move: url_helpers.project_product_roadmap_move_path(project),
           health: url_helpers.project_product_roadmap_health_path(project),
           span: url_helpers.project_product_roadmap_span_path(project),
+          priority: url_helpers.project_product_roadmap_priority_path(project),
           baseline: url_helpers.project_product_roadmap_baseline_path(project),
           new_issue: url_helpers.new_project_issue_path(project)
         },

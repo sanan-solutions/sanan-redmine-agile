@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 module SananAgile
+  # Story point scale (modified Fibonacci) offered by every SP picker; the "avg" Total rounds to it.
+  SP_FIBO = [0, 0.5, 1, 2, 3, 5, 8, 13, 20, 40, 100].freeze
+
   module SpTotalFormula
     FORMULAS = %w[manual max avg].freeze
-    FIBO = [0, 0.5, 1, 2, 3, 5, 8, 13, 21, 34].freeze
 
     module_function
 
@@ -126,7 +128,7 @@ module SananAgile
     def nearest_fibo(n)
       return nil if n.nil?
 
-      FIBO.min_by { |v| [(v.to_f - n.to_f).abs, -v.to_f] }
+      SananAgile::SP_FIBO.min_by { |v| [(v.to_f - n.to_f).abs, -v.to_f] }
     end
 
     def parse(raw)

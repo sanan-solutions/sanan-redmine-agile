@@ -248,6 +248,35 @@
     return Number(R.data.year) * 4 + q < y * 4 + tq;
   };
 
+  // ISO date (yyyy-mm-dd) → UTC ms; null when blank.
+  R.parseDate = function (iso) {
+    if (!iso) return null;
+    var p = String(iso).split('-');
+    return Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  };
+
+  // "12 Oct" (the year only when it is not the shown one).
+  R.fmtDate = function (iso) {
+    if (!iso) return '';
+    var p = String(iso).split('-');
+    var month = (R.t.months || [])[Number(p[1])] || p[1];
+    return Number(p[2]) + ' ' + month + (Number(p[0]) !== Number(R.data.year) ? ' ' + p[0] : '');
+  };
+
+  R.isOverdue = function (item) {
+    return !item.closed && !!item.due_date && !!R.data.today && item.due_date < R.data.today;
+  };
+
+  // "📅 1 Oct → 30 Nov" of an Epic / Story; empty when it has neither date.
+  R.dateRange = function (item) {
+    if (!item.start_date && !item.due_date) return '';
+    var late = R.isOverdue(item);
+    var tip = R.t.start_date + ': ' + (item.start_date || '—') + '\n' + R.t.due_date + ': ' + (item.due_date || '—') +
+      (late ? '\n' + R.t.tl_overdue : '');
+    return '<span class="rm-dates' + (late ? ' is-overdue' : '') + '" title="' + R.esc(tip) + '">📅 ' +
+      R.esc(R.fmtDate(item.start_date) || '?') + ' → ' + R.esc(R.fmtDate(item.due_date) || '?') + '</span>';
+  };
+
   R.baselineFor = function (product, quarter) {
     return product.baselines ? (product.baselines[String(quarter)] || product.baselines[quarter]) : null;
   };
